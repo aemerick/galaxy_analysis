@@ -33,7 +33,7 @@ def sfhFromParticles(ds, data, selection = None, times = None):
     times = times.convert_to_units('yr')
 
     for i,t in enumerate(times[1:]):
-        mass = np.sum(particle_mass[creation_time<=t])
+        mass[i] = np.sum(particle_mass[creation_time<=t])
 
     return times, mass
 
