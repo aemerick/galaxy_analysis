@@ -57,7 +57,6 @@ if __name__=='__main__':
 
     times, sfr = sfrFromParticles(ds, data, times = times)
     fig, ax = plt.subplots(figsize=(8,8))
-
     ax.plot(times/1.0E6, sfr*1.0E4, color = 'black', lw = 3)
     ax.set_xlabel('Time (Myr)')
     ax.set_ylabel(r'SFR (10$^{-4}$ M$_{\odot}$/yr)')
