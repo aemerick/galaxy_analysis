@@ -45,20 +45,25 @@ def sfrFromParticles(ds, data, selection = None, times = None):
 
 if __name__=='__main__':
 
+
     ds_list = np.sort( glob.glob('./DD????/DD????'))
-    
+
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
-    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 25.0*yt.units.Myr)
+    dt = 25.0*yt.units.Myr
+
+    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr')+dt, dt)
     times = times*yt.units.Myr
 
     times, sfr = sfrFromParticles(ds, data, times = times)
     fig, ax = plt.subplots(figsize=(8,8))
-    ax.plot(times.value, sfr, color = 'black', lw = 3)
+    ax.plot(times/1.0E6, sfr*1.0E4, color = 'black', lw = 3)
     ax.set_xlabel('Time (Myr)')
-    ax.set_ylabel(r'SFR (Msun/Myr)')
-    ax.set_ylim(0, np.max(sfr)*1.1)
+
+    ax.set_ylabel(r'SFR (10$^{-4}$ M$_{\odot}$/yr)')
+    ax.set_ylim(0, np.max(sfr)*1.1 * 1.0E4)
+
     plt.savefig('sfr.png')
 
 
