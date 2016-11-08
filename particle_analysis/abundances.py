@@ -66,7 +66,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
     rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
                   5 : (2,3), 6: (2,3), 7:(2,4),
                   8 : (2,4), 9: (2,5), 10:(2,5),
-                  11: (3,4), 12: (3,4)}
+                  11: (3,4), 12: (3,4), 13: (4,4)}
 
     if plot_type == 'standard':
         denom1 = 'Fe'
