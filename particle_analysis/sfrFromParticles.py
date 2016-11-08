@@ -1,6 +1,7 @@
 import yt.mods as yt
 import matplotlib.pyplot as plt
 import numpy as np
+import glob
 
 def sfrFromParticles(ds, data, selection = None, times = None):
     """
@@ -44,7 +45,9 @@ def sfrFromParticles(ds, data, selection = None, times = None):
 
 if __name__=='__main__':
 
-    ds   = yt.load('./DD0159/DD0159')
+    ds_list = np.sort( glob.glob('./DD????/DD????'))
+    
+    ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
     times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 25.0*yt.units.Myr)
@@ -54,7 +57,7 @@ if __name__=='__main__':
     fig, ax = plt.subplots(figsize=(8,8))
     ax.plot(times.value, sfr, color = 'black', lw = 3)
     ax.set_xlabel('Time (Myr)')
-    ax.set_ylabel('SFR (Msun/Myr)')
+    ax.set_ylabel(r'SFR (Msun/Myr)')
     ax.set_ylim(0, np.max(sfr)*1.1)
     plt.savefig('sfr.png')
 
