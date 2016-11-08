@@ -41,7 +41,7 @@ def sfrFromParticles(ds, data, selection = None, times = None):
     return times, sfr
 
 
-if __name__=='__main':
+if __name__=='__main__':
 
     ds   = yt.load('./DD0100/DD0100')
     data = ds.all_data()
@@ -50,7 +50,7 @@ if __name__=='__main':
 
     times, sfr = sfrFromParticles(ds, data, times = times)
     fig, ax = plt.subplots(figsize=(8,8))
-    ax.plot(times.value, sfr.value, color = 'black', lw = 3)
+    ax.plot(times.value, sfr, color = 'black', lw = 3)
     ax.set_xlabel('Time (Myr)')
     ax.set_ylabel('SFR (Msun/Myr)')
     ax.set_ylim(0, np.max(sfr)*1.1)
