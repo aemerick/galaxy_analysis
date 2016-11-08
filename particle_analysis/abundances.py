@@ -21,6 +21,7 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
 
     birth_mass = data['birth_mass'].value * yt.units.Msun
     ptype      = data['particle_type']
+    birth_mass = birth_mass[ptype==particle_type]
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -39,8 +40,8 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
         enzo_name1 = ('io','particle_' + ele1 + '_fraction')
         enzo_name2 = ('io','particle_' + ele2 + '_fraction')
 
-        mass1 = data[enzo_name1] * birth_mass
-        mass2 = data[enzo_name2] * birth_mass
+        mass1 = data[enzo_name1][ptype==particle_type] * birth_mass
+        mass2 = data[enzo_name2][ptype==particle_type] * birth_mass
 
         aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1), 
                                                              (ele2, mass2), 
@@ -62,6 +63,11 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
     xlabels = {'standard': r'log [Fe / H]'}
     ylabels = {'standard': r'log [X / Fe]'}
 
+    rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
+                  5 : (2,3), 6: (2,3), 7:(2,4),
+                  8 : (2,4), 9: (2,5), 10:(2,5),
+                  11: (3,4), 12: (3,4)}
+
     if plot_type == 'standard':
         denom1 = 'Fe'
         denom2 = 'H'
@@ -79,7 +85,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         elements = [x for x in abund.keys() if (x!= denom1) and (x!=denom2)]
         nabundances = len(elements)
 
-        nrow, ncol = 2 , 4
+        nrow, ncol = rowcoldict[nabundances]
 
         fig, ax = plt.subplots(nrow,ncol)
         fig.set_size_inches(4*ncol,4*nrow)
@@ -90,11 +96,11 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         for ele in elements:
 
             if color_by_age:
-                c = ax[(i,j)].scatter( abund[ele][denom2], abund[ele][denom1], s = 15, alpha = 0.5,
-                                   c = t - hf[dsname]['creation_time'].value, label=ele, cmap='viridis')
-                plt.colorbar()
+                age = np.array(t - hf[dsname]['creation_time'].value)
+                c = ax[(i,j)].scatter( np.array(abund[ele][denom2].value), np.array(abund[ele][denom1].value), s = 15, alpha = 0.5,
+                                   c = age, label=ele, cmap='algae')
             else:
-                ax[(i,j)].scatter( abund[ele][denom2], abund[ele][denom1], s =15, alpha =0.75,
+                ax[(i,j)].scatter( abund[ele][denom2].value, abund[ele][denom1].value, s =15, alpha =0.75,
                                                        color = 'black', label = ele)
 
             ax[(i,j)].set_xlabel(xlabels[plot_type])
@@ -112,6 +118,8 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
                 i = i + 1
 
         plt.tight_layout()
+        cbar = fig.colorbar(c)
+        cbar.ax.set_label('Age (Myr)')
         plt.savefig(dir + dsname + '_abundances.png')
         plt.close()
 
@@ -193,4 +201,4 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 if __name__=='__main__':
 
     generate_abundances()
-    plot_abundances(plot_type = 'standard')
+    plot_abundances(plot_type = 'standard', color_by_age = True)
