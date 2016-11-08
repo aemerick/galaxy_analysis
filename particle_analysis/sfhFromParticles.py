@@ -47,7 +47,7 @@ if __name__=='__main__':
     times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 25.0*yt.units.Myr)
     times = times*yt.units.Myr
 
-    times, mass = sfrFromParticles(ds, data, times = times)
+    times, mass = sfhFromParticles(ds, data, times = times)
     fig, ax = plt.subplots(figsize=(8,8))
     ax.plot(times/1.0E6, mass, color = 'black', lw = 3)
     ax.set_xlabel('Time (Myr)')
