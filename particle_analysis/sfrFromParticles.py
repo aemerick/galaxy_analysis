@@ -19,17 +19,18 @@ def sfrFromParticles(ds, data, selection = None, times = None):
 
     if times is None:
         bin_spacing = 10.0 * yt.units.Myr
-        times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
+        times = np.linspace(np.min(creation_time), currentTime, bin_spacing)*yt.units.Myr
     elif np.size(times) == 1:
         bin_spacing = times
         if not hasattr(bin_spacing, 'value'):
             bin_spacing = bin_spacing * yt.units.Myr
 
         times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
+        times = times *yt.units.Myr
 
-    times = np.array(times)
-    times = np.sort(times)
     sfr   = np.zeros(np.shape(times))
+
+    times = times.convert_to_units('yr')
 
     for i,t in enumerate(times[1:]):
         dt = t - times[i-1]
@@ -43,10 +44,11 @@ def sfrFromParticles(ds, data, selection = None, times = None):
 
 if __name__=='__main__':
 
-    ds   = yt.load('./DD0100/DD0100')
+    ds   = yt.load('./DD0159/DD0159')
     data = ds.all_data()
 
-    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 10.0*yt.units.Myr)
+    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 25.0*yt.units.Myr)
+    times = times*yt.units.Myr
 
     times, sfr = sfrFromParticles(ds, data, times = times)
     fig, ax = plt.subplots(figsize=(8,8))
