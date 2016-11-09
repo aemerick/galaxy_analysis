@@ -24,16 +24,7 @@ def snr(ds, data, times = None, sn_type = 'II'):
     _snia_labels = ["SN1a", "SNIa", "Type1a", "TypeIa", "Type Ia", "Type 1a",
                      "type 1a", "type Ia", "type ia", "type1a", "typeIa"]
 
-    #
-    # Determine the particle type we are working with
-    #
-    if any([sn_type in x for x in _core_collapse_labels]):
-        sn_particle_type = 13 # Remnant (core collapse + direct collapse)
-    elif any([sn_type in x for x in _snia_labels]):
-        sn_particle_type = 12 # WD and exploded WD have same type
-    else:
-        print "sn_type :" + sn_type + " not a valid option - check spelling"
-        return -1
+    _agb_labels = ['AGB', 'agb']
 
     if times is None:
         bin_spacing = 10.0 * yt.units.Myr
@@ -61,22 +52,24 @@ def snr(ds, data, times = None, sn_type = 'II'):
         print "no supernova of type " + sn_type + " found"
         return times, np.zeros(np.size(times.value) - 1)
 
-    # start the particle array slicer
-    pcut = (pt == sn_particle_type)
-
     # looking for core collapse supernova rate
-    if sn_particle_type == 13:
+    if  any( [sn_type in x for x in _core_collapse_labels]):
+
+        pcut = (pt == 13)
 
         # ignore stars that did not actually go supernova
         collapse_threshold = ds.parameters['IndividualStarDirectCollapseThreshold']
-        if not any([x <= collapse_threshold for x in birth_mass[pcut]]):
+        agb_threshold      = ds.parameters['IndividualStarSNIIMassCutoff']
+        if not any([(x <= collapse_threshold)*(x > agb_threshold) for x in birth_mass[pcut]]):
             print "no core collapse supernova present, only direct collapse"
             return times, np.zeros(np.size(times.value) - 1)
 
         # slice!
-        pcut *= (birth_mass <= collapse_threshold)
+        pcut *= (birth_mass <= collapse_threshold)*(x > agb_threshold)
 
-    elif sn_particle_type == 12:
+    elif any( [sn_type in x for x in _snia_labels]):
+
+        pcut = (pt == 12)
 
         # SNIa are the ones that are just masless tracers, rest are WD
         if not any(mass[pcut] == 0.0):
@@ -87,6 +80,23 @@ def snr(ds, data, times = None, sn_type = 'II'):
 
         # slice!
         pcut *= (mass == 0.0)
+
+    elif any( [sn_type in x for x in _agb_labels]):
+
+        #
+        # these are a little complicated - all WD type that didn't explode,
+        # as well as remnant type below AGB mass threshold (i.e. stars that die
+        # but don't go SN
+
+        raise NotImplementedError
+ #       pcut  = (pt == 12)
+ #       pcut *= (mass > 0.0)
+
+  #      pcut = pcut + ( (pt == 13) * (mass <= agb_threshold))
+
+    else:
+        print "sn_type :" + sn_type + " not a valid option - check spelling"
+        return -1
 
 
     #
