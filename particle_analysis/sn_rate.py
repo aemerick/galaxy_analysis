@@ -136,17 +136,19 @@ if __name__ == '__main__':
     sniilabel = 'Core Collapse'
 
     if log:
-        ax.plot(center/1.0E6, snrII, color = 'black', lw = 3, ls = '-', label = sniilabel)
-        ax.plot(center/1.0E6, snrIa, color = 'black', lw = 3, ls = '--', label = snialabel)
+        ax.plot(center/1.0E6, snrII*1.0E6, color = 'black', lw = 3, ls = '-', label = sniilabel)
+        ax.plot(center/1.0E6, snrIa*1.0E6, color = 'black', lw = 3, ls = '--', label = snialabel)
         x.semilogy()
     else:
-        ax.step(times[:-1]/1.0E6, snrII, color ='black', lw = 3, ls = '-', label = sniilabel)
-        ax.step(times[:-1]/1.0E6, snrIa, color ='orange', lw = 3, ls = '-', label = snialabel)
+        ax.step(times[:-1]/1.0E6, snrII*1.0E6, color ='black', lw = 3, ls = '-', label = sniilabel)
+        ax.step(times[:-1]/1.0E6, snrIa*1.0E6, color ='orange', lw = 3, ls = '-', label = snialabel)
 
     ax.set_xlabel('Time (Myr)')
 
-    ax.set_ylabel(r'SNR (yr$^{-1}$)')
-    ax.set_ylim( np.min( [np.min(snrIa), np.min(snrII)]),
-                 np.max( [np.max(snrIa), np.max(snrII)]))
+    ax.set_ylabel(r'SNR (10$^{-6}$ yr$^{-1}$)')
+    ax.set_ylim( np.min( [np.min(snrIa), np.min(snrII)])*1.0E6,
+                 np.max( [np.max(snrIa), np.max(snrII)])*1.5*1.0E6)
+    ax.legend(loc ='best')
+    plt.tight_layout()
     ax.minorticks_on()
     plt.savefig('snr.png')
