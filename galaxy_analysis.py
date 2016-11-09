@@ -28,7 +28,7 @@ class Galaxy(object):
         species = [x[1] for x in fields if ('_Density') in x[1]]
         self.species = np.sort( [x.rsplot('_')[0] for x in species])
 
-        return
+       return
 
 
     def create_radial_profile(self, fields = None, dsi = None):
