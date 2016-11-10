@@ -5,7 +5,6 @@ from galaxy_analysis.static_data import \
      MOLECULAR_WEIGHT, \
      AMU, \
      SOLAR_ABUNDANCE
-     
 
 def elemental_abundance(element, mass):
     n = mass / (MOLECULAR_WEIGHT[element] * AMU)
