@@ -14,6 +14,33 @@ from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities as util
 
 
+
+def _mass_function_generator(asym):
+
+    if not isinstance(asym, Iterable):
+        asym = [asym]
+
+    def return_function(a):
+        def _mass(field,data):
+            ele_dens = data[('enzo', a + '_Density')].value
+            ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+            ele_dens = ele_dens.convert_to_cgs()
+
+            mass = (ele_dens * data['cell_volume']).convert_to_units('g')
+
+            return mass
+
+        return _mass
+
+    nfields = 0
+    for a in asym:
+
+        yt.add_field(('gas', a + '_Mass'), function = return_function(a), units='g')
+
+        nfields = nfields + 1
+
+    return nfields
+
 #
 # Construct arbitrary mass fraction derived fields in yt
 # using a loop to generate functions
@@ -149,6 +176,8 @@ def generate_derived_fields(ds):
     ratios = util.ratios_list(metals)
 
     print "tracer species present: ", metals
+    nfields = _mass_function_generator(metals)
+    print nfields, "mass fields defined"
     nfields = _mass_fraction_function_generator(metals)
     print nfields, "mass fraction fields defined"
     nfields = _number_density_function_generator(metals)
