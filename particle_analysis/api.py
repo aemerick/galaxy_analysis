@@ -11,3 +11,7 @@ from .sfhFromParticles import \
 
 from .abundances import \
     generate_abundances
+
+from .sn_rate import \
+      snr, \
+      future_snr
