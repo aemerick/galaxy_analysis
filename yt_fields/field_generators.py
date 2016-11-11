@@ -102,6 +102,41 @@ def _number_density_function_generator(asym):
         nfields = nfields + 1
 
     return nfields
+
+def _particle_abundance_function_generator(ratios):
+
+    if not isinstance(ratios, Iterable):
+        ratios = [ratios]
+
+    def return_function(ele1, ele2, field1, field2):
+        def _abundance_ratio(field, data):
+            mass1 = data[field1].value
+            mass1 = ((mass1 * data['birth_mass'].value) * yt.units.Msun).convert_to_units('g')
+
+            mass2 = data[field2].value
+            mass2 = ((mass2 * data['birth_mass'].value) * yt.units.Msun).convert_to_units('g')
+            ratio = convert_abundances.abundance_ratio( (ele1, mass1.value), (ele2, mass2.value), 'mass')
+
+            return ratio * yt.units.g / yt.units.g
+
+        return _abundance_ratio
+
+    nfields = 0
+    for r in ratios:
+
+        ele1, ele2 = r.rsplit('/')
+
+        field1 = ('io','particle_' + ele1 + '_fraction')
+        field2 = ('io','particle_' + ele2 + '_fraction')
+
+        fieldname = 'particle_' + ele1 + '_over_' + ele2
+
+        yt.add_field(('io', fieldname), function = return_function(ele1,ele2,field1,field2),
+                              units = 'dimensionless', particle_type = True)
+        nfields = nfields + 1
+
+    return nfields
+
 #
 # Construct arbitrary abundance ratio fields in yt
 # using a function generator
@@ -184,6 +219,8 @@ def generate_derived_fields(ds):
     print nfields, "number density fields defined"
     nfields = _abundance_ratio_function_generator(ratios)
     print nfields, "abundance ratio fields defined"
+    nfields =  _particle_abundance_function_generator(ratios)
+    print nfields, "particle abundance ratio fields defined"
 
 
     return
