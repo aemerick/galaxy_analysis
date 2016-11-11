@@ -1,4 +1,5 @@
 import numpy as np
+import yt.units as u
 
 def _make_conversion_dictionaries():
 
@@ -100,3 +101,6 @@ def _set_molecular_weight_dictionary():
 SOLAR_ABUNDANCE  = _set_abundance_dictionary()
 MOLECULAR_WEIGHT = _set_molecular_weight_dictionary()
 AMU              = 1.66054E-24
+
+MAX_R            = 1.0 * u.kpc
+
