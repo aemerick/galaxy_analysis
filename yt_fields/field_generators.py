@@ -141,21 +141,44 @@ def _particle_abundance_function_generator(ratios):
 # Construct arbitrary abundance ratio fields in yt
 # using a function generator
 #
-def _abundance_ratio_function_generator(ratios):
+def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
 
+    def _H_mass(data, mode):
+
+        if mode == 'total':
+            mass = data[('enzo','HI_Density')] + data[('enzo','HII_Density')]
+            
+            if ('enzo','H2I_Density') in data.ds.field_list:
+                mass += data[('enzo','HM_Density')] + data[('enzo','H2I_Density')] +\
+                        data[('enzo','H2II_Density')]
+
+        elif mode == 'HI':
+            mass = data[('enzo','HI_Density')]
+        elif mode == 'HII':
+            mass = data[('enzo','HII_Denisty')]
+
+        return mass
 
     def return_function(ele1, ele2, field1, field2):
         def _abundance_ratio(field, data):
 
-            mass1 = data[field1]
+            if ele1 == 'H':
+                mass1 = _H_mass(data, H_mode)
+            else:
+                mass1 = data[field1]
+
             if ele1 != 'H' and ele1 != 'He':
                 mass1 = mass1.value * data.ds.mass_unit / data.ds.length_unit**3
             mass1 = (mass1 * data['cell_volume']).convert_to_units('g')
 
-            mass2 = data[field2]
+            if ele2 == 'H':
+                mass2 = _H_mass(data, H_mode)
+            else:
+                mass2 = data[field2]
+
             if ele2 != 'H' and  ele2 != 'He':
                 mass2 = mass2.value * data.ds.mass_unit / data.ds.length_unit**3
             mass2 = (mass2 * data['cell_volume']).convert_to_units('g')
@@ -217,10 +240,14 @@ def generate_derived_fields(ds):
     print nfields, "mass fraction fields defined"
     nfields = _number_density_function_generator(metals)
     print nfields, "number density fields defined"
-    nfields = _abundance_ratio_function_generator(ratios)
+    nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
     print nfields, "abundance ratio fields defined"
-    nfields =  _particle_abundance_function_generator(ratios)
-    print nfields, "particle abundance ratio fields defined"
+
+    if ds.parameters['NumberOfParticles'] > 0:
+        nfields =  _particle_abundance_function_generator(ratios)
+        print nfields, "particle abundance ratio fields defined"
+
+    print "no particle fields found"
 
 
     return

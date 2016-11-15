@@ -9,7 +9,10 @@ def species_from_fields(fields):
     element_fields = [x[1] for x in fields if ('_Density' in x[1] and\
                                                len(x[1]) <=10)]
     elements = np.sort([x.rsplit('_')[0] for x in element_fields])
-    metals   = [x for x in elements if (x != 'H' and x != 'He' and x != 'HI')]
+
+    ignore = ['H', 'He', 'HI', 'HM', 'HD']
+
+    metals   = [x for x in elements if x not in ignore]
 
 
     return metals
@@ -33,7 +36,7 @@ def ratios_list(species):
     species = [x for x in species if x != 'H' and x != 'He']
 
 
-    denominators = ['H', 'Mg', 'Fe', 'Na', 'Ni']
+    denominators = ['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C']
 
     ratios = []
 
