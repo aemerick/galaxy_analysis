@@ -39,6 +39,7 @@ def sfhFromParticles(ds, data, selection = None, times = None):
 if __name__=='__main__':
 
     ds_list = np.sort( glob.glob('./DD????/DD????'))
+
     
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()

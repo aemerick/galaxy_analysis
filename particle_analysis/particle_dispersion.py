@@ -1,6 +1,7 @@
 import numpy as np
 import yt
-
+import glob
+import matplotlib.pyplot as plt
 
 def vel_dispersion(v):
     return np.std(v)
@@ -37,15 +38,18 @@ def compute_velocity_dispersion(data, types = None, fields = None, filter = None
 
     dispersion = {}
 
-    for x,i in enumerate(fields):
+    for i,x in enumerate(fields):
 
         if filter is not None:
             v = data[x][filter]
         else:
             v = data[x]
 
-        dispersion[keys[i]] = vel_dispersion( v.convert_to_units('km/s') )
- 
+        if np.size(v) == 0:
+            dispersion[keys[i]] = 0.0
+        else:
+            dispersion[keys[i]] = vel_dispersion( v.convert_to_units('km/s') )
+
 
     return dispersion
 
@@ -71,17 +75,34 @@ if __name__ == '__main__':
 
     dispersions = compute_velocity_dispersion(data, filter = filter)
 
-    for x in dispersions:
-        print x, dispersions[x]
+    dr = 50.0
+    bins = np.arange(0.0, 750.0 + dr, dr) * yt.units.pc
 
-#    fig, ax = plt.subplots(figsize=(8,8))
-#    ax.plot(times/1.0E6, mass, color = 'black', lw = 3)
-#    ax.set_xlabel('Time (Myr)')
-#    ax.set_ylabel(r'Cumulative SFH (M$_{\odot}$)')
-#    ax.set_ylim(1.0, np.max(mass)*5.0)
-#    ax.semilogy()
-#    ax.minorticks_on()
-#    plt.savefig('sfh.png')
+    r = data['particle_position_spherical_radius'].convert_to_units('pc')
 
-    
-   
+    beta = np.zeros(np.size(bins)-1)
+    sigma = np.zeros(np.size(bins)-1)
+    for i in np.arange(1, np.size(bins)):
+        radial_filter = (r < bins[i]) * (r >= bins[i-1])
+
+        dispersions = compute_velocity_dispersion(data, filter = filter*radial_filter)
+
+        beta[i-1] = 1.0 - dispersions['theta'].value**2 / dispersions['r'].value**2
+        sigma[i-1] = np.sqrt(dispersions['x']**2 + dispersions['y']**2 + dispersions['z']**2)
+
+    centers = 0.5 * ( bins[1:] + bins[:-1])
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.plot(centers.value, beta, color = 'black', lw = 3)
+    ax.set_xlabel('Radius (pc)')
+    ax.set_ylabel(r'Anisotropy Parameter')
+    ax.minorticks_on()
+    plt.savefig('radial_anisotropy.png')
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.plot(centers.value, sigma, color = 'black', lw =3)
+    ax.set_xlabel('Radius (pc)')
+    ax.set_ylabel(r'3D velocity dispersion (km/s)')
+    ax.minorticks_on()
+    plt.savefig('velocity_dispersion.png')

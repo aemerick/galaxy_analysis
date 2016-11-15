@@ -139,13 +139,10 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    if not os.path.isfile(dir + outfile):
+    if not os.path.isfile(dir + outfile) or overwrite:
         hf = h5py.File(dir + outfile, 'w')
-    elif overwrite:
-        print "WARNING FILE EXISTS: Overwrite set to false - finishing"
-        return
     else:
-        hf = h5py.File(dir + outfile, 'w')
+        hf = h5py.File(dir + outfile, 'a')
 
     ds_list = np.sort( glob.glob('./DD????/DD????') )
     times   = np.zeros(np.size(ds_list))
@@ -171,6 +168,10 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
         data = ds.all_data()
 
         groupname = dsname.rsplit('/')[1]
+
+        if groupname in hf and not overwrite:
+            continue # skip this one, it already exists
+
         g = hf.create_group(groupname)
         g.create_dataset('Time'  , data = ds.current_time.convert_to_units('Myr').value)
 
@@ -201,4 +202,5 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 if __name__=='__main__':
 
     generate_abundances()
+
     plot_abundances(plot_type = 'standard', color_by_age = True)
