@@ -36,7 +36,7 @@ def ratios_list(species):
     species = [x for x in species if x != 'H' and x != 'He']
 
 
-    denominators = ['H', 'Mg', 'Fe', 'Na', 'Ni']
+    denominators = ['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C']
 
     ratios = []
 
