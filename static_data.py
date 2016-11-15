@@ -106,5 +106,3 @@ MAX_R            = 1.0 * u.kpc
 
 
 
-for i in np.arange(1,84):
-    print "case %i: %.2f; break;"%(i,SOLAR_ABUNDANCE[i]) 
