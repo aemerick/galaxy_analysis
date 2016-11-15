@@ -32,6 +32,9 @@ def _generate_radial_bins(bins):
 
     return bins
 
+_particle_profile_fields = ['count', 'particle_mass', 'total-dispersion',
+                            'r-dispersion','anisotropy','metallicity_fraction']
+
 def radial_profile(ds, data, fields, weight_field = None, bins = None,
                                      mode = 'both'):
     """
@@ -39,17 +42,15 @@ def radial_profile(ds, data, fields, weight_field = None, bins = None,
     """
 
     r = data['particle_position_spherical_radius'].convert_to_units('pc')
-    
-    bins = _generate_radial_bins(bins)        
+    bins = _generate_radial_bins(bins)
 
     all_profiles = {}
- 
+
     if np.size(mode) == 1:
         if mode == 'both':
             mode = ['sum','average']
         else:
             mode = [mode]
-    
 
     for m in mode:
 
@@ -65,13 +66,35 @@ def radial_profile(ds, data, fields, weight_field = None, bins = None,
                     continue
                 #
                 # profile of particle count as function of radius
-                #        
+                #
                 for i in np.arange(0, np.size(bins)-1):
                     p[i] = np.size(r[ (r <    bins[i+1])*
                                           (r >= bins[i])])
-        
+            elif 'dispersion' or 'anisotropy' in field:
+                if m == 'sum':
+                    continue
+
+                if 'dispersion' in field:
+
+                    disp_type = field.rsplit('-')[0]
+                    if disp_type == 'total':
+                        types = ['x','y','z']
+                    else:
+                        types = [disp_type]
+
+                    val = compute_velocity_dispersion( data, types = [disp_type],
+                                                        filter = (r<bins[i+1])*(r>=bins[i]))
+
+                    if types == 'total':
+                       p[i] = np.sqrt(val['x']*val['x'] + val['y']*val['y'] + val['z']*val['z'])
+                    else:
+                       p[i] = val[disp_type]
+                else:
+                    val = compute_velocity_dispersion(data, types =['r','theta'],
+                                                      filter = (r<bins[i+1])*(r>=bins[i]))
+
+                    p[i] = 1.0 - val['theta']**2 / val['r']**2
             else:
-        
                 for i in np.arange(0, np.size(bins)-1):
                     if m == 'sum':
                         p[i] = np.sum( data[field][ (r< bins[i+1])*
