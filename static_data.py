@@ -1,6 +1,8 @@
 import numpy as np
 import yt.units as u
 
+import six
+
 def _make_conversion_dictionaries():
 
     x = {}
@@ -105,4 +107,39 @@ AMU              = 1.66054E-24
 MAX_R            = 1.0 * u.kpc
 
 
+
+#
+# Dictionary of all possible data to construct or plot
+#   keys are field names, values are tuples of:
+#     1) associated enzo field name (may be the same)
+#     2) Latex label
+#     3) Plot lims (if None, set automatically)
+#     4) Colorbar lims (if None, set automatically)
+#     5) Desired units
+#     6) Desired color map
+
+PLOT_DATA = {
+             ('gas','surface_density'):
+                  (  ('enzo','Density'),
+                     r'\Sigma_{\rm{gas}\ \ (M_\odot\ \rm{pc}^{-2})', None,
+                     None, u.Msun / u.pc**2, 'algae'),
+
+             ('gas', 'Density'):
+                 ( ('enzo','Density'),
+                   r'Density (g cm$^{-3}$)', None, None,
+                   u.g / u.cm**(-3), 'algae'),
+
+             ('gas', 'Temperature'):
+                 (('enzo','Temperature'), r'Temperature (K)', (10.0, 1.0E7), (1.0, 1.0E7),
+                 u.K, 'algae'),
+
+             ('gas', 'velocity_magnitude'):
+                 (('gas','velocity_magnitude'),
+                    r'$|\rm{v}|$ (km s$^{-1}$)', (1.0, 1.0E3), (1.0, 1.0E3),
+                    u.km / u.s, 'algae'),
+             }
+
+
+LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
+IMAGE_COLORBAR_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
 
