@@ -8,6 +8,8 @@ import h5py
 
 from collections import Iterable
 
+from utilities import utilities as util
+
 _hdf5_compression = 'lzf'
 
 
@@ -194,12 +196,16 @@ class Galaxy(object):
         self.dsname = dsname
 
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+        self.df     = self.ds.all_data()
 
         hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
 
         self.construct_regions()
+
+        self.total_quantities = {}
+        self._total_quantities_calculated = False
 
 
         if not os.path.isfile( hdf5_file ):
@@ -239,11 +245,34 @@ class Galaxy(object):
         # return raw set to handle elsewhere
         return proj
 
+    def calculate_total_quantities(self, fields = None, *args, **kwargs):
+        """
+        Computes and saves total quantities
+        """
+
+        if fields is None:
+            # calculate all
+            fields = [('gas','H_total_mass'), ('gas','He_total_mass'),
+                      ('gas','metal_mass')]
+
+            for e in self.species_list:
+                fields += [('gas', e +'_Mass')]
+
+
+        for field in fields:
+            self.total_quantities[field] = np.sum(self.df[field].convert_to_units('Msun'))
+
+        self._total_quantities_calculated = True
+
+        return
+
     def calculate_mass_fractions(self, fields = None, *args, **kwargs):
        """
        Compute mass fraction of given species contained within spherical
        bins
        """
+
+       raise NotImplementedError
 
        return
 
