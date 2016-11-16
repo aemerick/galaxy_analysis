@@ -229,11 +229,17 @@ def _additional_helper_fields():
 
         return mass
 
+    def _metal_total_mass(field, data):
+        mass = data['Metal_Density'] * data['cell_volume']
+
+        return mass.convert_to_units('g')
+
 #    def _H2_total_mass(field, data):
 #        mass = data[('gas',
 
     yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
+    yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
