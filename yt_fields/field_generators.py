@@ -212,6 +212,36 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
     return nfields
 
+
+def _additional_helper_fields():
+
+    nfields = 0
+
+
+    def _H_total_mass(field, data):
+        mass = data[('gas','H_p0_mass')] + data[('gas','H_p1_mass')]
+
+        return mass
+
+    def _He_total_mass(field, data):
+        mass = data[('gas','He_p0_mass')] + data[('gas','He_p1_mass')] +\
+               data[('gas','He_p2_mass')]
+
+        return mass
+
+#    def _H2_total_mass(field, data):
+#        mass = data[('gas',
+
+    yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
+    yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
+#    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
+#    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
+
+
+
+    return nfields
+
+
 def generate_derived_fields(ds):
     """
     Given a data set (to extract the on-disk field names), generate
@@ -248,6 +278,9 @@ def generate_derived_fields(ds):
         print nfields, "particle abundance ratio fields defined"
 
     print "no particle fields found"
+
+    nfields = _additional_helper_fields()
+    print nfields, "additional helper fields defined"
 
 
     return
