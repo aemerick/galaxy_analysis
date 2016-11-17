@@ -8,7 +8,15 @@ import h5py
 
 from collections import Iterable
 
+
+# --------- internal imports --------------
 from utilities import utilities as util
+from static_data import LABELS,\
+                        UNITS,\
+                        IMAGE_COLORBAR_LIMITS,\
+                        PLOT_LIMITS
+
+from yt_fields import field_generators as fg
 
 _hdf5_compression = 'lzf'
 
@@ -189,18 +197,26 @@ class Galaxy(object):
 
     def __init__(self, dsname, dir = './'):
         """
-        Object for individual galaxy object
+        Object for individual data dump analysis
         """
 
         self.dir    = dir
         self.dsname = dsname
 
+        # load, generate fields, reload
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+        fg.generate_derived_fields(self.ds)
+        self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+
         self.df     = self.ds.all_data()
 
         hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
+        self.species_list = util.species_from_fields(self.ds.field_list)
+
+        self._set_accumulation_fields()
+
 
         self.construct_regions()
 
@@ -252,29 +268,60 @@ class Galaxy(object):
 
         if fields is None:
             # calculate all
-            fields = [('gas','H_total_mass'), ('gas','He_total_mass'),
-                      ('gas','metal_mass')]
-
-            for e in self.species_list:
-                fields += [('gas', e +'_Mass')]
-
+            fields = self._accumulation_fields
 
         for field in fields:
-            self.total_quantities[field] = np.sum(self.df[field].convert_to_units('Msun'))
+            self.total_quantities[field] = np.sum(self.df[field].convert_to_units(UNITS[field].units))
 
         self._total_quantities_calculated = True
 
         return
 
-    def calculate_mass_fractions(self, fields = None, *args, **kwargs):
-       """
-       Compute mass fraction of given species contained within spherical
-       bins
-       """
+    def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
 
-       raise NotImplementedError
+        if fields is None:
+            fields = self._accumulation_fields
 
-       return
+        rbins, centers, profiles = self.calculate_mass_profile(fields = fields)
+
+        compute_total_fields = [x for x in fields if x not in self.total_quantities]
+        self.calculate_total_quantities(fields = compute_total_fields)
+
+        for field in fields:
+            profiles[field] = profiles[field] / self.total_quantities[field]
+
+        return rbins, centers, profiles
+
+    def calculate_mass_profile(self, fields = None, *args, **kwargs):
+        """
+        Compute mass fraction of given species contained within spherical
+        bins out to the halo radius. Used to estimate metal retention fractions
+        of given species.
+        """
+
+        if fields is None:
+            fields = self._accumulation_fields
+
+        rbins = self.rbins_halo_sphere
+
+        # data
+        r = self.halo_sphere['spherical_r'].convert_to_units(rbins.units)
+
+        profiles = {}
+
+        for field in fields:
+            profiles[field] = np.zeros(np.size(rbins)-1)
+
+        for i in np.arange(np.size(rbins)-1):
+            radial_filter = (r >= rbins[i]) * (r < rbins[i+1])
+
+            for field in fields:
+                profiles[field][i] = np.sum(\
+                      self.halo_sphere[field][radial_filter].convert_to_units(UNITS[field].units))
+
+        centers = 0.5 * (rbins[1:] + rbins[:-1])
+
+        return rbins, centers, profiles
 
 
     def calculate_surface_density_profile(self, fields, *args, **kwargs):
@@ -292,13 +339,8 @@ class Galaxy(object):
         r    = np.sqrt(( (proj['px']-self.disk.center[0])**2 + (self.disk.center[1] -proj['py'])**2)).convert_to_units('pc')
         A    = (proj['pdx']*proj['pdy']).convert_to_units('pc**2')
 
-
         # set up bins
-        r_max = self.disk_region['radius']
-        dr    = self.disk_region['dr']
-        r_max = r_max.convert_to_units(dr.units)
-
-        rbins = self.rbins_disk()
+        rbins = self.rbins_disk
 
         profiles = {}
 
@@ -307,13 +349,13 @@ class Galaxy(object):
             profiles[field] = np.zeros(np.size(rbins) - 1)
 
         for i in np.arange(np.size(rbins)-1):
-            for field in fields:
+            radial_filter = (r >= rbins[i]) * (r < rbins[i+1])
 
-                radial_filter = (r >= rbins[i]) * (r < rbins[i+1])
+            annulus_area  = 2.0 * np.pi * (rbins[i+1]**2 - rbins[i]**2)
 
-                annulus_area  = 2.0 * np.pi * (rbins[i+1]**2 - rbins[i]**2)
+            if np.size(proj['dx'][radial_filter]) > 0:
 
-                if np.size( proj['dx'][radial_filter] ) > 0:
+                for field in fields:
 
                     projection = np.array(proj[field][radial_filter].convert_to_units('Msun/pc**2'))
 
@@ -344,7 +386,7 @@ class Galaxy(object):
             halo_sphere_kwargs = {}
 
             for n in ['radius','center']:
-                sphere_kwargs[n] = self.halo_spherical_region[n]
+                halo_sphere_kwargs[n] = self.halo_spherical_region[n]
 
 
         self.disk   = self.ds.disk(**disk_kwargs)
@@ -380,6 +422,16 @@ class Galaxy(object):
         self.halo_spherical_region = {'center' : self.ds.domain_center,
                                       'radius' : 5.0 * yt.units.kpc,
                                       'dr'     : 50.0 * yt.units.pc}
+
+        return
+
+    def _set_accumulation_fields(self):
+
+        self._accumulation_fields = [('gas','H_total_mass'), ('gas','He_total_mass'),
+                                     ('gas','metal_mass')]
+
+        for e in self.species_list:
+            self._accumulation_fields += [('gas', e +'_Mass')]
 
         return
 
