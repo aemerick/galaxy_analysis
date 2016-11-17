@@ -155,6 +155,13 @@ PLOT_DATA = {
              }
 
 
+# add in species
+for asym in asym_to_anum:
+    PLOT_DATA[('gas', asym + '_Mass')] =\
+              ( ('gas', asym + '_Mass'), r' ' + asym + ' Mass (M$_{\odot}$)',
+                (0.01, 100.0), (1.0E-3, 1.0E3), u.Msun, 'algae')
+
+
 LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
 PLOT_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
 IMAGE_COLORBAR_LIMITS = {k: v[3] for k, v in six.iteritems(PLOT_DATA)}
