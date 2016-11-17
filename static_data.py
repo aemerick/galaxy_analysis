@@ -137,9 +137,25 @@ PLOT_DATA = {
                  (('gas','velocity_magnitude'),
                     r'$|\rm{v}|$ (km s$^{-1}$)', (1.0, 1.0E3), (1.0, 1.0E3),
                     u.km / u.s, 'algae'),
+
+             ('gas', 'H_total_mass'):
+                 (('gas','H_total_mass'),
+                  r'M$_{\rm{H}}$ (M$_{\odot}$)', (1.0, 1.0E7), (1.0, 1.0E3),
+                  u.Msun, 'algae'),
+
+             ('gas', 'He_total_mass'):
+                  (('gas','He_total_mass'),
+                  r'M$_{\rm{He}}$ (M$_{\odot}$)', (1.0,1.0E7), (1.0,1.0E3),
+                  u.Msun, 'algae'),
+
+             ('gas', 'metal_mass'):
+                  (('gas','metal_mass'),
+                  r'Metal Mass (M$_{\odot}$)', (1.0, 1.0E4), (1.0, 1.0E3),
+                  u.Msun, 'algae'),
              }
 
 
 LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
-IMAGE_COLORBAR_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
-
+PLOT_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
+IMAGE_COLORBAR_LIMITS = {k: v[3] for k, v in six.iteritems(PLOT_DATA)}
+UNITS  = {k: v[4] for k, v in six.iteritems(PLOT_DATA)}
