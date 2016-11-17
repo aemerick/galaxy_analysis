@@ -243,7 +243,7 @@ def _additional_helper_fields():
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-
+    nfields = 3
 
     return nfields
 
