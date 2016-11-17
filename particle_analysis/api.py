@@ -15,3 +15,6 @@ from .abundances import \
 from .sn_rate import \
       snr, \
       future_snr
+
+from .particle_types import \
+     particle_selection
