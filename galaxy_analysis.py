@@ -12,9 +12,11 @@ from collections import Iterable
 # --------- internal imports --------------
 from utilities import utilities as util
 from static_data import LABELS,\
-                        UNITS,\
+                        FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS
+
+from particle_analysis import particle_types as pt
 
 from yt_fields import field_generators as fg
 
@@ -217,6 +219,9 @@ class Galaxy(object):
 
         self._set_accumulation_fields()
 
+        self.particle_meta_data = {}
+        self.gas_meta_data      = {}
+        self.meta_data          = {}
 
         self.construct_regions()
 
@@ -271,7 +276,7 @@ class Galaxy(object):
             fields = self._accumulation_fields
 
         for field in fields:
-            self.total_quantities[field] = np.sum(self.df[field].convert_to_units(UNITS[field].units))
+            self.total_quantities[field] = np.sum(self.df[field].convert_to_units(FIELD_UNITS[field].units))
 
         self._total_quantities_calculated = True
 
@@ -317,7 +322,7 @@ class Galaxy(object):
 
             for field in fields:
                 profiles[field][i] = np.sum(\
-                      self.halo_sphere[field][radial_filter].convert_to_units(UNITS[field].units))
+                      self.halo_sphere[field][radial_filter].convert_to_units(FIELD_UNITS[field].units))
 
         centers = 0.5 * (rbins[1:] + rbins[:-1])
 
@@ -366,6 +371,83 @@ class Galaxy(object):
         centers = 0.5 * (rbins[:-1] + rbins[1:])
 
         return rbins, centers, profiles
+
+    def compute_all_meta_data(self):
+        """
+        Wrapper to compute all meta data
+        """
+
+        self.compute_meta_data()
+        self.compute_particle_meta_data()
+        self.compute_gas_meta_data()
+
+        return
+
+    def compute_particle_meta_data(self):
+        """
+        Computes and saves all particle meta data for this time step.
+        This is:
+            1) Total mass, and total mass of each particle type
+            2) Total number, and number of each particle type
+            3) Number of each: core collapse, SNIa, AGB, direct collapse
+            4)
+
+        """
+
+        MS_stars = pt.main_sequence(self.ds, self.df)
+        WD_stars = pt.main_sequence(self.ds, self.df)
+        SNII     = pt.core_collapse(self.ds, self.df)
+        SNIa     = pt.snIa(self.ds, self.df)
+
+        particle_mass = self.df['particle_mass'].convert_to_units(UNITS['Mass'].units)
+
+        self.particle_meta_data['total_mass']    = np.sum(particle_mass)
+        self.particle_meta_data['total_mass_MS'] = np.sum(particle_mass[MS_stars])
+        self.particle_meta_data['total_number']  = np.size(particle_mass)
+        self.particle_meta_data['total_number_MS'] = np.size(particle_mass[MS_stars])
+
+        self.particle_meta_data['total_mass_WD'] = np.sum(particle_mass[WD_stars])
+        self.particle_meta_data['total_number_WD'] = np.size(particle_mass[WD_stars])
+
+        self.particle_meta_data['total_number_SNII'] = np.size(particle_mass[SNII])
+        self.particle_meta_data['total_number_SNIa'] = np.size(particle_mass[SNIa])
+
+        self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
+
+
+        return
+
+    def compute_gas_meta_data(self):
+
+
+        return
+
+    def compute_meta_data(self):
+        """
+        Computes general meta data information and stores it as a
+        dictionary. Really should just be looking into parameter file
+        """
+
+        self.meta_data['Time']  = self.ds.current_time.convert_to_units(UNITS['Time'].units)
+        self.meta_data['dx']    = np.min(self.df['dx'].convert_to_units(UNITS['Length'].units)
+
+        return
+
+    def compute_everything(self):
+        """
+        Compute everything we need to add to the HDF5 files:
+
+          - Meta quantities:
+            1) Total masses of all species
+            2) Total stellar mass
+            3) 
+
+            1) Mass profiles of all species
+            2)
+        """
+
+
+        return
 
     def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
                                 halo_sphere_kwargs = None):
