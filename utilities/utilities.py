@@ -1,5 +1,9 @@
 import numpy as np
 
+def compute_stats(x):
+
+    return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
+
 def chemistry_species_from_fields(fields):
     """
     Returns a list of the individual chemical species fields
