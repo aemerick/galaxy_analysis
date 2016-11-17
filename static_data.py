@@ -165,4 +165,8 @@ for asym in asym_to_anum:
 LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
 PLOT_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
 IMAGE_COLORBAR_LIMITS = {k: v[3] for k, v in six.iteritems(PLOT_DATA)}
-UNITS  = {k: v[4] for k, v in six.iteritems(PLOT_DATA)}
+FIELD_UNITS  = {k: v[4] for k, v in six.iteritems(PLOT_DATA)}
+
+
+UNITS = {'Time': u.Myr, 'Mass' : u.Msun, 'Velocity' : u.km/u.s, 'Length' : u.pc}
+
