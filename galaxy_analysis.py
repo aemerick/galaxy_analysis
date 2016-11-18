@@ -472,6 +472,18 @@ class Galaxy(object):
 
         return
 
+    def get_star_model_properties(self):
+        """
+        Go to stellar model and compute stellar model properties of the stars
+        as well as radiation properties of the stars. Used to compute more fun things
+        like total luminosity and half light radius
+        """
+
+        self.star_model_properties = {}
+
+
+        return
+
     def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
                                 halo_sphere_kwargs = None):
 
