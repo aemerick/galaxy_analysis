@@ -47,7 +47,7 @@ def IMF(M, m_min = 1.0, m_max = 100.0, bins = None, log = True):
         m_max = np.log10(m_max)
 
     if bins is None:
-        bins = np.linspace(m_min, m_max, 50)
+        bins = np.linspace(m_min, m_max, 25)
 
     elif np.size(bins) == 1:
         bins = np.linspace(m_min, m_max, bins)
@@ -83,12 +83,14 @@ if __name__ == "__main__":
     ds      = yt.load(ds_list[-1])
     data    = ds.all_data()
 
-    hist, bins, cent = compute_IMF(ds, data, mode = 'mass', bins = 50)
+    nbins = 25
+
+    hist, bins, cent = compute_IMF(ds, data, mode = 'mass', bins = nbins)
 
     fig, ax = plt.subplots(1)
     ax.plot(cent, hist, color = 'black', ls = '--', lw = 3, label = 'Mass')
 
-    hist, bins, cent = compute_IMF(ds, data, mode = 'birth_mass', bins = 50)
+    hist, bins, cent = compute_IMF(ds, data, mode = 'birth_mass', bins = nbins)
 
     ax.plot(cent, hist, color = 'black', ls ='-', lw = 3, label = 'Birth Mass')
 
@@ -97,10 +99,11 @@ if __name__ == "__main__":
     ax.plot(cent, theory, color = 'red', ls = ':', lw = 3, label = "Salpeter")
 
     ax.semilogy()
-    ax.set_xlabel(r'log(M) (M$_{\odot}$)')
+    ax.set_xlabel(r'log(M [M$_{\odot}$])')
     ax.set_ylabel(r'dN/log(M)')
     fig.set_size_inches(8,8)
     ax.legend(loc='best')
+    ax.minorticks_on()
     plt.tight_layout()
     fig.savefig('IMF.png')
     plt.close()
