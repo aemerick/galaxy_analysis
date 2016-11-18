@@ -283,6 +283,62 @@ class Galaxy(object):
 
         return
 
+
+    def calculate_mass_outflow_profile(self, fields = None, mode = 'sphere', *args, **kwargs):
+        """
+        Returns the mass outflow rate as a function of radius. This can be used
+        to compute mass loading factor by dividing by the current SFR. Warning:
+        if no fields are provided, computes total mass outflow rate and rate for
+        all species
+        """
+
+        if fields is None:
+            fields = self._accumulation_fields
+
+        if mode == 'sphere':
+            xbins  =  self.rbins_halo_sphere
+            xdata  =  self.halo_sphere['spherical_radius'].convert_to_units(UNITS["Length"].units)
+            vel    =  self.halo_sphere['velocity_spherical_radius'].convert_to_units(UNITS['Velocity'].units)
+            data   =  self.halo_sphere
+
+        elif mode == 'disk':
+            xbins  =  self.zbins_disk
+            xdata  =  (self.disk['z'] - self.disk.center[2]).convert_to_units(UNITS["Length"].units)
+            vel    =  self.disk['velocity_cylindrical_z'].conevrt_to_units(UNITS['Velocity'].units)
+            data   =  self.disk
+
+        else:
+            raise ValueError("Must choose either disk or sphere for mass outflow profile mode")
+
+        profile = {}
+
+        for field in fields:
+            profile[field] = np.zeros(np.size(xbins)-1))
+
+        for i in np.arange(np.size(xbins)-1):
+            x_filter = (xdata >= xbins[i+1])*(xdata < xbins[i])
+            v_filter = (vel > 0.0)
+            dx       = xbins[i+1] - xbins[i]
+
+            filter = x_filter * v_filter
+            for field in fields:
+                M    = data[field].convert_to_units(UNITS['Mass'].units)
+                Mdot     = np.sum( M[filter] * vel[filter] ) / dx
+                Mdot     = Mdot.convert_to_units('Msun/yr')
+
+                profile[field][i] = Mdot
+
+
+        center = 0.5 * (xbins[1:] + xbins[:-1])
+
+        return xbins, center, profile
+
+    def _compute_flow_rate(self, mode = 'sphere', selection=None):
+        """
+        Computes flow rate in a specified direction
+        """
+
+        return
     def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
 
         if fields is None:
