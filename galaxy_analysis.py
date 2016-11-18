@@ -17,6 +17,7 @@ from static_data import LABELS,\
                         PLOT_LIMITS
 
 from particle_analysis import particle_types as pt
+from particle_analysis import IMF
 
 from yt_fields import field_generators as fg
 
@@ -399,7 +400,7 @@ class Galaxy(object):
         SNII     = pt.core_collapse(self.ds, self.df)
         SNIa     = pt.snIa(self.ds, self.df)
 
-        particle_mass = self.df['particle_mass'].convert_to_units(UNITS['Mass'].units)
+        particle_mass = self.df['birth_mass'].convert_to_units(UNITS['Mass'].units)
 
         self.particle_meta_data['total_mass']    = np.sum(particle_mass)
         self.particle_meta_data['total_mass_MS'] = np.sum(particle_mass[MS_stars])
@@ -412,8 +413,18 @@ class Galaxy(object):
         self.particle_meta_data['total_number_SNII'] = np.size(particle_mass[SNII])
         self.particle_meta_data['total_number_SNIa'] = np.size(particle_mass[SNIa])
 
+        self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarOTRadiationMass'])*\
+                                                                             (MS_stars)])
+        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarRadiationMinimumMass'])*\
+                                                                             (MS_stars)])
+
         self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
 
+        # compute theoretical total IMF and 'observed' IMF of just MS stars
+        self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(ds,data, mode='mass',       bins=25)
+        self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(ds,data, mode='birth_mass', bins=25)
+
+        # in principle store abundance information here, but might just leave this as separate
 
         return
 
@@ -430,6 +441,18 @@ class Galaxy(object):
 
         self.meta_data['Time']  = self.ds.current_time.convert_to_units(UNITS['Time'].units)
         self.meta_data['dx']    = np.min(self.df['dx'].convert_to_units(UNITS['Length'].units)
+
+        return
+
+    def compute_time_evolution(self):
+        """
+        Computes current SFR, SNR, and SFH from particles
+        """
+
+        self.time_data['time'], self.time_data['SFR'] = sfrFromParticles(ds,data)
+        self.time_data['time'], self.time_data['SFH'] = sfhFromParticles(ds, data, times=self.time_data['times'])
+        self.time_data['time'], self.time_data['SNII_snr'] = snr(ds, data,times=self.time_data['times'], sn_type ='II')
+        self.time_data['time'], self.time_data['SNIa_snr'] = snr(ds, data,times=self.time_data['times'], sn_type ='Ia')
 
         return
 
