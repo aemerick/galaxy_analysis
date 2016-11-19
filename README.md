@@ -20,5 +20,8 @@ of a dwarf galaxy with initial gass mass of around 10^6 - 10^7 solar masses.
 These simulations constitute a substantial portion of my thesis work.
 
 IMPORTANT ACKNOWLEDGEMENT:
+
+This code relies extensively on the publically available yt analysis toolkit: http://yt-project.org/
+
 This code is largely inspired by the very well written galaxy analysis code by Nathan Goldbaum (https://bitbucket.org/ngoldbaum/galaxy_analysis). 
 Some portions of my code are almost direct translations of this, modified to fit my specifc needs.
