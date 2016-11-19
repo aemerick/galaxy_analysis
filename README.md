@@ -16,3 +16,7 @@ in a simulation.
 The first test of the above will be to readily compare the star formation and chemodynamic properties
 of a series of simulations varying the underlying feedback physics in an 1.5 pc resolution simulation
 of a dwarf galaxy with initial gass mass of around 10^6 - 10^7 solar masses.
+
+IMPORTANT ACKNOWLEDGEMENT:
+This code is largely inspired by the very well written galaxy analysis code by Nathan Goldbaum (https://bitbucket.org/ngoldbaum/galaxy_analysis). 
+Some portions of my code are almost direct translations of this, modified to fit my specifc needs.
