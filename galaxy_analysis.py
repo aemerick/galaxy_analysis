@@ -2,6 +2,7 @@ from __future__ import division
 
 import yt
 import numpy as np
+from scipy import optimize
 import glob
 import os
 import h5py
@@ -495,7 +496,6 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
-        
 
         return
 
@@ -527,6 +527,9 @@ class Galaxy(object):
 
     def instantaneous_SFR(self):
         """
+        Returns instantaneous SFR as computed from the global SFR from
+        particle formation times. Uses linear interpolation on sampled
+        SFR to get exact instantaneous SFR
         """
 
         if hasattr(self, 'time_data'):
@@ -536,7 +539,7 @@ class Galaxy(object):
             self.compute_time_evolution()
 
         return np.interp(self.ds.current_time.convert_to_units(UNITS['Time'].units),
-                         0.5*(self.time_data['time'][:-1]+self.time_data['time'][1]), self.time_data['SFR'])
+                         0.5*(self.time_data['time'][:-1]+self.time_data['time'][1]), self.time_data['SFR']) * yt.units.Msun / self.time_data['time'].unit_quantity
 
     def compute_everything(self):
         """
@@ -554,6 +557,42 @@ class Galaxy(object):
 
         return
 
+
+    def compute_half_light_radius(self):
+        """
+        Compute the radial Luminosity profile as determined
+        from stellar evolution model used to described stars, then
+        calculate the half light radius.
+        """
+
+        if hasattr(self, 'particle_profiles'):
+            if not 'luminosity' or ('io','particle_model_luminosity') in self.particle_profiles:
+                x, c, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
+
+        else:
+            self.particle_profiles = {}
+            self.particle_profiles['r'], centers, prof, = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+            self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
+
+        cum_luminosity = np.cumsum(self.particle_profiles[('io','particle_model_luminosity')])
+
+        frac_luminosity = cum_luminosity / cum_luminosity[-1]
+
+        if hasattr(frac_luminosity, 'value'):
+            frac_luminosity = frac_luminosity.value
+
+        x      = centers.value
+
+        func   = lambda xval : np.interp(xval, x, frac_luminosity) - 0.5
+
+        r_half = optimize.brentq(func, x[0], x[-1])
+
+        self.particle_meta_data['half_light_radius'] = r_half * centers.unit_quantity
+
+        return r_half * centers.unit_quantity
+
+
     def get_star_model_properties(self):
         """
         Go to stellar model and compute stellar model properties of the stars
@@ -565,6 +604,61 @@ class Galaxy(object):
 
 
         return
+
+    def particle_profile(self, fields, mode = 'sphere', xtype = 'radial',
+                         accumulate=True, weight_field = None, pt=None):
+        """
+        Constructs a radial profile of the corresponding field. xtype = 'radial' for
+        mode 'sphere' ONLY. For mode = 'disk', xtype = 'z' or xtype = 'radial'.
+        """
+
+        if (not weight_field is None) and accumulate:
+            raise ValueError("Cannot have weight field and accumulation True")
+
+        if not isinstance(fields, Iterable):
+            fields = [fields]
+
+        if mode == 'sphere':
+            xbins = self.rbins_sphere
+            x     = self.sphere['particle_position_spherical_radius'].convert_to_units(xbins.units)
+            data  = self.sphere
+
+        elif mode == 'disk':
+            if xtype == 'radial':
+                xbins = self.rbins_disk
+                x     = self.disk['particle_position_cylindrical_radius'].convert_to_units(xbins.units)
+            else:
+                xbins = self.zbins_disk
+                x     = np.abs(self.disk['particle_position_cylindrical_height']).convert_to_units(xbins.units)
+
+            data = self.disk
+
+        if pt == None:
+            particle_filter = [True] * np.size(x)
+        else:
+            particle_filter = data['particle_type'] == pt
+
+        profiles = {}
+        for field in fields:
+            profiles[field] = np.zeros(np.size(xbins) - 1)
+
+        for field in fields:
+            for i in np.arange(np.size(xbins)-1):
+                x_filter   = (x < xbins[i]) * (x >= xbins[i-1])
+                filter     = x_filter * particle_filter
+                field_data = data[field][filter]
+
+                if accumulate:
+                    profiles[field][i] = np.sum( field_data )
+                elif weight_field is None:
+                    profiles[field][i] = np.average( field_data )
+                else:
+                    weights = data[weight_field][filter]
+                    profiles[field][i] = np.average( field_data, weights = weights)
+
+
+        centers = 0.5 * (xbins[1:] + xbins[:-1])
+        return xbins, centers, profiles
 
     def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
                                 halo_sphere_kwargs = None):
