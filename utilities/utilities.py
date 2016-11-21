@@ -1,5 +1,25 @@
 import numpy as np
 
+def compute_stats(x):
+
+    return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
+
+def chemistry_species_from_fields(fields):
+    """
+    Returns a list of the individual chemical species fields
+    used in the non-equillibrium chemistry solver
+
+    Example, returns ["HI", "HII", "HeI", "HeII", "HeIII"] if
+    primordial chemistry is set to 1
+    """
+
+    species = [x[1] for x in fields if ('_Density' in x[1] and\
+                                        ('I_' in x[1] or 'HM' in x[1]))]
+
+    species = np.sort([x.rsplit('_')[0] for x in species])
+
+    return species
+
 def species_from_fields(fields):
     """
     Returns a list of the individual species tracer fields
@@ -76,3 +96,5 @@ def ratios_list(species):
     ratios = list(np.sort(np.unique(ratios)))
 
     return ratios
+
+

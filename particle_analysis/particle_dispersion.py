@@ -9,8 +9,8 @@ def vel_dispersion(v):
 
 def compute_velocity_dispersion(data, types = None, fields = None, filter = None):
     """
-    Returns all possible velocity dispersons from all particles found in the 
-    data set. A particle filter can be passed using "filter" which is a list 
+    Returns all possible velocity dispersons from all particles found in the
+    data set. A particle filter can be passed using "filter" which is a list
     of booleans:
       e.x.
         > filter = data['particle_type'] == 11

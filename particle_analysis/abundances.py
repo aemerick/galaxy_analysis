@@ -48,7 +48,8 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
                                                              'mass' )
     return aratios
 
-def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard', color_by_age=False):
+def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard', color_by_age=False,
+                    ds_list = None):
     """
     Given an hdf5 file of stored abundances generated from Enzo particle data,
     plot all abundance ratios of certain plot type. Currently only supports the standard
@@ -72,7 +73,11 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         denom1 = 'Fe'
         denom2 = 'H'
 
-    for dsname in hf.keys():
+    if ds_list is None: # do all
+        ds_list = hf.keys()
+
+
+    for dsname in ds_list:
 
         # make one plot for each file
         t  = hf[dsname]['Time'].value
@@ -84,6 +89,8 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         abund = hf[dsname]['abundances']
         elements = [x for x in abund.keys() if (x!= denom1) and (x!=denom2)]
         nabundances = len(elements)
+
+        outname = dir + dsname + '_abundances.png'
 
         nrow, ncol = rowcoldict[nabundances]
 
@@ -97,7 +104,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
             if color_by_age:
                 age = np.array(t - hf[dsname]['creation_time'].value)
-                c = ax[(i,j)].scatter( np.array(abund[ele][denom2].value), np.array(abund[ele][denom1].value), s = 15, alpha = 0.5,
+                c = ax[(i,j)].scatter( np.array(abund[ele][denom2].value), np.array(abund[ele][denom1].value), s = 7.5, alpha = 0.25,
                                    c = age, label=ele, cmap='algae')
             else:
                 ax[(i,j)].scatter( abund[ele][denom2].value, abund[ele][denom1].value, s =15, alpha =0.75,
@@ -120,7 +127,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         plt.tight_layout()
         cbar = fig.colorbar(c)
         cbar.ax.set_label('Age (Myr)')
-        plt.savefig(dir + dsname + '_abundances.png')
+        plt.savefig(outname)
         plt.close()
 
     return
