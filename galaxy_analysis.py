@@ -14,10 +14,16 @@ from utilities import utilities as util
 from static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
-                        PLOT_LIMITS
+                        PLOT_LIMITS,\
+                        UNITS
 
 from particle_analysis import particle_types as pt
 from particle_analysis import IMF
+
+# need to have better API
+from particle_analysis.sfrFromParticles import sfrFromParticles
+from particle_analysis.sfhFromParticles import sfhFromParticles
+from particle_analysis.sn_rate          import snr
 
 from yt_fields import field_generators as fg
 
@@ -169,7 +175,7 @@ class GalaxyAnalyzer(object):
                 # up to date
                 return
         # now compute the SFR
-        times, sfr = particle_analysis.sfrFromParticles(self.dsf, self.dsf.all_data())
+        times, sfr = sfrFromParticles(self.dsf, self.dsf.all_data())
 
 
         self.data['TimeEvolution'].create_dataset('SFR', data=[times,sfr],
@@ -284,12 +290,17 @@ class Galaxy(object):
         return
 
 
-    def calculate_mass_outflow_profile(self, fields = None, mode = 'sphere', *args, **kwargs):
+    def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
+                               outflow = True, *args, **kwargs):
         """
-        Returns the mass outflow rate as a function of radius. This can be used
-        to compute mass loading factor by dividing by the current SFR. Warning:
-        if no fields are provided, computes total mass outflow rate and rate for
-        all species
+        Returns the mass inflow or outflow rate as a function of radius. This can be used
+        to compute mass loading factor by dividing by the current SFR.
+
+        outflow == True (default) computes outflow rate (requiring that v > 0.0). False
+        computes inflow rate (requiring that v < 0.0).
+
+        if no fields are provided, computes total mass flow rate and rate for
+        all species.
         """
 
         if fields is None:
@@ -304,7 +315,7 @@ class Galaxy(object):
         elif mode == 'disk':
             xbins  =  self.zbins_disk
             xdata  =  (self.disk['z'] - self.disk.center[2]).convert_to_units(UNITS["Length"].units)
-            vel    =  self.disk['velocity_cylindrical_z'].conevrt_to_units(UNITS['Velocity'].units)
+            vel    =  self.disk['velocity_cylindrical_z'].convert_to_units(UNITS['Velocity'].units)
             data   =  self.disk
 
         else:
@@ -313,12 +324,19 @@ class Galaxy(object):
         profile = {}
 
         for field in fields:
-            profile[field] = np.zeros(np.size(xbins)-1))
+            profile[field] = np.zeros(np.size(xbins)-1)
+
+        center = 0.5 * (xbins[1:] + xbins[:-1])
+
+        dx = n_cell * np.min(data['dx'].convert_to_units(xdata.units))
+
+        if outflow: # compute outflow
+            v_filter = vel > 0.0
+        else:       # compute inflow
+            v_filter = vel < 0.0
 
         for i in np.arange(np.size(xbins)-1):
-            x_filter = (xdata >= xbins[i+1])*(xdata < xbins[i])
-            v_filter = (vel > 0.0)
-            dx       = xbins[i+1] - xbins[i]
+            x_filter = ( xdata >= (center[i] - 0.5*dx)) * ( xdata < (center[i] + 0.5*dx))
 
             filter = x_filter * v_filter
             for field in fields:
@@ -328,17 +346,8 @@ class Galaxy(object):
 
                 profile[field][i] = Mdot
 
-
-        center = 0.5 * (xbins[1:] + xbins[:-1])
-
         return xbins, center, profile
 
-    def _compute_flow_rate(self, mode = 'sphere', selection=None):
-        """
-        Computes flow rate in a specified direction
-        """
-
-        return
     def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
 
         if fields is None:
@@ -486,6 +495,7 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
+        
 
         return
 
@@ -496,7 +506,7 @@ class Galaxy(object):
         """
 
         self.meta_data['Time']  = self.ds.current_time.convert_to_units(UNITS['Time'].units)
-        self.meta_data['dx']    = np.min(self.df['dx'].convert_to_units(UNITS['Length'].units)
+        self.meta_data['dx']    = np.min(self.df['dx'].convert_to_units(UNITS['Length'].units))
 
         return
 
@@ -505,12 +515,28 @@ class Galaxy(object):
         Computes current SFR, SNR, and SFH from particles
         """
 
-        self.time_data['time'], self.time_data['SFR'] = sfrFromParticles(ds,data)
-        self.time_data['time'], self.time_data['SFH'] = sfhFromParticles(ds, data, times=self.time_data['times'])
-        self.time_data['time'], self.time_data['SNII_snr'] = snr(ds, data,times=self.time_data['times'], sn_type ='II')
-        self.time_data['time'], self.time_data['SNIa_snr'] = snr(ds, data,times=self.time_data['times'], sn_type ='Ia')
+        if not hasattr(self, 'time_data'):
+            self.time_data = {}
+
+        self.time_data['time'], self.time_data['SFR'] = sfrFromParticles(self.ds, self.df)
+        self.time_data['time'], self.time_data['SFH'] = sfhFromParticles(self.ds, self.df, times=self.time_data['time'])
+        self.time_data['time'], self.time_data['SNII_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='II')
+        self.time_data['time'], self.time_data['SNIa_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='Ia')
 
         return
+
+    def instantaneous_SFR(self):
+        """
+        """
+
+        if hasattr(self, 'time_data'):
+            if not 'SFR' in self.time_data:
+                self.compute_time_evolution()
+        else:
+            self.compute_time_evolution()
+
+        return np.interp(self.ds.current_time.convert_to_units(UNITS['Time'].units),
+                         0.5*(self.time_data['time'][:-1]+self.time_data['time'][1]), self.time_data['SFR'])
 
     def compute_everything(self):
         """
