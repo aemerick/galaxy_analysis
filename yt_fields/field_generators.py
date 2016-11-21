@@ -12,7 +12,7 @@ from galaxy_analysis.static_data import AMU,\
 
 from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities as util
-
+from galaxy_analysis import star_analysis
 
 
 def _mass_function_generator(asym):
@@ -211,6 +211,37 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
         nfields = nfields + 1
 
     return nfields
+
+
+def generate_stellar_model_fields(ds):
+
+    #
+    # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
+    #
+
+    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1']
+    units = ['luminosity' : yt.units.erg/yt.units.s,
+             'L_FUV' : yt.units.erg/yt.units.s,
+             'L_LW'  : yt.units.erg/yt.units.s,
+             'Q0' : 1.0 /yt.units.s, 'Q1' : 1.0 / yt.units.s,
+             'E0' : yt.units.eV, 'E1' : 1.0 / yt.units.eV]
+    unit_label = ['luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
+                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg']
+
+    def _function_generator(field_name):
+        def _function(field, data):
+
+            p = star_analysis.get_star_property(ds, data, property_names = field_name)
+            p = p * units[field_name]
+            return p
+
+        return _function
+
+    for field in field_names:
+        yt.add_field(('io', 'particle_model_' + field),
+                     function = _function_generator(field), units=unit_label[field])
+
+    return
 
 def generate_derived_fields(ds):
     """
