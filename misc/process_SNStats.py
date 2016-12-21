@@ -1,3 +1,16 @@
+"""
+    process_SNstats
+
+    Author: A. Emerick
+
+    Notes: script and functions to process output 
+           SN statistics from IndividualStarPrintSNStats 
+           parameter in Enzo. These stats are meant to understand
+           the typical densities in which SN energy is injected,
+           and to post-process check if SN are resolved at the given
+           resolution
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
