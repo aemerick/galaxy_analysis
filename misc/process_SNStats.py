@@ -92,6 +92,73 @@ def save_data(directory, data):
     return
 
 
+def R_PDS(n, z, E_51 = 1.0):
+
+    z         = z / 0.017     # in solar
+
+    n, z = np.asarray(n), np.asarray(z)
+    scalar_input = False
+    if n.ndim == 0:
+        n, z = n[None], z[None]
+        scalar_input = True
+
+    R_PDS = np.zeros(np.size(n))
+
+    R_PDS[ z  < 0.01] = 49.3 * E_51**(0.25) * n[z < 0.01]**(-0.5)
+    R_PDS[ z >= 0.01] = 18.5 * E_51**(2.0/7.0) * n[z >= 0.01]**(-3.0/7.0) * z[z>=0.01]**(-1.0/7.0)
+
+    if scalar_input:
+        return np.squeeze(R_PDS)
+
+    return R_PDS
+
+
+def rho_to_n(rho, mu= 1.3):
+    m_p = 1.6737236E-24
+
+    return rho / (m_p * mu)
+
+def plot_rpds(data, dx = None, ncell = 1):
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    avg_dens = data['avg_rho']
+    max_dens = data['max_rho']
+
+    avg_dens = rho_to_n(avg_dens)
+    max_dens = rho_to_n(max_dens)
+
+    ncell_vol = 4.0 * np.pi * ncell**3 # well... not exactly
+
+    R_avg = R_PDS(avg_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
+    R_max = R_PDS(max_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
+
+    avg_hist, bins = np.histogram(np.log10(R_avg), bins = np.linspace(-0.5, 2, 20))
+    max_hist, bins = np.histogram(np.log10(R_max), bins = bins)
+    cent = 0.5 * (bins[1:] + bins[:-1])
+
+    ax.set_xlabel(r'log[Supernova PDS Radius (pc)]')
+    ax.set_ylabel(r'Count')
+
+    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = 'average density', where = 'post')
+    ax.step(cent, max_hist, lw = 3, ls = '-', color = 'red',   label = 'max density', where='post')
+
+    if dx is not None:
+        logdx = np.log10(dx)
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '--', color = 'black', lw =3) 
+        logdx = np.log10(3.0*dx)
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '-', color = 'black', lw =3)
+
+
+    ax.legend(loc='best')
+    plt.tight_layout()
+    ax.minorticks_on()
+    plt.savefig('sn_radius_distribution.png')
+
+    plt.close()
+
+    return
+    
+
 def plot_density(data, estimate_n = True):
     fig, ax = plt.subplots(figsize=(8,8))
 
@@ -99,11 +166,8 @@ def plot_density(data, estimate_n = True):
     max_dens = data['max_rho']
 
     if estimate_n:
-        m_p = 1.6737236E-24
-        mu  = 1.3
-
-        avg_dens = data['avg_rho'] / (m_p*mu)
-        max_dens = data['max_rho'] / (m_p*mu)
+        avg_dens = rho_to_n(avg_dens)
+        max_dens = rho_to_n(max_dens)
 
         bins = np.linspace(-3,3,30)
     else:
@@ -137,3 +201,4 @@ if __name__ == "__main__":
     data = read_all_data(directory)
     save_data(directory, data)
     plot_density(data)
+    plot_rpds(data, dx = 1.5)
