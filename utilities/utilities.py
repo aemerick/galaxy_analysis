@@ -1,4 +1,26 @@
 import numpy as np
+import sys
+import contextlib
+
+class _DummyFile(object):
+    """
+    A do nothing write for use with below
+    """
+    def write(self, x): pass
+
+@contextlib.contextmanager
+def nostdout():
+    """
+    Silence a called function's stdout using:
+        with nostdout():
+            foo()
+    """
+
+    save_stdout = sys.stdout
+    sys.stdout  = _DummyFile()
+    yield
+    sys.stdout = save_stdout
+    return
 
 def compute_stats(x):
 

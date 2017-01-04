@@ -11,7 +11,7 @@ from galaxy_analysis.static_data import AMU,\
                  MOLECULAR_WEIGHT
 
 from galaxy_analysis.utilities import convert_abundances
-from galaxy_analysis.utilities import utilities as util
+from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 
 
@@ -232,8 +232,14 @@ def generate_stellar_model_fields(ds):
 
     def _function_generator(field_name):
         def _function(field, data):
-
-            p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+            
+            if len(data['particle_mass']) == 1:
+                # this is ugly, but a way to bypass yt's validation step
+                # and the fact that the below will print errors during this
+                with utilities.nostdout():
+                    p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+            else:
+                p = star_analysis.get_star_property(ds, data, property_names = [field_name])
             p = p * units[field_name]
             return p
 
@@ -298,8 +304,8 @@ def generate_derived_fields(ds):
     fields = ds.field_list
 
     # lets figure out the metal tracers present
-    metals = util.species_from_fields(fields)
-    ratios = util.ratios_list(metals)
+    metals = utilities.species_from_fields(fields)
+    ratios = utilities.ratios_list(metals)
 
     print "tracer species present: ", metals
     nfields = _mass_function_generator(metals)
