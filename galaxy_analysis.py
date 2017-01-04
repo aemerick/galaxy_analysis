@@ -11,7 +11,7 @@ from collections import Iterable
 
 
 # --------- internal imports --------------
-from utilities import utilities as util
+from utilities import utilities
 from static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
@@ -223,7 +223,7 @@ class Galaxy(object):
         hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
-        self.species_list = util.species_from_fields(self.ds.field_list)
+        self.species_list = utilities.species_from_fields(self.ds.field_list)
 
         self._set_accumulation_fields()
 
@@ -484,7 +484,7 @@ class Galaxy(object):
         self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
-        self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
+        self.particle_meta_data['metallicity_stas'] = utilities.compute_stats(self.df['metallicity_fraction'])
 
         # compute theoretical total IMF and 'observed' IMF of just MS stars
         self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(ds,data, mode='mass',       bins=25)
