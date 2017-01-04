@@ -259,7 +259,7 @@ class Galaxy(object):
         print "does nothing for now"
         return
 
-    def calculate_projected_disk_field(self, field, **kwargs):
+    def calculate_projected_disk_field(self, field, axis = 'z', **kwargs):
         """
         Calculate the projected surface density of a given field.
         Examples:
@@ -269,7 +269,7 @@ class Galaxy(object):
            > galaxy.calculate_surface_density(('gas','H2I_Density'))
         """
 
-        proj = ds.proj( field, 'z', data_source = self.disk, **kwargs)
+        proj = ds.proj( field, axis, data_source = self.disk, **kwargs)
 
         # return raw set to handle elsewhere
         return proj
@@ -481,7 +481,7 @@ class Galaxy(object):
 
         self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarOTRadiationMass'])*\
                                                                              (MS_stars)])
-        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarRadiationMinimumMass'])*\
+        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
         self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
@@ -553,7 +553,7 @@ class Galaxy(object):
             1) Mass profiles of all species
             2)
         """
-
+        raise NotImplementedError
 
         return
 
@@ -567,12 +567,13 @@ class Galaxy(object):
 
         if hasattr(self, 'particle_profiles'):
             if not 'luminosity' or ('io','particle_model_luminosity') in self.particle_profiles:
-                x, c, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                out = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                centers = out[1]; prof = out[2]
                 self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         else:
             self.particle_profiles = {}
-            self.particle_profiles['r'], centers, prof, = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+            self.particle_profiles['r'], centers, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
             self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         cum_luminosity = np.cumsum(self.particle_profiles[('io','particle_model_luminosity')])
