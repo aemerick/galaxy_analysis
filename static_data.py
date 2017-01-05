@@ -170,3 +170,11 @@ FIELD_UNITS  = {k: v[4] for k, v in six.iteritems(PLOT_DATA)}
 
 UNITS = {'Time': u.Myr, 'Mass' : u.Msun, 'Velocity' : u.km/u.s, 'Length' : u.pc}
 
+#
+# yt cut region definitions for ISM phases
+#
+ISM = { "HIM": "obj['temperature'].in_units('K') >= 10**(5.5)",
+        "WIM": "(obj['temperature'].in_units('K') >= 10**(4)) & (obj['temperature'].in_units('K') < 10**(5.5))",
+        "WNM": "(obj['temperature'].in_units('K') >= 10**(2)) & (obj['temperature'].in_units('K') < 10**(4))",
+        "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') <= 100)",
+        "Molecular": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') > 100)"}
