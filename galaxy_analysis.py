@@ -6,6 +6,7 @@ from scipy import optimize
 import glob
 import os
 import h5py
+import copy
 
 from collections import Iterable
 
@@ -16,7 +17,8 @@ from static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
-                        UNITS
+                        UNITS,\
+                        ISM
 
 from particle_analysis import particle_types as pt
 from particle_analysis import IMF
@@ -509,47 +511,69 @@ class Galaxy(object):
         """
 
         mdict = {}
-        mdict['ISM_CNM']['Total'] = np.sum(self.disk.cut_region( static_data.CNM_cut_string)['cell_mass']).convert_to_units('Msun')
         
-        cut_region_names = ['ISM_CNM', 'ISM_WNM', 'ISM_WHIM', 'ISM_HOT'] # GravBound
-        cut_strings = {'ISM_CNM' : static_data.CNM_cut_string, 'ISM_WNM' : static_data.WNM_cut_string,
-                       'ISM_WHIM' : static_data.WNM_cut_string, 'ISM_HOT' : static_data.HOT_cut_string}        
+        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']        
         fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass'}
 
         # do this for the disk ISM regions
         for crtype in cut_region_names:
+            mdict[crtype] = {}
             for s in fields:
-                mdict[crtype][s] = np.sum(self.disk.cut_region( cut_strings[crtype])[fields[s]]).convert_to_units('Msun')
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[fields[s]]).convert_to_units('Msun')
 
             for s in self.species_list:
-                mdict[crtype][s] = np.sum(self.disk.cut_region( cut_strings[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
 
         # now do this for the whole disk
+        mdict['Disk'] = {}
         for s in fields:
             mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
    
         # now do this for the halo
+        mdict['Halo'] = {}
         for s in fields:
             mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
 
         # now do this for full box
+        mdict['FullBox'] = {}
         for s in fields:
-            mdict['FullBox'][s] = np.sum(self.data[fields[s]]).convert_to_units('Msun')
+            mdict['FullBox'][s] = np.sum(self.df[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
-            mdict['FullBox'][s] = np.sum(self.data[('gas', s + '_Mass')]).convert_to_units('Msun')
+            mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).convert_to_units('Msun')
 
         # now we need to do some subtraction of the fields
-
+        mdict['OutsideHalo'] = {}
         for s in fields.keys() + self.species_list:
-            mdict['FullBox'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
-            mdict['Halo'][s]    = mdict['Halo'][s]    - mdict['Disk'][s]
+            mdict['OutsideHalo'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
+            mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
+
+        # now we compute the gravitationally bound gas IF potential is present
+        if 'PotentialField' in self.ds.field_list:
+            mdict['GravBound'] = {}
+            for s in fields:
+                mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
+            for s in self.species_list:
+                mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
 
         self.gas_sequestering = mdict
         return mdict
+
+    @property
+    def fractional_gas_sequestering(self):
+        if not hasattr(self, 'gas_sequestering'):
+            discard = self.compute_gas_sequestering()
+        
+        fields = self.gas_sequestering['Disk'].keys()
+        x      = copy.deepcopy(self.gas_sequestering)
+        for region in self.gas_sequestering.keys():
+            for s in fields:
+                x[region][s] /= self.gas_sequestering['FullBox'][s]
+
+        return x        
 
     def compute_meta_data(self):
         """
@@ -756,10 +780,10 @@ class Galaxy(object):
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                             'radius' : 2.0 * yt.units.kpc,
-                            'height' : 500.0 * yt.units.pc,
+                            'height' : 400.0 * yt.units.pc,
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
-                            'dz'     : 100.0 * yt.units.pc }
+                            'dz'     : 50.0 * yt.units.pc }
 
         self.spherical_region = {'center' : self.ds.domain_center,
                                  'radius' : 2.0 * yt.units.kpc,
