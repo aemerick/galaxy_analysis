@@ -2,11 +2,33 @@ import numpy as np
 import sys
 import contextlib
 
+def filter_dict(self, field, dictionary, level = 2):
+    """
+    Filter through nested dictionarys like one would do with
+    arrays. Only works if sub-dictionaries all have same 
+    kwargs as desired by 'field'
+    """
+    return [(x,dictionary[x][field]) for x in dictionary.keys]
+
 class _DummyFile(object):
     """
     A do nothing write for use with below
     """
     def write(self, x): pass
+
+@contextlib.contextmanager
+def nooutput():
+    """
+    Silce stdout and stderr
+    """
+    save_stdout = sys.stdout
+    save_stderr = sys.stderr
+    sys.stdout  = _DummyFile()
+    sys.stderr  = _DummyFile()
+    yield
+    sys.stdout = save_stdout
+    sys.stderr = save_stderr
+    return
 
 @contextlib.contextmanager
 def nostdout():
@@ -21,6 +43,12 @@ def nostdout():
     yield
     sys.stdout = save_stdout
     return
+
+#
+# could probably do the check for scalar input stuff
+# with a with statement in a similar way to the above
+# but would be a little trickier
+#
 
 def compute_stats(x):
 
