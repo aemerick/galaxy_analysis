@@ -214,7 +214,8 @@ class Galaxy(object):
         self.dsname = dsname
 
         # load, generate fields, reload
-        self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+        with utilities.nooutput(): # silence yt for now
+            self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
         fg.generate_derived_fields(self.ds)
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
@@ -496,8 +497,59 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
+        self.gas_meta_data['mases'] = self.compute_gas_sequestering()
 
         return
+
+    def compute_gas_sequestering(self):
+        """
+        Computes the sequestering of gas into various categ ories (geometric and phase) for 
+        all species as well as the total gas mass. Returns a dictionary of dictionaries
+        containing all of this information
+        """
+
+        mdict = {}
+        mdict['ISM_CNM']['Total'] = np.sum(self.disk.cut_region( static_data.CNM_cut_string)['cell_mass']).convert_to_units('Msun')
+        
+        cut_region_names = ['ISM_CNM', 'ISM_WNM', 'ISM_WHIM', 'ISM_HOT'] # GravBound
+        cut_strings = {'ISM_CNM' : static_data.CNM_cut_string, 'ISM_WNM' : static_data.WNM_cut_string,
+                       'ISM_WHIM' : static_data.WNM_cut_string, 'ISM_HOT' : static_data.HOT_cut_string}        
+        fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass'}
+
+        # do this for the disk ISM regions
+        for crtype in cut_region_names:
+            for s in fields:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( cut_strings[crtype])[fields[s]]).convert_to_units('Msun')
+
+            for s in self.species_list:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( cut_strings[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for the whole disk
+        for s in fields:
+            mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
+   
+        # now do this for the halo
+        for s in fields:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for full box
+        for s in fields:
+            mdict['FullBox'][s] = np.sum(self.data[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['FullBox'][s] = np.sum(self.data[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        # now we need to do some subtraction of the fields
+
+        for s in fields.keys() + self.species_list:
+            mdict['FullBox'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
+            mdict['Halo'][s]    = mdict['Halo'][s]    - mdict['Disk'][s]
+
+        self.gas_sequestering = mdict
+        return mdict
 
     def compute_meta_data(self):
         """
