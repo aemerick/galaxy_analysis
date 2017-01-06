@@ -353,7 +353,14 @@ class Galaxy(object):
         return xbins, center, profile
 
     def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
+        """
+        Computes fractional radial mass profiles for all species. Can be easily
+        used to make cumulative profiles
+        """
 
+        #
+        # check if profiles exist already and don't recalculate unless ordered to
+        # 
         if fields is None:
             fields = self._accumulation_fields
 
@@ -364,6 +371,8 @@ class Galaxy(object):
 
         for field in fields:
             profiles[field] = profiles[field] / self.total_quantities[field]
+
+        # save fractional profiles here?
 
         return rbins, centers, profiles
 
@@ -395,6 +404,10 @@ class Galaxy(object):
                       self.halo_sphere[field][radial_filter].convert_to_units(FIELD_UNITS[field].units))
 
         centers = 0.5 * (rbins[1:] + rbins[:-1])
+
+        #
+        # save and store profiles here?
+        #
 
         return rbins, centers, profiles
 
@@ -739,6 +752,11 @@ class Galaxy(object):
 
     def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
                                 halo_sphere_kwargs = None):
+        """
+        Defines the pre-defined (or user modified) geometric regions to 
+        perform analysis on. These are the galaxy disk, a sphere around the
+        galaxy, and a halo sphere (out to virial radius).
+        """
 
         if disk_kwargs is None:
             disk_kwargs = {}
