@@ -278,10 +278,20 @@ def _additional_helper_fields(fields):
         return mass.convert_to_units('g')
 
     def _grav_pot(field,data):
-        return (data['PotentialField'] * -1.0).convert_to_units('erg/g')
+        try:
+            x = (data['PotentialField'] * -1.0).convert_to_units('erg/g')
+        except:
+            x = (data['GravPotential'] * -1.0).convert_to_units('erg/g')
+
+        return x
 
     def _potential_energy(field,data):
-        return (data['PotentialField'] * data['cell_mass']).convert_to_units('erg')
+        try:
+            x = (data['PotentialField'] * data['cell_mass']).convert_to_units('erg')
+        except:
+            x = (data['GravPotential'] * data['cell_mass']).convert_to_units('erg')
+
+        return x
 
     def _grav_bound(field, data):
         PE = data[('gas','potential_energy')].convert_to_units('erg')
@@ -301,7 +311,7 @@ def _additional_helper_fields(fields):
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-    if ('enzo','PotentialField') in fields:
+    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
         yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
         yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = 'auto', 

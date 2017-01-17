@@ -565,7 +565,7 @@ class Galaxy(object):
             mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
 
         # now we compute the gravitationally bound gas IF potential is present
-        if 'PotentialField' in self.ds.field_list:
+        if 'PotentialField' in self.ds.field_list or 'GravPotential' in self.ds.field_list:
             mdict['GravBound'] = {}
             for s in fields:
                 mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
