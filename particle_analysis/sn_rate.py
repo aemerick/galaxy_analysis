@@ -129,6 +129,9 @@ def snr(ds, data, times = None, sn_type = 'II'):
 
         pcut = (pt == 12)
 
+        if np.size(mass[pcut]) < 1:
+            return times, np.zeros(np.size(times))
+        
         # SNIa are the ones that are just masless tracers, rest are WD
         if not any(mass[pcut] == 0.0):
             print "no Type Ia supernova, only white dwarfs"
