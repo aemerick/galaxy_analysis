@@ -228,7 +228,7 @@ class Galaxy(object):
 
         self.df     = self.ds.all_data()
 
-        hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
+        self.hdf5_filename   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
         self.species_list = utilities.species_from_fields(self.ds.field_list)
@@ -238,29 +238,84 @@ class Galaxy(object):
         self.particle_meta_data = {}
         self.gas_meta_data      = {}
         self.meta_data          = {}
+        self.gas_profiles       = {}
+        self.time_data          = {}
 
         self.construct_regions()
 
         self.total_quantities = {}
         self._total_quantities_calculated = False
 
+        if os.path.isfile( self.hdf5_filename ):
+            self.load()
 
-        if not os.path.isfile( hdf5_file ):
-            f = h5py.File(hdf5_file, 'w')
-
-            self._create_data_structure()
-
-        else:
-
-            f = h5py.File(hdf5_file, 'a')
-            self._update_data_structure()
-
-        self.data = f
+#        if not os.path.isfile( hdf5_file ):
+#            f = h5py.File(hdf5_file, 'w')
+#
+#            self._create_data_structure()
+#
+#        else:
+#
+#            f = h5py.File(hdf5_file, 'a')
+#            self._update_data_structure()
+#
+#        self.data = f
 
         return
 
-    def _create_data_structure(self):
-        print 'does nothing for now'
+    def load(self, filename = None, nocopy = False):
+        if filename is None:
+            filename = self.hdf5_filename
+        else:
+            self.hdf5_filename = filename
+
+        if os.path.isfile(filename):
+            if nocopy:
+                return dd.io.load(self.hdf5_filename)
+            else:
+                self._output_data_dict = dd.io.load(self.hdf5_filename)
+                self._map_output_to_class()
+
+        else:
+            print "No hdf5 output file exists at " + filename
+
+        return
+
+    def save(self, filename = None):
+        if filename is None:
+            filename = self.hdf5_filename
+        else:
+            self.hdf5_filename = filename
+
+        self._map_class_to_output()
+ 
+        dd.io.save(filename, self._output_data_dict)
+
+        return
+
+    def _map_class_to_output(self):
+        """
+        Map the class structure to the output file
+        """
+
+        self._output_data_dict['gas_meta_data']      = self.gas_meta_data
+        self._output_data_dict['particle_meta_data'] = self.particle_meta_data
+        self._output_data_dict['time_data']          = self.time_data
+
+        return
+
+    def _map_output_to_class(self):
+
+        def _verify_and_add(x, name):
+            if name in self._output_data_dict.keys():
+                return self._output_data_dict[name]
+            else:
+                return x
+
+        self.gas_meta_data      = _verify_and_add(self.gas_meta_data, 'gas_meta_data')
+        self.particle_meta_data = _verify_and_add(self.particle_meta_data, 'particle_meta_data')
+        self.time_data          = _verify_and_add(self.time_data, 'time_data')
+
         return
 
     def _update_data_structure(self):
@@ -468,6 +523,7 @@ class Galaxy(object):
         self.compute_meta_data()
         self.compute_particle_meta_data()
         self.compute_gas_meta_data()
+        self.compute_time_evolution()
 
         return
 
@@ -506,11 +562,13 @@ class Galaxy(object):
         self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
-        self.particle_meta_data['metallicity_stas'] = utilities.compute_stats(self.df['metallicity_fraction'])
+        self.particle_meta_data['metallicity_stars'] = utilities.compute_stats(self.df['metallicity_fraction'])
 
         # compute theoretical total IMF and 'observed' IMF of just MS stars
         self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(self.ds, self.df, mode='mass',       bins=25)
         self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(self.ds, self.df, mode='birth_mass', bins=25)
+
+        self.compute_half_light_radius()
 
         # in principle store abundance information here, but might just leave this as separate
 
@@ -519,6 +577,10 @@ class Galaxy(object):
     def compute_gas_meta_data(self):
 
         self.gas_meta_data['masses'] = self.compute_gas_sequestering()
+
+        return
+
+    def compute_gas_profiles(self):
 
         return
 
