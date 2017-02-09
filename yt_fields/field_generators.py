@@ -4,6 +4,7 @@ __email__  = "aemerick11@gmail.com"
 
 import yt
 from yt.units import dimensions
+import numpy as np
 
 from collections import Iterable
 
@@ -11,7 +12,7 @@ from galaxy_analysis.static_data import AMU,\
                  MOLECULAR_WEIGHT
 
 from galaxy_analysis.utilities import convert_abundances
-from galaxy_analysis.utilities import utilities as util
+from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 
 
@@ -232,9 +233,18 @@ def generate_stellar_model_fields(ds):
 
     def _function_generator(field_name):
         def _function(field, data):
+            try:
+                if len(data['particle_mass']) == 1:
+                    # this is ugly, but a way to bypass yt's validation step
+                    # and the fact that the below will print errors during this
+                    with utilities.nostdout():
+                        p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+                else:
+                    p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+                p = p * units[field_name]
+            except:
+                p = np.zeros(np.shape(data['Density']))
 
-            p = star_analysis.get_star_property(ds, data, property_names = [field_name])
-            p = p * units[field_name]
             return p
 
         return _function
@@ -246,7 +256,7 @@ def generate_stellar_model_fields(ds):
 
     return
 
-def _additional_helper_fields():
+def _additional_helper_fields(fields):
 
     nfields = 0
 
@@ -267,6 +277,31 @@ def _additional_helper_fields():
 
         return mass.convert_to_units('g')
 
+    def _grav_pot(field,data):
+        try:
+            x = (data['PotentialField'] * -1.0).convert_to_units('erg/g')
+        except:
+            x = (data['GravPotential'] * -1.0).convert_to_units('erg/g')
+
+        return x
+
+    def _potential_energy(field,data):
+        try:
+            x = (data['PotentialField'] * data['cell_mass']).convert_to_units('erg')
+        except:
+            x = (data['GravPotential'] * data['cell_mass']).convert_to_units('erg')
+
+        return x
+
+    def _grav_bound(field, data):
+        PE = data[('gas','potential_energy')].convert_to_units('erg')
+        TE = ( data[('gas','thermal_energy')] * data['cell_mass'].convert_to_units('g')).convert_to_units('erg')
+        KE = ( data[('gas','kinetic_energy')] * data['cell_volume']).convert_to_units('erg')
+
+        result = 1 * ((TE + KE) + PE < 0.0)
+
+        return result
+
 #    def _H2_total_mass(field, data):
 #        mass = data[('gas',
 
@@ -276,7 +311,13 @@ def _additional_helper_fields():
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-    nfields = 3
+    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
+        yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
+        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = 'auto', 
+                                                           dimensions = dimensions.dimensionless)
+
+    nfields = 5
 
     return nfields
 
@@ -298,8 +339,8 @@ def generate_derived_fields(ds):
     fields = ds.field_list
 
     # lets figure out the metal tracers present
-    metals = util.species_from_fields(fields)
-    ratios = util.ratios_list(metals)
+    metals = utilities.species_from_fields(fields)
+    ratios = utilities.ratios_list(metals)
 
     print "tracer species present: ", metals
     nfields = _mass_function_generator(metals)
@@ -319,7 +360,7 @@ def generate_derived_fields(ds):
 
     generate_stellar_model_fields(ds)
 
-    nfields = _additional_helper_fields()
+    nfields = _additional_helper_fields(fields)
     print nfields, "additional helper fields defined"
 
 

@@ -6,17 +6,19 @@ from scipy import optimize
 import glob
 import os
 import h5py
+import copy
 
 from collections import Iterable
 
 
 # --------- internal imports --------------
-from utilities import utilities as util
+from utilities import utilities
 from static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
-                        UNITS
+                        UNITS,\
+                        ISM
 
 from particle_analysis import particle_types as pt
 from particle_analysis import IMF
@@ -214,7 +216,8 @@ class Galaxy(object):
         self.dsname = dsname
 
         # load, generate fields, reload
-        self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+        with utilities.nooutput(): # silence yt for now
+            self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
         fg.generate_derived_fields(self.ds)
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
@@ -223,7 +226,7 @@ class Galaxy(object):
         hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
-        self.species_list = util.species_from_fields(self.ds.field_list)
+        self.species_list = utilities.species_from_fields(self.ds.field_list)
 
         self._set_accumulation_fields()
 
@@ -259,7 +262,7 @@ class Galaxy(object):
         print "does nothing for now"
         return
 
-    def calculate_projected_disk_field(self, field, **kwargs):
+    def calculate_projected_disk_field(self, field, axis = 'z', **kwargs):
         """
         Calculate the projected surface density of a given field.
         Examples:
@@ -269,7 +272,7 @@ class Galaxy(object):
            > galaxy.calculate_surface_density(('gas','H2I_Density'))
         """
 
-        proj = ds.proj( field, 'z', data_source = self.disk, **kwargs)
+        proj = ds.proj( field, axis, data_source = self.disk, **kwargs)
 
         # return raw set to handle elsewhere
         return proj
@@ -350,7 +353,14 @@ class Galaxy(object):
         return xbins, center, profile
 
     def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
+        """
+        Computes fractional radial mass profiles for all species. Can be easily
+        used to make cumulative profiles
+        """
 
+        #
+        # check if profiles exist already and don't recalculate unless ordered to
+        # 
         if fields is None:
             fields = self._accumulation_fields
 
@@ -361,6 +371,8 @@ class Galaxy(object):
 
         for field in fields:
             profiles[field] = profiles[field] / self.total_quantities[field]
+
+        # save fractional profiles here?
 
         return rbins, centers, profiles
 
@@ -392,6 +404,10 @@ class Galaxy(object):
                       self.halo_sphere[field][radial_filter].convert_to_units(FIELD_UNITS[field].units))
 
         centers = 0.5 * (rbins[1:] + rbins[:-1])
+
+        #
+        # save and store profiles here?
+        #
 
         return rbins, centers, profiles
 
@@ -481,10 +497,10 @@ class Galaxy(object):
 
         self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarOTRadiationMass'])*\
                                                                              (MS_stars)])
-        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarRadiationMinimumMass'])*\
+        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
-        self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
+        self.particle_meta_data['metallicity_stas'] = utilities.compute_stats(self.df['metallicity_fraction'])
 
         # compute theoretical total IMF and 'observed' IMF of just MS stars
         self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(ds,data, mode='mass',       bins=25)
@@ -496,8 +512,81 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
+        self.gas_meta_data['mases'] = self.compute_gas_sequestering()
 
         return
+
+    def compute_gas_sequestering(self):
+        """
+        Computes the sequestering of gas into various categ ories (geometric and phase) for 
+        all species as well as the total gas mass. Returns a dictionary of dictionaries
+        containing all of this information
+        """
+
+        mdict = {}
+        
+        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']        
+        fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass'}
+
+        # do this for the disk ISM regions
+        for crtype in cut_region_names:
+            mdict[crtype] = {}
+            for s in fields:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[fields[s]]).convert_to_units('Msun')
+
+            for s in self.species_list:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for the whole disk
+        mdict['Disk'] = {}
+        for s in fields:
+            mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
+   
+        # now do this for the halo
+        mdict['Halo'] = {}
+        for s in fields:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for full box
+        mdict['FullBox'] = {}
+        for s in fields:
+            mdict['FullBox'][s] = np.sum(self.df[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        # now we need to do some subtraction of the fields
+        mdict['OutsideHalo'] = {}
+        for s in fields.keys() + self.species_list:
+            mdict['OutsideHalo'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
+            mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
+
+        # now we compute the gravitationally bound gas IF potential is present
+        if 'PotentialField' in self.ds.field_list or 'GravPotential' in self.ds.field_list:
+            mdict['GravBound'] = {}
+            for s in fields:
+                mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
+            for s in self.species_list:
+                mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        self.gas_sequestering = mdict
+        return mdict
+
+    @property
+    def fractional_gas_sequestering(self):
+        if not hasattr(self, 'gas_sequestering'):
+            discard = self.compute_gas_sequestering()
+        
+        fields = self.gas_sequestering['Disk'].keys()
+        x      = copy.deepcopy(self.gas_sequestering)
+        for region in self.gas_sequestering.keys():
+            for s in fields:
+                x[region][s] /= self.gas_sequestering['FullBox'][s]
+
+        return x        
 
     def compute_meta_data(self):
         """
@@ -553,7 +642,7 @@ class Galaxy(object):
             1) Mass profiles of all species
             2)
         """
-
+        raise NotImplementedError
 
         return
 
@@ -567,12 +656,13 @@ class Galaxy(object):
 
         if hasattr(self, 'particle_profiles'):
             if not 'luminosity' or ('io','particle_model_luminosity') in self.particle_profiles:
-                x, c, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                out = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                centers = out[1]; prof = out[2]
                 self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         else:
             self.particle_profiles = {}
-            self.particle_profiles['r'], centers, prof, = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+            self.particle_profiles['r'], centers, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
             self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         cum_luminosity = np.cumsum(self.particle_profiles[('io','particle_model_luminosity')])
@@ -662,6 +752,11 @@ class Galaxy(object):
 
     def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
                                 halo_sphere_kwargs = None):
+        """
+        Defines the pre-defined (or user modified) geometric regions to 
+        perform analysis on. These are the galaxy disk, a sphere around the
+        galaxy, and a halo sphere (out to virial radius).
+        """
 
         if disk_kwargs is None:
             disk_kwargs = {}
@@ -703,10 +798,10 @@ class Galaxy(object):
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                             'radius' : 2.0 * yt.units.kpc,
-                            'height' : 500.0 * yt.units.pc,
+                            'height' : 400.0 * yt.units.pc,
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
-                            'dz'     : 100.0 * yt.units.pc }
+                            'dz'     : 50.0 * yt.units.pc }
 
         self.spherical_region = {'center' : self.ds.domain_center,
                                  'radius' : 2.0 * yt.units.kpc,
