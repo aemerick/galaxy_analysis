@@ -281,7 +281,8 @@ def _additional_helper_fields(fields):
         try:
             x = (data['PotentialField'] * -1.0).convert_to_units('erg/g')
         except:
-            x = (data['GravPotential'] * -1.0).convert_to_units('erg/g')
+            x = ( (data['GravPotential'].value * data.ds.velocity_unit**2)
+                   * -1.0).convert_to_units('erg/g')
 
         return x
 
@@ -289,7 +290,7 @@ def _additional_helper_fields(fields):
         try:
             x = (data['PotentialField'] * data['cell_mass']).convert_to_units('erg')
         except:
-            x = (data['GravPotential'] * data['cell_mass']).convert_to_units('erg')
+            x = (data['GravPotential'].value *(data.ds.velocity_unit**2)* data['cell_mass']).convert_to_units('erg')
 
         return x
 
