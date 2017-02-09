@@ -66,7 +66,7 @@ if __name__=='__main__':
         ax.semilogy()
     else:
         ax.step(times[:-1]/1.0E6, sfr*1.0E4, color = 'black', lw = 3, where='pre')
-
+    print sfr*1.0E4
     ax.set_xlabel('Time (Myr)')
 
     ax.set_ylabel(r'SFR (10$^{-4}$ M$_{\odot}$/yr)')
