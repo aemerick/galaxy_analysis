@@ -38,7 +38,6 @@ from yt_fields import field_generators as fg
 _hdf5_compression = 'lzf'
 
 
-FIELDS_DEFINED = False
 
 
 def create_h5_file(directory, data, dataset_name):
@@ -227,15 +226,19 @@ class Galaxy(object):
         with utilities.nooutput(): # silence yt for now
             self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
-        if not FIELDS_DEFINED:
+        if not fg.FIELDS_DEFINED:
             dfiles = glob.glob(self.dir + '/' + 'DD????/DD????')
             dfiles = np.sort(dfiles)
-            fg.generate_derived_fields(dfiles[-1])
-            FIELDS_DEFINED = True
+            fg.generate_derived_fields(yt.load(dfiles[-1]))
+            fg.FIELDS_DEFINED = True
 
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
         self.df     = self.ds.all_data()
+
+        self._has_particles = False
+        if ('io','particle_position_x') in self.ds.field_list:
+            self._has_particles = True
 
         self.hdf5_filename   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
@@ -646,12 +649,21 @@ class Galaxy(object):
             mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
 
         # now we compute the gravitationally bound gas IF potential is present
-        if 'PotentialField' in self.ds.field_list or 'GravPotential' in self.ds.field_list:
+        if 'PotentialField' in self.ds.field_list or ('enzo','GravPotential') in self.ds.field_list:
             mdict['GravBound'] = {}
             for s in fields:
                 mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
             for s in self.species_list:
                 mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        # and finally add up the mass in stars
+        mdict['stars'] = {}
+        for s in ['H','He'] + self.species_list:
+            if self._has_particles:
+                mdict['stars'][s] = np.sum( (self.df['birth_mass'].value *
+                                             self.df['particle_' + s + '_fraction'])[self.df['particle_type'] == 11])
+            else:
+                mdict['stars'][s] = 0.0
 
         self.gas_sequestering = mdict
         return mdict

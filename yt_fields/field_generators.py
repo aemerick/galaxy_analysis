@@ -15,6 +15,7 @@ from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 
+FIELDS_DEFINED = False
 
 def _mass_function_generator(asym):
 
@@ -364,5 +365,5 @@ def generate_derived_fields(ds):
     nfields = _additional_helper_fields(fields)
     print nfields, "additional helper fields defined"
 
-
+    FIELDS_DEFINED = True
     return
