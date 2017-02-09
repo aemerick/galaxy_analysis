@@ -38,6 +38,9 @@ from yt_fields import field_generators as fg
 _hdf5_compression = 'lzf'
 
 
+FIELDS_DEFINED = False
+
+
 def create_h5_file(directory, data, dataset_name):
     output_name = os.path.sep.join([directory, dataset_name+'.h5'])
     if os.path.exists(output_name):
@@ -223,7 +226,13 @@ class Galaxy(object):
         # load, generate fields, reload
         with utilities.nooutput(): # silence yt for now
             self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
-        fg.generate_derived_fields(self.ds)
+
+        if not FIELDS_DEFINED:
+            dfiles = glob.glob(self.dir + '/' + 'DD????/DD????')
+            dfiles = np.sort(dfiles)
+            fg.generate_derived_fields(dfiles[-1])
+            FIELDS_DEFINED = True
+
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
         self.df     = self.ds.all_data()
@@ -297,7 +306,10 @@ class Galaxy(object):
         """
         Map the class structure to the output file
         """
+        if not hasattr(self, '_output_data_dict'):
+            self._output_data_dict = {}
 
+        self._output_data_dict['meta_data']          = self.meta_data
         self._output_data_dict['gas_meta_data']      = self.gas_meta_data
         self._output_data_dict['particle_meta_data'] = self.particle_meta_data
         self._output_data_dict['time_data']          = self.time_data
@@ -312,6 +324,7 @@ class Galaxy(object):
             else:
                 return x
 
+        self.meta_data          = _verify_and_add(self.meta_data, 'meta_data')
         self.gas_meta_data      = _verify_and_add(self.gas_meta_data, 'gas_meta_data')
         self.particle_meta_data = _verify_and_add(self.particle_meta_data, 'particle_meta_data')
         self.time_data          = _verify_and_add(self.time_data, 'time_data')
