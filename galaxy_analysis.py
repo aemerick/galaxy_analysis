@@ -10,6 +10,11 @@ import copy
 
 from collections import Iterable
 
+# this is used to save / load generated
+# hierarchical ditionaries of data very easily
+# in / out of HDF5 files
+import deepdish as dd
+
 
 # --------- internal imports --------------
 from utilities import utilities
@@ -482,7 +487,8 @@ class Galaxy(object):
         SNII     = pt.core_collapse(self.ds, self.df)
         SNIa     = pt.snIa(self.ds, self.df)
 
-        particle_mass = self.df['birth_mass'].convert_to_units(UNITS['Mass'].units)
+        particle_mass = (self.df['birth_mass'].value *
+                         yt.units.Msun).convert_to_units(UNITS['Mass'].units)
 
         self.particle_meta_data['total_mass']    = np.sum(particle_mass)
         self.particle_meta_data['total_mass_MS'] = np.sum(particle_mass[MS_stars])
@@ -495,16 +501,16 @@ class Galaxy(object):
         self.particle_meta_data['total_number_SNII'] = np.size(particle_mass[SNII])
         self.particle_meta_data['total_number_SNIa'] = np.size(particle_mass[SNIa])
 
-        self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarOTRadiationMass'])*\
+        self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarOTRadiationMass'])*\
                                                                              (MS_stars)])
-        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
+        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
         self.particle_meta_data['metallicity_stas'] = utilities.compute_stats(self.df['metallicity_fraction'])
 
         # compute theoretical total IMF and 'observed' IMF of just MS stars
-        self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(ds,data, mode='mass',       bins=25)
-        self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(ds,data, mode='birth_mass', bins=25)
+        self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(self.ds, self.df, mode='mass',       bins=25)
+        self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(self.ds, self.df, mode='birth_mass', bins=25)
 
         # in principle store abundance information here, but might just leave this as separate
 
@@ -512,7 +518,7 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
-        self.gas_meta_data['mases'] = self.compute_gas_sequestering()
+        self.gas_meta_data['masses'] = self.compute_gas_sequestering()
 
         return
 
@@ -611,6 +617,8 @@ class Galaxy(object):
         self.time_data['time'], self.time_data['SFH'] = sfhFromParticles(self.ds, self.df, times=self.time_data['time'])
         self.time_data['time'], self.time_data['SNII_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='II')
         self.time_data['time'], self.time_data['SNIa_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='Ia')
+
+        self.time_data['time'] = 0.5 * (self.time_data['time'][1:] + self.time_data['time'][:-1]) # bin centers
 
         return
 
