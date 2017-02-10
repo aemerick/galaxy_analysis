@@ -37,9 +37,6 @@ from yt_fields import field_generators as fg
 
 _hdf5_compression = 'lzf'
 
-
-
-
 _all_fields = ['density', 'temperature', 'cell_mass']
 
 class Galaxy(object):
@@ -76,11 +73,13 @@ class Galaxy(object):
         self.species_list = utilities.species_from_fields(self.ds.field_list)
 
         self._set_accumulation_fields()
+        self._set_projection_fields()
 
         self.particle_meta_data = {}
         self.gas_meta_data      = {}
         self.meta_data          = {}
         self.gas_profiles       = {}
+        self.particle_profiles  = {}
         self.time_data          = {}
 
         self.construct_regions()
@@ -137,7 +136,7 @@ class Galaxy(object):
 
     def _map_class_to_output(self):
         """
-        Map the class structure to the output file
+        Map the class parameter structure to the output dictionary
         """
         if not hasattr(self, '_output_data_dict'):
             self._output_data_dict = {}
@@ -146,10 +145,16 @@ class Galaxy(object):
         self._output_data_dict['gas_meta_data']      = self.gas_meta_data
         self._output_data_dict['particle_meta_data'] = self.particle_meta_data
         self._output_data_dict['time_data']          = self.time_data
+        self._output_data_dict['gas_profiles']       = self.gas_profiles
+        self._output_data_dict['particle_profiles']  = self.particle_profiles
 
         return
 
     def _map_output_to_class(self):
+        """
+        Analyzed data on disk is read in and stored to self._output_data_dict.
+        Map this dictionary to the associated class parameters
+        """
 
         def _verify_and_add(x, name):
             if name in self._output_data_dict.keys():
@@ -161,6 +166,8 @@ class Galaxy(object):
         self.gas_meta_data      = _verify_and_add(self.gas_meta_data, 'gas_meta_data')
         self.particle_meta_data = _verify_and_add(self.particle_meta_data, 'particle_meta_data')
         self.time_data          = _verify_and_add(self.time_data, 'time_data')
+        self.gas_profiles       = _verify_and_add(self.gas_profiles, 'gas_profiles')
+        self.particle_profiles  = _verify_and_add(self.particle_profiles, 'particle_profiles')
 
         return
 
@@ -200,7 +207,7 @@ class Galaxy(object):
         return
 
 
-    def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
+    def calculate_dMdt_profile(self, fields = None, mode = 'large_disk', n_cell = 4,
                                outflow = True, *args, **kwargs):
         """
         Returns the mass inflow or outflow rate as a function of radius. This can be used
@@ -228,8 +235,14 @@ class Galaxy(object):
             vel    =  self.disk['velocity_cylindrical_z'].convert_to_units(UNITS['Velocity'].units)
             data   =  self.disk
 
+        elif mode == 'large_disk':
+            xbins = self.zbins_large_disk
+            xdata = (self.large_disk['z'] - self.large_disk.center[2]).convert_to_units(UNITS["Length"].units)
+            vel   = self.large_disk['velocity_cylindrical_z'].convert_to_units(UNITS['Velocity'].units)
+            data  = self.large_disk
+
         else:
-            raise ValueError("Must choose either disk or sphere for mass outflow profile mode")
+            raise ValueError("Must choose disk, sphere, or large_disk for mass outflow profile")
 
         profile = {}
 
@@ -318,23 +331,30 @@ class Galaxy(object):
         return rbins, centers, profiles
 
 
-    def calculate_surface_density_profile(self, fields, *args, **kwargs):
+    def calculate_surface_density_profile(self, fields = None, data_source = None, rbins = None,
+                                          *args, **kwargs):
         """
         Computes a 1D surface density profile in a cylindrical region of the galaxy
         using already set disk selection region.
         """
 
+        if fields is None:
+            fields = self._projection_fields
+
         if not isinstance(fields, Iterable):
             fields = [fields]
 
+        if data_source is None:
+            data_source = self.disk
+
+        if rbins is None:
+            rbins       = self.rbins_disk
+
         # project the fields
-        proj = self.ds.proj(fields, 'z', data_source = self.disk, **kwargs)
+        proj = self.ds.proj(fields, 'z', data_source = data_source, **kwargs)
 
-        r    = np.sqrt(( (proj['px']-self.disk.center[0])**2 + (self.disk.center[1] -proj['py'])**2)).convert_to_units('pc')
+        r    = np.sqrt(( (proj['px']-data_source.center[0])**2 + (data_source.center[1] -proj['py'])**2)).convert_to_units('pc')
         A    = (proj['pdx']*proj['pdy']).convert_to_units('pc**2')
-
-        # set up bins
-        rbins = self.rbins_disk
 
         profiles = {}
 
@@ -427,6 +447,15 @@ class Galaxy(object):
         return
 
     def compute_gas_profiles(self):
+
+        x, c, self.gas_profiles['outflow_rate']    = self.calculate_dMdt_profile()
+        self.gas_profiles['outflow_rate']['zbins'] = x
+
+        x, c, self.gas_profiles['surface_density']    = self.calculate_surface_density_profile()
+        self.gas_profiles['surface_density']['rbins'] = x
+
+        x, c, self.gas_profiles['mass']            = self.calculate_mass_profile()
+        self.gas_profiles['mass']['rbins']         = x
 
         return
 
@@ -675,8 +704,8 @@ class Galaxy(object):
         centers = 0.5 * (xbins[1:] + xbins[:-1])
         return xbins, centers, profiles
 
-    def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
-                                halo_sphere_kwargs = None):
+    def construct_regions(self, disk_kwargs = None, large_disk_kwargs = None,
+                                sphere_kwargs = None, halo_sphere_kwargs = None):
         """
         Defines the pre-defined (or user modified) geometric regions to 
         perform analysis on. These are the galaxy disk, a sphere around the
@@ -688,6 +717,12 @@ class Galaxy(object):
 
             for n in ['normal','radius','height','center']:
                 disk_kwargs[n] = self.disk_region[n]
+
+        if large_disk_kwargs is None:
+            large_disk_kwargs = {}
+
+            for n in ['normal','radius','height','center']:
+                large_disk_kwargs[n] = self.large_disk_region[n]
 
         if sphere_kwargs is None:
             sphere_kwargs = {}
@@ -703,6 +738,8 @@ class Galaxy(object):
 
 
         self.disk   = self.ds.disk(**disk_kwargs)
+
+        self.large_disk = self.ds.disk(**large_disk_kwargs)
 
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
@@ -728,12 +765,19 @@ class Galaxy(object):
                             'dr'     : 25.0 * yt.units.pc,
                             'dz'     : 50.0 * yt.units.pc }
 
+        self.large_disk_region = {'normal' : np.array([0,0,1]),
+                                  'radius' : 2.0 * yt.units.kpc,
+                                  'height' : 2.0 * yt.units.kpc,
+                                  'center' : self.ds.domain_center,
+                                  'dr'     : 25.0*yt.units.pc,
+                                  'dz'     : 50.0*yt.units.pc}
+
         self.spherical_region = {'center' : self.ds.domain_center,
                                  'radius' : 2.0 * yt.units.kpc,
                                  'dr'     : 25.0 * yt.units.pc   }
 
-        self.halo_spherical_region = {'center' : self.ds.domain_center,
-                                      'radius' : 5.0 * yt.units.kpc,
+        self.halo_spherical_region = {'center' :    self.ds.domain_center,
+                                      'radius' : 14.0 * yt.units.kpc,
                                       'dr'     : 50.0 * yt.units.pc}
 
         return
@@ -745,6 +789,16 @@ class Galaxy(object):
 
         for e in self.species_list:
             self._accumulation_fields += [('gas', e +'_Mass')]
+
+        return
+
+    def _set_projection_fields(self):
+
+        self._projection_fields = [('enzo','HI_Density'), ('enzo','H2I_Density'),
+                                   ('enzo','Density'), ('enzo','HII_Density')]
+
+        for e in self.species_list:
+            self._projection_fields += [('gas',e + '_Density')]
 
         return
 
@@ -771,7 +825,7 @@ class Galaxy(object):
     @property
     def zbins_disk(self):
         zmin = 0.0
-        zmax = self.disk.height * 0.5
+        zmax = self.disk.height
         dz   = self.disk_region['dz']
         zmax = zmax.convert_to_units(dz.units)
 
@@ -786,3 +840,23 @@ class Galaxy(object):
         rmax = rmax.convert_to_units(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
+    @property
+    def zbins_large_disk(self):
+        zmin = 0.0
+        zmax = self.large_disk.height
+        dz   = self.large_disk_region['dz']
+        zmax = zmax.convert_to_units(dz.units)
+
+        return np.arange(zmin, zmax + dz, dz) * dz.unit_quantity
+
+
+    @property
+    def rbins_large_disk(self):
+        rmin = 0.0
+        rmax = self.large_disk.radius
+        dr   = self.large_disk_region['dr']
+        rmax = rmax.convert_to_units(dr.units)
+
+        return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
