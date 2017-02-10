@@ -122,44 +122,49 @@ PLOT_DATA = {
              ('gas','surface_density'):
                   (  ('enzo','Density'),
                      r'\Sigma_{\rm{gas}\ \ (M_\odot\ \rm{pc}^{-2})', None,
-                     None, u.Msun / u.pc**2, 'algae'),
+                     None, u.Msun / u.pc**2, 'viridis'),
 
              ('gas', 'Density'):
                  ( ('enzo','Density'),
                    r'Density (g cm$^{-3}$)', None, None,
-                   u.g / u.cm**(-3), 'algae'),
+                   u.g / u.cm**(3), 'algae'),
+
+             ('gas', 'number_density'):
+                 ( ('gas','number_density', r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 500.0),
+                   u.cm**(-3), 'viridis'),
 
              ('gas', 'Temperature'):
-                 (('enzo','Temperature'), r'Temperature (K)', (10.0, 1.0E7), (1.0, 1.0E7),
-                 u.K, 'algae'),
+                 (('enzo','Temperature'), r'Temperature (K)', (10.0, 1.0E7), (10.0, 1.0E7),
+                 u.K, 'RdYlBu_r'),
 
              ('gas', 'velocity_magnitude'):
                  (('gas','velocity_magnitude'),
                     r'$|\rm{v}|$ (km s$^{-1}$)', (1.0, 1.0E3), (1.0, 1.0E3),
-                    u.km / u.s, 'algae'),
+                    u.km / u.s, 'cubehelix'),
 
              ('gas', 'H_total_mass'):
                  (('gas','H_total_mass'),
                   r'M$_{\rm{H}}$ (M$_{\odot}$)', (1.0, 1.0E7), (1.0, 1.0E3),
-                  u.Msun, 'algae'),
+                  u.Msun, 'viridis'),
 
              ('gas', 'He_total_mass'):
                   (('gas','He_total_mass'),
                   r'M$_{\rm{He}}$ (M$_{\odot}$)', (1.0,1.0E7), (1.0,1.0E3),
-                  u.Msun, 'algae'),
+                  u.Msun, 'viridis'),
 
              ('gas', 'metal_mass'):
                   (('gas','metal_mass'),
                   r'Metal Mass (M$_{\odot}$)', (1.0, 1.0E4), (1.0, 1.0E3),
-                  u.Msun, 'algae'),
+                  u.Msun, 'viridis'),
              }
 
-
-# add in species
+#
+# add in definitions for all individual species
+#	
 for asym in asym_to_anum:
     PLOT_DATA[('gas', asym + '_Mass')] =\
               ( ('gas', asym + '_Mass'), r' ' + asym + ' Mass (M$_{\odot}$)',
-                (0.01, 100.0), (1.0E-3, 1.0E3), u.Msun, 'algae')
+                (0.01, 100.0), (1.0E-3, 1.0E3), u.Msun, 'viridis')
 
 
 LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
