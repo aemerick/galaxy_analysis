@@ -130,7 +130,7 @@ PLOT_DATA = {
                    u.g / u.cm**(3), 'algae'),
 
              ('gas', 'number_density'):
-                 ( ('gas','number_density', r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 500.0),
+                 ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 500.0),
                    u.cm**(-3), 'viridis'),
 
              ('gas', 'Temperature'):
