@@ -17,6 +17,23 @@ from galaxy_analysis import star_analysis
 
 FIELDS_DEFINED = False
 
+def _density_function_generator(asym):
+    if not isinstance(asym, Iterable):
+        asym = [asym]
+
+    def return_function(a):
+        def _density(field, data):
+            dens = data[('enzo', a + '_Density')].value
+            dens = dens * data.ds.mass_unit / data.ds.length_unit**3
+            return dens.convert_to_units('g/cm**3')
+
+        return _density
+
+    for a in asym:
+        yt.add_field(('gas', a + "_Density"), function = return_function(a), units = 'g/cm**3')
+
+    return
+
 def _mass_function_generator(asym):
 
     if not isinstance(asym, Iterable):
@@ -343,6 +360,9 @@ def generate_derived_fields(ds):
     # lets figure out the metal tracers present
     metals = utilities.species_from_fields(fields)
     ratios = utilities.ratios_list(metals)
+
+    # make new functions to do correct units for species fields
+    _density_function_generator(metals + ['Metal'])
 
     print "tracer species present: ", metals
     nfields = _mass_function_generator(metals)
