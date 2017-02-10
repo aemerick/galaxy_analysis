@@ -795,7 +795,8 @@ class Galaxy(object):
     def _set_projection_fields(self):
 
         self._projection_fields = [('enzo','HI_Density'), ('enzo','H2I_Density'),
-                                   ('enzo','Density'), ('enzo','HII_Density')]
+                                   ('enzo','Density'), ('enzo','HII_Density'),
+                                   ('gas','Metal_Density')]
 
         for e in self.species_list:
             self._projection_fields += [('gas',e + '_Density')]
