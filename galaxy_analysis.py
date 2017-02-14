@@ -411,9 +411,15 @@ class Galaxy(object):
 
         particle_mass = (self.df['birth_mass'].value *
                          yt.units.Msun).convert_to_units(UNITS['Mass'].units)
+        m = (self.df['particle_mass'].convert_to_units(UNITS['Mass'].units))
 
-        self.particle_meta_data['total_mass']    = np.sum(particle_mass)
-        self.particle_meta_data['total_mass_MS'] = np.sum(particle_mass[MS_stars])
+        self.particle_meta_data['total_mass'] = np.sum(m)
+        self.particle_meta_data['total_mass_MS'] = np.sum(m[MS_stars])
+        self.particle_meta_data['total_birth_mass'] = np.sum(particle_mass)
+        self.particle_meta_data['total_birth_mass_MS'] = np.sum(particle_mass[MS_stars])
+
+        self.meta_data['M_star'] = (self.particle_meta_data['total_mass_MS'] * 1.0)
+
         self.particle_meta_data['total_number']  = np.size(particle_mass)
         self.particle_meta_data['total_number_MS'] = np.size(particle_mass[MS_stars])
 
@@ -443,6 +449,13 @@ class Galaxy(object):
     def compute_gas_meta_data(self):
 
         self.gas_meta_data['masses'] = self.compute_gas_sequestering()
+
+        self.meta_data['M_HI']  = np.sum(self.disk['HI_Density'] *\
+                                  self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units)
+        self.meta_data['M_gas'] = np.sum((self.disk['cell_mass']).convert_to_units(UNITS['Mass'].units))
+        self.meta_data['Z_avg'] = np.sum( (self.disk[('gas','Metal_Density')]*\
+                                           self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units))/\
+                                                  self.meta_data['M_gas']
 
         return
 
@@ -523,6 +536,11 @@ class Galaxy(object):
                                              self.df['particle_' + s + '_fraction'])[self.df['particle_type'] == 11])
             else:
                 mdict['stars'][s] = 0.0
+
+        if self._has_particles:
+            mdict['stars']['metals'] = np.sum( (self.df['birth_mass'].value * self.df['metallicity_fraction'])[self.df['particle_type'] == 11])
+        else:
+            mdict['stars']['metals'] = 0.0
 
         self.gas_sequestering = mdict
         return mdict
@@ -609,7 +627,7 @@ class Galaxy(object):
         """
 
         if hasattr(self, 'particle_profiles'):
-            if not 'luminosity' or ('io','particle_model_luminosity') in self.particle_profiles:
+            if (not 'luminosity' in self.particle_profiles) or (not ('io','particle_model_luminosity') in self.particle_profiles):
                 out = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
                 centers = out[1]; prof = out[2]
                 self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
@@ -677,8 +695,8 @@ class Galaxy(object):
 
             data = self.disk
 
-        if pt == None:
-            particle_filter = [True] * np.size(x)
+        if pt is None:
+            particle_filter = [True] * np.size(data['particle_type'])
         else:
             particle_filter = data['particle_type'] == pt
 
@@ -690,6 +708,11 @@ class Galaxy(object):
             for i in np.arange(np.size(xbins)-1):
                 x_filter   = (x < xbins[i]) * (x >= xbins[i-1])
                 filter     = x_filter * particle_filter
+                print field
+                print i
+                print x_filter
+                print particle_filter
+                print data[field]
                 field_data = data[field][filter]
 
                 if accumulate:
@@ -800,6 +823,19 @@ class Galaxy(object):
 
         for e in self.species_list:
             self._projection_fields += [('gas',e + '_Density')]
+
+        return
+
+    def _load_boundary_mass_flux(self):
+
+        self.boundary_mass_flux = {}
+
+        if not os.path.isfile(self.dir + 'boundary_mass_flux.dat'):
+            return
+
+        f = np.genfromtxt(self.dir + 'boundary_mass_flux.dat')
+
+        # do data filtering --- code this somewhere else and do it with function call
 
         return
 
