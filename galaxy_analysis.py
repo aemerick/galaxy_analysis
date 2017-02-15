@@ -708,11 +708,7 @@ class Galaxy(object):
             for i in np.arange(np.size(xbins)-1):
                 x_filter   = (x < xbins[i]) * (x >= xbins[i-1])
                 filter     = x_filter * particle_filter
-                print field
-                print i
-                print x_filter
-                print particle_filter
-                print data[field]
+
                 field_data = data[field][filter]
 
                 if accumulate:

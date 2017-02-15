@@ -251,17 +251,15 @@ def generate_stellar_model_fields(ds):
 
     def _function_generator(field_name):
         def _function(field, data):
-            try:
-                if len(data['particle_mass']) == 1:
-                    # this is ugly, but a way to bypass yt's validation step
-                    # and the fact that the below will print errors during this
-                    with utilities.nostdout():
-                        p = star_analysis.get_star_property(ds, data, property_names = [field_name])
-                else:
-                    p = star_analysis.get_star_property(ds, data, property_names = [field_name])
-                p = p * units[field_name]
-            except:
-                p = np.zeros(np.shape(data['Density']))
+            if np.size(data['particle_mass']) == 1:
+                # this is ugly, but a way to bypass yt's validation step
+                # and the fact that the below will print errors during this
+                with utilities.nostdout():
+                    p = star_analysis.get_star_property(ds, data, property_names = [field_name],
+                                                            dummy_call = True)
+            else:
+                p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+            p = p * units[field_name]
 
             return p
 
@@ -333,7 +331,7 @@ def _additional_helper_fields(fields):
     if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
         yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
-        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = 'auto', 
+        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = 'auto',
                                                            dimensions = dimensions.dimensionless)
 
     nfields = 5
