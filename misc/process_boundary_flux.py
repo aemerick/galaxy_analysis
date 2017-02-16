@@ -12,7 +12,7 @@ import os
 
 __all__ = ['process_boundary_flux']
 
-def process_boundary_flux(data = None, filename = None):
+def process_boundary_flux(data = None, filename = None, dir = ''):
     """
     Given a set of boundary mass flux data, loop through
     and stitch this together so that there is no double
@@ -25,7 +25,7 @@ def process_boundary_flux(data = None, filename = None):
     if data is None:
 
         if filename is None:
-            filename = 'boundary_mass_flux.dat'
+            filename = dir + 'boundary_mass_flux.dat'
         
         if not os.path.isfile(filename):
             print 'boundary mass flux file not found at ' + filename
@@ -47,6 +47,9 @@ def process_boundary_flux(data = None, filename = None):
         filtered_data[i] = np.mean(data[selection], axis= 0)
     
     filtered_data = np.array(filtered_data)
+
+    for i in np.arange(2, np.size(filtered_data[0])):
+        filtered_data[:,i] = np.cumsum(filtered_data[:,i])
 
     outfile = 'filtered_boundary_mass_flux.dat'
 
