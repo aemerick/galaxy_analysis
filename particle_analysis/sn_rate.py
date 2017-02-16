@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
+
+__all__ = ['future_snr', 'snr']
+
+
 _core_collapse_labels = ["SNII", "II", "2", "SN_II", "TypeII", "Type 2",
                          "Type II", "type II", "typeII", 'core collapse']
 

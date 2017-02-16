@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
+__all__ = ['sfrFromParticles']
+
 def sfrFromParticles(ds, data, selection = None, times = None):
     """
     Given a dataset, computes the star formation rate as a 

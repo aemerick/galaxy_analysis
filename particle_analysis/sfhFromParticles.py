@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
+__all__ = ['sfhFromParticles']
+
 def sfhFromParticles(ds, data, selection = None, times = None):
     """
     Given a dataset, computes the star formation history
