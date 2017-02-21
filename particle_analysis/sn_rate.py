@@ -27,7 +27,7 @@ def future_snr(ds, data, times = None, sn_type = 'II'):
     current_time  = ds.current_time.convert_to_units('Myr').value
 
     if times is None:
-        bin_spacing = 10.0* yt.units.Myr
+        bin_spacing = 2.0* yt.units.Myr
         times = np.linspace(current_time, current_time + 2000.0, bin_spacing)*yt.units.Myr
     elif np.size(times) == 1:
         bin_spacing = times

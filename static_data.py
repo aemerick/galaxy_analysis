@@ -129,6 +129,11 @@ PLOT_DATA = {
                    r'Density (g cm$^{-3}$)', None, None,
                    u.g / u.cm**(3), 'algae'),
 
+             ('gas', 'cell_mass'):
+                 ( ('enzo','cell_mass'),
+                   r'Total Mass (M$_{\odot}$)', None, None,
+                   u.Msun, 'algae'),
+
              ('gas', 'number_density'):
                  ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 500.0),
                    u.cm**(-3), 'viridis'),
@@ -156,6 +161,11 @@ PLOT_DATA = {
                   (('gas','metal_mass'),
                   r'Metal Mass (M$_{\odot}$)', (1.0, 1.0E4), (1.0, 1.0E3),
                   u.Msun, 'viridis'),
+
+             ('gas', 'H_p0_mass'):
+                  (('gas','H_p0_mass'),
+                  r'HI Mass (M$_{\odot}$)', None, None,
+                  u.Msun, 'viridis')
              }
 
 #

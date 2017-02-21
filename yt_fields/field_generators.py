@@ -295,6 +295,10 @@ def _additional_helper_fields(fields):
 
         return pe
 
+    def _otlwcgs(field, data):
+        lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
+        return lw.convert_to_units('1/s') 
+
     def _G_o(field,data):
 
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
@@ -352,6 +356,7 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
+    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = 'auto', dimensions = dimensions.dimensionless)
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')

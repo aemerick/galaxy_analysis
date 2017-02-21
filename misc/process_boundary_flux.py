@@ -12,24 +12,21 @@ import os
 
 __all__ = ['process_boundary_flux']
 
-def process_boundary_flux(data = None, filename = None, dir = ''):
+def process_boundary_flux(data = None, filename = None, wdir = ''):
     """
     Given a set of boundary mass flux data, loop through
     and stitch this together so that there is no double
     counting of timesteps.
     """
 
-    if data is None and filename is None:
-        raise ValueError
-
     if data is None:
 
         if filename is None:
-            filename = dir + 'boundary_mass_flux.dat'
+            filename = wdir + 'boundary_mass_flux.dat'
         
         if not os.path.isfile(filename):
             print 'boundary mass flux file not found at ' + filename
-            return 0
+            return False, 0
 
         data = np.genfromtxt(filename)
         with open(filename, 'r') as f:
@@ -57,7 +54,7 @@ def process_boundary_flux(data = None, filename = None, dir = ''):
 
     data = np.genfromtxt(outfile, names = True)
 
-    return data
+    return True, data
 
     
     
