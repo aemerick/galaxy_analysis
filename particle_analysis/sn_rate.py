@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
+
+__all__ = ['future_snr', 'snr']
+
+
 _core_collapse_labels = ["SNII", "II", "2", "SN_II", "TypeII", "Type 2",
                          "Type II", "type II", "typeII", 'core collapse']
 
@@ -131,6 +135,9 @@ def snr(ds, data, times = None, sn_type = 'II'):
 
         pcut = (pt == 12)
 
+        if np.size(mass[pcut]) < 1:
+            return times, np.zeros(np.size(times))
+        
         # SNIa are the ones that are just masless tracers, rest are WD
         if not any(mass[pcut] == 0.0):
             print "no Type Ia supernova, only white dwarfs"
@@ -202,7 +209,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(figsize=(8,8))
 
-    snialabel = 'Type Ia'
+    snialabel = 'Type Ia x 10'
     sniilabel = 'Core Collapse'
 
     ftimes = np.arange(ds.current_time.convert_to_units('Myr').value,
@@ -213,19 +220,21 @@ if __name__ == '__main__':
 
     if log:
         ax.plot(center/1.0E6, snrII*1.0E6, color = 'black', lw = 3, ls = '-', label = sniilabel)
-        ax.plot(center/1.0E6, snrIa*1.0E6, color = 'black', lw = 3, ls = '--', label = snialabel)
+        ax.plot(center/1.0E6, snrIa*1.0E6*10, color = 'black', lw = 3, ls = '--', label = snialabel)
         x.semilogy()
     else:
         ax.step(times[:-1]/1.0E6, snrII*1.0E6, color ='black', lw = 3, ls = '-', label = sniilabel)
-        ax.step(times[:-1]/1.0E6, snrIa*1.0E6, color ='orange', lw = 3, ls = '-', label = snialabel)
+        ax.step(times[:-1]/1.0E6, snrIa*1.0E6 * 10, color ='orange', lw = 3, ls = '-', label = snialabel)
         ax.step(ftimes[:-1]/1.0E6, fsnrII*1.0E6, color = 'black', lw = 3, ls = ':')
-        ax.step(ftimes[:-1]/1.0E6, fsnrIa*1.0E6, color = 'orange', lw = 3, ls = ':')
+        ax.step(ftimes[:-1]/1.0E6, fsnrIa*1.0E6 * 10, color = 'orange', lw = 3, ls = ':')
 
     ax.set_xlabel('Time (Myr)')
 
-    ax.set_ylabel(r'SNR (10$^{-6}$ yr$^{-1}$)')
+    ax.set_ylabel(r'SNR (Myr$^{-1}$)')
     ax.set_ylim( np.min( [np.min(snrIa), np.min(snrII)])*1.0E6,
-                 np.max( [np.max(snrIa), np.max(snrII)])*1.5*1.0E6)
+                 np.max( [np.max(snrIa), np.max(snrII)])*1.25*1.0E6)
+    ax.plot( [ds.current_time.convert_to_units('Myr').value]*2, ax.get_ylim(), ls = '--', lw = 3, color = 'black')
+
     ax.legend(loc ='best')
     plt.tight_layout()
     ax.minorticks_on()

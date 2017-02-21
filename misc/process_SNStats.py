@@ -17,12 +17,13 @@ import glob
 
 import subprocess
 
-_col_names = ['grid_id', 'pid', 'time', 'mass', 'birth_mass', 'metallicity',
+
+_col_names = ['name', 'grid_id', 'pid', 'time', 'mass', 'birth_mass', 'metallicity',
              'm_eject', 'cells', 'volume', 'fraction', 'injected_mass',
              'energy_injected', 'ISM_mass', 'max_rho', 'avg_rho',
              'total_metal_mass', 'z_avg']
 
-_dtypes = [int, int, float, float, float, float,
+_dtypes = [str, int, int, float, float, float, float,
           float, int, float, float, float,
           float, float, float, float,
           float, float]
@@ -40,11 +41,12 @@ def filter_data(data):
     unique_sn = np.unique(data['pid'])
     num_unique = np.size(unique_sn)
 
-    filtered_data = np.zeros( num_unique, dtype = _ndtype)
+    filtered_data = np.zeros( num_unique, dtype = _ndtype[1:])
 
     for i, pid in enumerate(unique_sn):
 
         selection = data['pid'] == pid
+
 
         filtered_data[i] = (-1, pid, np.average(data['time'][selection]), np.average(data['mass'][selection]),
                         np.average(data['birth_mass'][selection]), np.average(data['metallicity'][selection]),
@@ -76,10 +78,11 @@ def read_all_data(directory, filter = True):
 
 #    outputs = glob.glob(directory + '/*.o*')
     # merge the output files into one with just the data we want
-    bash_command = "grep -h 'IndividualStarSNStats' " + directory + "/*.o* > combined_output.txt"
+    bash_command = "grep -h 'IndividualStarSNStats:' " + directory + "/*.o* > combined_output.txt"
     subprocess.call(bash_command, shell=True)
 
     data = np.genfromtxt(directory + '/combined_output.txt', dtype = _ndtype)
+
 
     if filter:
         filtered_data = filter_data(data)
@@ -142,11 +145,13 @@ def plot_rpds(data, dx = None, ncell = 1):
     ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = 'average density', where = 'post')
     ax.step(cent, max_hist, lw = 3, ls = '-', color = 'red',   label = 'max density', where='post')
 
+    ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
+
     if dx is not None:
         logdx = np.log10(dx)
-        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '--', color = 'black', lw =3) 
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = ':', color = 'black', lw =3) 
         logdx = np.log10(3.0*dx)
-        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '-', color = 'black', lw =3)
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '--', color = 'black', lw =3)
 
 
     ax.legend(loc='best')
@@ -165,6 +170,8 @@ def plot_density(data, estimate_n = True):
     avg_dens = data['avg_rho']
     max_dens = data['max_rho']
 
+    print avg_dens
+    print max_dens
     if estimate_n:
         avg_dens = rho_to_n(avg_dens)
         max_dens = rho_to_n(max_dens)
@@ -173,6 +180,8 @@ def plot_density(data, estimate_n = True):
     else:
         bins = 10
 
+    print avg_dens
+    print max_dens
 
     avg_hist, bins = np.histogram(np.log10(avg_dens), bins = bins)
     max_hist, bins = np.histogram(np.log10(max_dens), bins = bins)
@@ -181,9 +190,10 @@ def plot_density(data, estimate_n = True):
     ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = 'average density', where = 'pre')
     ax.step(cent, max_hist, lw = 3 , ls = '-', color = 'red', label = 'max density', where = 'pre')
 
-    ax.set_xlabel(r'log[ $\rho$ (g cm$^{-3}$)]')
+    ax.set_xlabel(r'log[ n (cm$^{-3}$)]')
     ax.set_ylabel(r'Count')
     
+    ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
     ax.legend(loc='best')
     plt.tight_layout()
     ax.minorticks_on()

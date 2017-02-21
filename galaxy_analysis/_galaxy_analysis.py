@@ -6,202 +6,40 @@ from scipy import optimize
 import glob
 import os
 import h5py
+import copy
 
 from collections import Iterable
 
+# this is used to save / load generated
+# hierarchical ditionaries of data very easily
+# in / out of HDF5 files
+import deepdish as dd
+
 
 # --------- internal imports --------------
-from utilities import utilities as util
-from static_data import LABELS,\
+from ..utilities import utilities
+from ..static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
-                        UNITS
+                        UNITS,\
+                        ISM
 
-from particle_analysis import particle_types as pt
-from particle_analysis import IMF
+from ..particle_analysis import particle_types as pt
+from ..particle_analysis import IMF
 
 # need to have better API
-from particle_analysis.sfrFromParticles import sfrFromParticles
-from particle_analysis.sfhFromParticles import sfhFromParticles
-from particle_analysis.sn_rate          import snr
+from ..particle_analysis.sfrFromParticles import sfrFromParticles
+from ..particle_analysis.sfhFromParticles import sfhFromParticles
+from ..particle_analysis.sn_rate          import snr
 
-from yt_fields import field_generators as fg
+from ..yt_fields import field_generators as fg
 
 _hdf5_compression = 'lzf'
 
-
-def create_h5_file(directory, data, dataset_name):
-    output_name = os.path.sep.join([directory, dataset_name+'.h5'])
-    if os.path.exists(output_name):
-        return output_name
-    with h5py.File(output_name) as f:
-        f.create_dataset(dataset_name, data = data, compression='lzf')
-    return output_name
-
 _all_fields = ['density', 'temperature', 'cell_mass']
 
-def _create_data_structure(f, ds_list):
-    """
-    Create the general data structure
-    """
-
-    f.create_group("TimeEvolution")
-    grp = f.create_group("Spatial")
-
-    f.create_dataset('Time')
-
-    for dsname in ds_list:
-        dsname = dsname.rsplit('/')[0]
-        subgrp = grp.create_group(dsname)
-
-        _create_ds_subgroups(subgrp)
-
-
-    return
-
-def _create_ds_subgroups(grp):
-    """
-    Create the necessary sub groups
-    """
-
-    for subgrp_name in ['Gas', 'Stars']:
-        sbgrp = grp.create_group(subgrp_name)
-        sbgrp.create_group('RadialProfiles')
-        sbgrp.create_group('Profiles')
-
-    return
-
-
-def _update_data_structure(f, ds_list):
-    """
-    Updates data structure in HDF5 file if there are 
-    new data sets present that are not currently included
-    """
-
-    ds_in_hdf5 = f['Spatial'].keys()
-
-    if len(ds_in_hdf5) == len(ds_list):
-        # nothing to do here
-        return False
-
-    else:
-        # find the missing keys
-        if len(ds_list) < len(ds_in_hdf5):
-            print "Available data sets less than those in HDF5 - is this OK"
-            return False
-
-        missing_ds = [x for x in ds_list if x not in ds_in_hdf5]
-
-        for dsname in missing_ds:
-            _create_ds_subgroups( f.create_group(dsname) )
-
-    return True
-
-
-class GalaxyAnalyzer(object):
-    """
-    Analyzes time evolution properties of a galaxy
-    """
-
-    def __init__(self, dir = './', h5file = None):
-
-        self.ds_list = np.sort( glob.glob(dir + 'DD????/DD????') )
-
-        self.ds0        = yt.load(ds_list[0])
-        self.dsf        = yt.load(ds_list[-1])
-        self.parameters = ds0.parameters
-
-        _set_data_region_properties()
-
-
-        if h5file is None:
-            hf5file = dir + 'galaxy_data.h5'
-
-        #
-        # check if h5file exists -- if not, create it
-        # and construct data structure groups
-        #
-        new_data = False
-        if not os.path.isfile( h5file ):
-
-            f = h5py.File( hf5file, 'r+')
-            _create_data_structure(f, ds_list)
-
-            new_data = True
-        else:
-
-            f = h5py.File( h5file, 'r+')
-            new_data = _update_data_structure(f, ds_list)
-
-        self.data = f
-
-        # maybe store time values from all data sets here            
-
-        return
-
-
-    def create_radial_profile(self, fields = None, dsi = None):
-        raise NotImplementedError
-
-        if dsi is None:
-            data_files = ds_list
-        else:
-            data_files = ["DD%0004i/DD%0004i"%(i)]
-
-        #
-        # loop
-        #
-        for dsname in ds_list:
-            ds   = yt.load(dsname)
-            data = ds.all_data()
-
-        return
-            #profile_1d = yt.create_profile(data, ['density', 'temperature',
-            #                                      '
-
-    def particle_radial_profile(self, fields = None, dsi= None):
-        raise NotImplementedError
-        return
-
-    def sfr_from_last(self):
-        """ Calculate SFR from final data dump """
-
-        if 'SFR' in self.data['TimeEvolution'].keys():
-            if self.ds1.current_time > self.data['TimeEvolution']['SFR'][lastval]:
-                self.data.__delitem__('TimeEvolution/SFR')
-                del self.data['TimeEvolution/SFR']
-
-            else:
-                # up to date
-                return
-        # now compute the SFR
-        times, sfr = sfrFromParticles(self.dsf, self.dsf.all_data())
-
-
-        self.data['TimeEvolution'].create_dataset('SFR', data=[times,sfr],
-                                                  compression=_hdf5_compression)
-
-        return
-
-    def snr_from_last(self):
-        """ Calculate the SNR from final data dump """
-
-        raise NotImplementedError
-
-        for sn_type in ['SNII, SNIa']:
-            rate = sn_type + '_rate'
-
-            if rate in self.data['TimeEvolution'].keys():
-                if self.dsf.current_time > self.data['TimeEvolution'][rate][lastval]:
-                    self.data.__delitem__('TimeEvolution/' + rate)
-                    del self.data['TimeEvolution/' + rate]
-
-            else:
-                return
-
-#            times, snr = particle_analysis.snrFromParticles(
-        return
+__all__ = ['Galaxy']
 
 class Galaxy(object):
 
@@ -214,52 +52,132 @@ class Galaxy(object):
         self.dsname = dsname
 
         # load, generate fields, reload
-        self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
-        fg.generate_derived_fields(self.ds)
+        with utilities.nooutput(): # silence yt for now
+            self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
+
+        if not fg.FIELDS_DEFINED:
+            dfiles = glob.glob(self.dir + '/' + 'DD????/DD????')
+            dfiles = np.sort(dfiles)
+            fg.generate_derived_fields(yt.load(dfiles[-1]))
+            fg.FIELDS_DEFINED = True
+
         self.ds     = yt.load(self.dir + '/' + self.dsname + '/' + self.dsname)
 
         self.df     = self.ds.all_data()
 
-        hdf5_file   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
+        self._has_particles = False
+        if ('io','particle_position_x') in self.ds.field_list:
+            self._has_particles = True
+
+        self.hdf5_filename   = self.dir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
-        self.species_list = util.species_from_fields(self.ds.field_list)
+        self.species_list = utilities.species_from_fields(self.ds.field_list)
 
         self._set_accumulation_fields()
+        self._set_projection_fields()
 
         self.particle_meta_data = {}
         self.gas_meta_data      = {}
         self.meta_data          = {}
+        self.gas_profiles       = {}
+        self.particle_profiles  = {}
+        self.time_data          = {}
 
         self.construct_regions()
 
         self.total_quantities = {}
         self._total_quantities_calculated = False
 
+        if os.path.isfile( self.hdf5_filename ):
+            self.load()
 
-        if not os.path.isfile( hdf5_file ):
-            f = h5py.File(hdf5_file, 'w')
-
-            self._create_data_structure()
-
-        else:
-
-            f = h5py.File(hdf5_file, 'a')
-            self._update_data_structure()
-
-        self.data = f
+#        if not os.path.isfile( hdf5_file ):
+#            f = h5py.File(hdf5_file, 'w')
+#
+#            self._create_data_structure()
+#
+#        else:
+#
+#            f = h5py.File(hdf5_file, 'a')
+#            self._update_data_structure()
+#
+#        self.data = f
 
         return
 
-    def _create_data_structure(self):
-        print 'does nothing for now'
+    def load(self, filename = None, nocopy = False):
+        if filename is None:
+            filename = self.hdf5_filename
+        else:
+            self.hdf5_filename = filename
+
+        if os.path.isfile(filename):
+            if nocopy:
+                return dd.io.load(self.hdf5_filename)
+            else:
+                self._output_data_dict = dd.io.load(self.hdf5_filename)
+                self._map_output_to_class()
+
+        else:
+            print "No hdf5 output file exists at " + filename
+
+        return
+
+    def save(self, filename = None):
+        if filename is None:
+            filename = self.hdf5_filename
+        else:
+            self.hdf5_filename = filename
+
+        self._map_class_to_output()
+ 
+        dd.io.save(filename, self._output_data_dict)
+
+        return
+
+    def _map_class_to_output(self):
+        """
+        Map the class parameter structure to the output dictionary
+        """
+        if not hasattr(self, '_output_data_dict'):
+            self._output_data_dict = {}
+
+        self._output_data_dict['meta_data']          = self.meta_data
+        self._output_data_dict['gas_meta_data']      = self.gas_meta_data
+        self._output_data_dict['particle_meta_data'] = self.particle_meta_data
+        self._output_data_dict['time_data']          = self.time_data
+        self._output_data_dict['gas_profiles']       = self.gas_profiles
+        self._output_data_dict['particle_profiles']  = self.particle_profiles
+
+        return
+
+    def _map_output_to_class(self):
+        """
+        Analyzed data on disk is read in and stored to self._output_data_dict.
+        Map this dictionary to the associated class parameters
+        """
+
+        def _verify_and_add(x, name):
+            if name in self._output_data_dict.keys():
+                return self._output_data_dict[name]
+            else:
+                return x
+
+        self.meta_data          = _verify_and_add(self.meta_data, 'meta_data')
+        self.gas_meta_data      = _verify_and_add(self.gas_meta_data, 'gas_meta_data')
+        self.particle_meta_data = _verify_and_add(self.particle_meta_data, 'particle_meta_data')
+        self.time_data          = _verify_and_add(self.time_data, 'time_data')
+        self.gas_profiles       = _verify_and_add(self.gas_profiles, 'gas_profiles')
+        self.particle_profiles  = _verify_and_add(self.particle_profiles, 'particle_profiles')
+
         return
 
     def _update_data_structure(self):
         print "does nothing for now"
         return
 
-    def calculate_projected_disk_field(self, field, **kwargs):
+    def calculate_projected_disk_field(self, field, axis = 'z', **kwargs):
         """
         Calculate the projected surface density of a given field.
         Examples:
@@ -269,7 +187,7 @@ class Galaxy(object):
            > galaxy.calculate_surface_density(('gas','H2I_Density'))
         """
 
-        proj = ds.proj( field, 'z', data_source = self.disk, **kwargs)
+        proj = ds.proj( field, axis, data_source = self.disk, **kwargs)
 
         # return raw set to handle elsewhere
         return proj
@@ -291,7 +209,7 @@ class Galaxy(object):
         return
 
 
-    def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
+    def calculate_dMdt_profile(self, fields = None, mode = 'large_disk', n_cell = 4,
                                outflow = True, *args, **kwargs):
         """
         Returns the mass inflow or outflow rate as a function of radius. This can be used
@@ -319,8 +237,14 @@ class Galaxy(object):
             vel    =  self.disk['velocity_cylindrical_z'].convert_to_units(UNITS['Velocity'].units)
             data   =  self.disk
 
+        elif mode == 'large_disk':
+            xbins = self.zbins_large_disk
+            xdata = (self.large_disk['z'] - self.large_disk.center[2]).convert_to_units(UNITS["Length"].units)
+            vel   = self.large_disk['velocity_cylindrical_z'].convert_to_units(UNITS['Velocity'].units)
+            data  = self.large_disk
+
         else:
-            raise ValueError("Must choose either disk or sphere for mass outflow profile mode")
+            raise ValueError("Must choose disk, sphere, or large_disk for mass outflow profile")
 
         profile = {}
 
@@ -350,7 +274,14 @@ class Galaxy(object):
         return xbins, center, profile
 
     def calculate_mass_fraction_profile(self, fields = None, *args, **kwargs):
+        """
+        Computes fractional radial mass profiles for all species. Can be easily
+        used to make cumulative profiles
+        """
 
+        #
+        # check if profiles exist already and don't recalculate unless ordered to
+        # 
         if fields is None:
             fields = self._accumulation_fields
 
@@ -361,6 +292,8 @@ class Galaxy(object):
 
         for field in fields:
             profiles[field] = profiles[field] / self.total_quantities[field]
+
+        # save fractional profiles here?
 
         return rbins, centers, profiles
 
@@ -393,26 +326,37 @@ class Galaxy(object):
 
         centers = 0.5 * (rbins[1:] + rbins[:-1])
 
+        #
+        # save and store profiles here?
+        #
+
         return rbins, centers, profiles
 
 
-    def calculate_surface_density_profile(self, fields, *args, **kwargs):
+    def calculate_surface_density_profile(self, fields = None, data_source = None, rbins = None,
+                                          *args, **kwargs):
         """
         Computes a 1D surface density profile in a cylindrical region of the galaxy
         using already set disk selection region.
         """
 
+        if fields is None:
+            fields = self._projection_fields
+
         if not isinstance(fields, Iterable):
             fields = [fields]
 
+        if data_source is None:
+            data_source = self.disk
+
+        if rbins is None:
+            rbins       = self.rbins_disk
+
         # project the fields
-        proj = self.ds.proj(fields, 'z', data_source = self.disk, **kwargs)
+        proj = self.ds.proj(fields, 'z', data_source = data_source, **kwargs)
 
-        r    = np.sqrt(( (proj['px']-self.disk.center[0])**2 + (self.disk.center[1] -proj['py'])**2)).convert_to_units('pc')
+        r    = np.sqrt(( (proj['px']-data_source.center[0])**2 + (data_source.center[1] -proj['py'])**2)).convert_to_units('pc')
         A    = (proj['pdx']*proj['pdy']).convert_to_units('pc**2')
-
-        # set up bins
-        rbins = self.rbins_disk
 
         profiles = {}
 
@@ -447,6 +391,7 @@ class Galaxy(object):
         self.compute_meta_data()
         self.compute_particle_meta_data()
         self.compute_gas_meta_data()
+        self.compute_time_evolution()
 
         return
 
@@ -466,10 +411,17 @@ class Galaxy(object):
         SNII     = pt.core_collapse(self.ds, self.df)
         SNIa     = pt.snIa(self.ds, self.df)
 
-        particle_mass = self.df['birth_mass'].convert_to_units(UNITS['Mass'].units)
+        particle_mass = (self.df['birth_mass'].value *
+                         yt.units.Msun).convert_to_units(UNITS['Mass'].units)
+        m = (self.df['particle_mass'].convert_to_units(UNITS['Mass'].units))
 
-        self.particle_meta_data['total_mass']    = np.sum(particle_mass)
-        self.particle_meta_data['total_mass_MS'] = np.sum(particle_mass[MS_stars])
+        self.particle_meta_data['total_mass'] = np.sum(m)
+        self.particle_meta_data['total_mass_MS'] = np.sum(m[MS_stars])
+        self.particle_meta_data['total_birth_mass'] = np.sum(particle_mass)
+        self.particle_meta_data['total_birth_mass_MS'] = np.sum(particle_mass[MS_stars])
+
+        self.meta_data['M_star'] = (self.particle_meta_data['total_mass_MS'] * 1.0)
+
         self.particle_meta_data['total_number']  = np.size(particle_mass)
         self.particle_meta_data['total_number_MS'] = np.size(particle_mass[MS_stars])
 
@@ -479,16 +431,18 @@ class Galaxy(object):
         self.particle_meta_data['total_number_SNII'] = np.size(particle_mass[SNII])
         self.particle_meta_data['total_number_SNIa'] = np.size(particle_mass[SNIa])
 
-        self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarOTRadiationMass'])*\
+        self.particle_meta_data['N_OTRAD']           = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarOTRadiationMass'])*\
                                                                              (MS_stars)])
-        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>ds.parameters['IndividualStarRadiationMinimumMass'])*\
+        self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
-        self.particle_meta_data['metallicity_stas'] = util.compute_stats(self.df['metallicity_fraction'])
+        self.particle_meta_data['metallicity_stars'] = utilities.compute_stats(self.df['metallicity_fraction'])
 
         # compute theoretical total IMF and 'observed' IMF of just MS stars
-        self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(ds,data, mode='mass',       bins=25)
-        self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(ds,data, mode='birth_mass', bins=25)
+        self.particle_meta_data['IMF_obs']        = IMF.compute_IMF(self.ds, self.df, mode='mass',       bins=25)
+        self.particle_meta_data['IMF_birth_mass'] = IMF.compute_IMF(self.ds, self.df, mode='birth_mass', bins=25)
+
+        self.compute_half_light_radius()
 
         # in principle store abundance information here, but might just leave this as separate
 
@@ -496,8 +450,115 @@ class Galaxy(object):
 
     def compute_gas_meta_data(self):
 
+        self.gas_meta_data['masses'] = self.compute_gas_sequestering()
+
+        self.meta_data['M_HI']  = np.sum(self.disk['HI_Density'] *\
+                                  self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units)
+        self.meta_data['M_gas'] = np.sum((self.disk['cell_mass']).convert_to_units(UNITS['Mass'].units))
+        self.meta_data['Z_avg'] = np.sum( (self.disk[('gas','Metal_Density')]*\
+                                           self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units))/\
+                                                  self.meta_data['M_gas']
 
         return
+
+    def compute_gas_profiles(self):
+
+        x, c, self.gas_profiles['outflow_rate']    = self.calculate_dMdt_profile()
+        self.gas_profiles['outflow_rate']['zbins'] = x
+
+        x, c, self.gas_profiles['surface_density']    = self.calculate_surface_density_profile()
+        self.gas_profiles['surface_density']['rbins'] = x
+
+        x, c, self.gas_profiles['mass']            = self.calculate_mass_profile()
+        self.gas_profiles['mass']['rbins']         = x
+
+        return
+
+    def compute_gas_sequestering(self):
+        """
+        Computes the sequestering of gas into various categ ories (geometric and phase) for 
+        all species as well as the total gas mass. Returns a dictionary of dictionaries
+        containing all of this information
+        """
+
+        mdict = {}
+        
+        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']        
+        fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass'}
+
+        # do this for the disk ISM regions
+        for crtype in cut_region_names:
+            mdict[crtype] = {}
+            for s in fields:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[fields[s]]).convert_to_units('Msun')
+
+            for s in self.species_list:
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for the whole disk
+        mdict['Disk'] = {}
+        for s in fields:
+            mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
+   
+        # now do this for the halo
+        mdict['Halo'] = {}
+        for s in fields:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
+
+        # now do this for full box
+        mdict['FullBox'] = {}
+        for s in fields:
+            mdict['FullBox'][s] = np.sum(self.df[fields[s]]).convert_to_units('Msun')
+        for s in self.species_list:
+            mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        # now we need to do some subtraction of the fields
+        mdict['OutsideHalo'] = {}
+        for s in fields.keys() + self.species_list:
+            mdict['OutsideHalo'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
+            mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
+
+        # now we compute the gravitationally bound gas IF potential is present
+        if 'PotentialField' in self.ds.field_list or ('enzo','GravPotential') in self.ds.field_list:
+            mdict['GravBound'] = {}
+            for s in fields:
+                mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
+            for s in self.species_list:
+                mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
+
+        # and finally add up the mass in stars
+        mdict['stars'] = {}
+        for s in ['H','He'] + self.species_list:
+            if self._has_particles:
+                mdict['stars'][s] = np.sum( (self.df['birth_mass'].value *
+                                             self.df['particle_' + s + '_fraction'])[self.df['particle_type'] == 11])
+            else:
+                mdict['stars'][s] = 0.0
+
+        if self._has_particles:
+            mdict['stars']['metals'] = np.sum( (self.df['birth_mass'].value * self.df['metallicity_fraction'])[self.df['particle_type'] == 11])
+        else:
+            mdict['stars']['metals'] = 0.0
+
+        self.gas_sequestering = mdict
+        return mdict
+
+    @property
+    def fractional_gas_sequestering(self):
+        if not hasattr(self, 'gas_sequestering'):
+            discard = self.compute_gas_sequestering()
+        
+        fields = self.gas_sequestering['Disk'].keys()
+        x      = copy.deepcopy(self.gas_sequestering)
+        for region in self.gas_sequestering.keys():
+            for s in fields:
+                x[region][s] /= self.gas_sequestering['FullBox'][s]
+
+        return x        
 
     def compute_meta_data(self):
         """
@@ -522,6 +583,8 @@ class Galaxy(object):
         self.time_data['time'], self.time_data['SFH'] = sfhFromParticles(self.ds, self.df, times=self.time_data['time'])
         self.time_data['time'], self.time_data['SNII_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='II')
         self.time_data['time'], self.time_data['SNIa_snr'] = snr(self.ds, self.df ,times=self.time_data['time'], sn_type ='Ia')
+
+        self.time_data['time'] = 0.5 * (self.time_data['time'][1:] + self.time_data['time'][:-1]) # bin centers
 
         return
 
@@ -553,7 +616,7 @@ class Galaxy(object):
             1) Mass profiles of all species
             2)
         """
-
+        raise NotImplementedError
 
         return
 
@@ -566,13 +629,14 @@ class Galaxy(object):
         """
 
         if hasattr(self, 'particle_profiles'):
-            if not 'luminosity' or ('io','particle_model_luminosity') in self.particle_profiles:
-                x, c, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+            if (not 'luminosity' in self.particle_profiles) or (not ('io','particle_model_luminosity') in self.particle_profiles):
+                out = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+                centers = out[1]; prof = out[2]
                 self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         else:
             self.particle_profiles = {}
-            self.particle_profiles['r'], centers, prof, = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
+            self.particle_profiles['r'], centers, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
             self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
 
         cum_luminosity = np.cumsum(self.particle_profiles[('io','particle_model_luminosity')])
@@ -633,8 +697,8 @@ class Galaxy(object):
 
             data = self.disk
 
-        if pt == None:
-            particle_filter = [True] * np.size(x)
+        if pt is None:
+            particle_filter = [True] * np.size(data['particle_type'])
         else:
             particle_filter = data['particle_type'] == pt
 
@@ -646,6 +710,7 @@ class Galaxy(object):
             for i in np.arange(np.size(xbins)-1):
                 x_filter   = (x < xbins[i]) * (x >= xbins[i-1])
                 filter     = x_filter * particle_filter
+
                 field_data = data[field][filter]
 
                 if accumulate:
@@ -660,14 +725,25 @@ class Galaxy(object):
         centers = 0.5 * (xbins[1:] + xbins[:-1])
         return xbins, centers, profiles
 
-    def construct_regions(self, disk_kwargs = None, sphere_kwargs = None,
-                                halo_sphere_kwargs = None):
+    def construct_regions(self, disk_kwargs = None, large_disk_kwargs = None,
+                                sphere_kwargs = None, halo_sphere_kwargs = None):
+        """
+        Defines the pre-defined (or user modified) geometric regions to 
+        perform analysis on. These are the galaxy disk, a sphere around the
+        galaxy, and a halo sphere (out to virial radius).
+        """
 
         if disk_kwargs is None:
             disk_kwargs = {}
 
             for n in ['normal','radius','height','center']:
                 disk_kwargs[n] = self.disk_region[n]
+
+        if large_disk_kwargs is None:
+            large_disk_kwargs = {}
+
+            for n in ['normal','radius','height','center']:
+                large_disk_kwargs[n] = self.large_disk_region[n]
 
         if sphere_kwargs is None:
             sphere_kwargs = {}
@@ -683,6 +759,8 @@ class Galaxy(object):
 
 
         self.disk   = self.ds.disk(**disk_kwargs)
+
+        self.large_disk = self.ds.disk(**large_disk_kwargs)
 
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
@@ -703,17 +781,24 @@ class Galaxy(object):
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                             'radius' : 2.0 * yt.units.kpc,
-                            'height' : 500.0 * yt.units.pc,
+                            'height' : 400.0 * yt.units.pc,
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
-                            'dz'     : 100.0 * yt.units.pc }
+                            'dz'     : 50.0 * yt.units.pc }
+
+        self.large_disk_region = {'normal' : np.array([0,0,1]),
+                                  'radius' : 2.0 * yt.units.kpc,
+                                  'height' : 2.0 * yt.units.kpc,
+                                  'center' : self.ds.domain_center,
+                                  'dr'     : 25.0*yt.units.pc,
+                                  'dz'     : 50.0*yt.units.pc}
 
         self.spherical_region = {'center' : self.ds.domain_center,
                                  'radius' : 2.0 * yt.units.kpc,
                                  'dr'     : 25.0 * yt.units.pc   }
 
-        self.halo_spherical_region = {'center' : self.ds.domain_center,
-                                      'radius' : 5.0 * yt.units.kpc,
+        self.halo_spherical_region = {'center' :    self.ds.domain_center,
+                                      'radius' : 14.0 * yt.units.kpc,
                                       'dr'     : 50.0 * yt.units.pc}
 
         return
@@ -725,6 +810,30 @@ class Galaxy(object):
 
         for e in self.species_list:
             self._accumulation_fields += [('gas', e +'_Mass')]
+
+        return
+
+    def _set_projection_fields(self):
+
+        self._projection_fields = [('enzo','HI_Density'), ('enzo','H2I_Density'),
+                                   ('enzo','Density'), ('enzo','HII_Density'),
+                                   ('gas','Metal_Density')]
+
+        for e in self.species_list:
+            self._projection_fields += [('gas',e + '_Density')]
+
+        return
+
+    def _load_boundary_mass_flux(self):
+
+        self.boundary_mass_flux = {}
+
+        if not os.path.isfile(self.dir + 'boundary_mass_flux.dat'):
+            return
+
+        f = np.genfromtxt(self.dir + 'boundary_mass_flux.dat')
+
+        # do data filtering --- code this somewhere else and do it with function call
 
         return
 
@@ -751,7 +860,7 @@ class Galaxy(object):
     @property
     def zbins_disk(self):
         zmin = 0.0
-        zmax = self.disk.height * 0.5
+        zmax = self.disk.height
         dz   = self.disk_region['dz']
         zmax = zmax.convert_to_units(dz.units)
 
@@ -766,3 +875,23 @@ class Galaxy(object):
         rmax = rmax.convert_to_units(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
+    @property
+    def zbins_large_disk(self):
+        zmin = 0.0
+        zmax = self.large_disk.height
+        dz   = self.large_disk_region['dz']
+        zmax = zmax.convert_to_units(dz.units)
+
+        return np.arange(zmin, zmax + dz, dz) * dz.unit_quantity
+
+
+    @property
+    def rbins_large_disk(self):
+        rmin = 0.0
+        rmax = self.large_disk.radius
+        dr   = self.large_disk_region['dr']
+        rmax = rmax.convert_to_units(dr.units)
+
+        return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
