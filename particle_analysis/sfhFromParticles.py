@@ -23,7 +23,7 @@ def sfhFromParticles(ds, data, selection = None, times = None):
 
     if times is None:
         bin_spacing = 2.0 * yt.units.Myr
-        times = np.linspace(np.min(creation_time), currentTime, bin_spacing)*yt.units.Myr
+        times = np.arange(np.min(creation_time) - bin_spacing*2.0, currentTime, bin_spacing)*yt.units.Myr
     elif np.size(times) == 1:
         bin_spacing = times
         if not hasattr(bin_spacing, 'value'):
