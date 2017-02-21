@@ -5,6 +5,9 @@ import glob
 import matplotlib.pyplot as plt
 
 
+__all__ = ['compute_IMF', 'IMF', 'scaled_IMF']
+
+
 def compute_IMF(ds, data, mode = 'mass', **kwargs):
     """
     Wrapper around IMF function to compute IMF

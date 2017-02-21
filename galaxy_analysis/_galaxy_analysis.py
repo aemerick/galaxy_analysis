@@ -17,27 +17,29 @@ import deepdish as dd
 
 
 # --------- internal imports --------------
-from utilities import utilities
-from static_data import LABELS,\
+from ..utilities import utilities
+from ..static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
                         UNITS,\
                         ISM
 
-from particle_analysis import particle_types as pt
-from particle_analysis import IMF
+from ..particle_analysis import particle_types as pt
+from ..particle_analysis import IMF
 
 # need to have better API
-from particle_analysis.sfrFromParticles import sfrFromParticles
-from particle_analysis.sfhFromParticles import sfhFromParticles
-from particle_analysis.sn_rate          import snr
+from ..particle_analysis.sfrFromParticles import sfrFromParticles
+from ..particle_analysis.sfhFromParticles import sfhFromParticles
+from ..particle_analysis.sn_rate          import snr
 
-from yt_fields import field_generators as fg
+from ..yt_fields import field_generators as fg
 
 _hdf5_compression = 'lzf'
 
 _all_fields = ['density', 'temperature', 'cell_mass']
+
+__all__ = ['Galaxy']
 
 class Galaxy(object):
 

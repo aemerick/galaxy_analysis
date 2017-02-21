@@ -7,6 +7,8 @@ from collections import Iterable
 from onezone.star import Star, StarList
 
 
+__all__ = ['get_list_of_stars', 'get_star_property', 'Star', 'StarList']
+
 def get_list_of_stars(ds, data, dummy_call = False):
 
     types = {11 : 'star', 12 : 'WD', 13 : 'remnant', 1 : 'N/A'}
