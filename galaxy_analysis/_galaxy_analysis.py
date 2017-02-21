@@ -17,7 +17,8 @@ import deepdish as dd
 
 
 # --------- internal imports --------------
-from ..utilities import utilities
+from galaxy_analysis.utilities import utilities
+#from ..utilities import utilities
 from ..static_data import LABELS,\
                         FIELD_UNITS,\
                         IMAGE_COLORBAR_LIMITS,\
