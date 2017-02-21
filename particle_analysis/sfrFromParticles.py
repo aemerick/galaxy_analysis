@@ -1,4 +1,6 @@
 import yt.mods as yt
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
@@ -53,7 +55,7 @@ if __name__=='__main__':
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
-    dt = 25.0*yt.units.Myr
+    dt = 2.5*yt.units.Myr
 
     times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr')+dt, dt)
     times = times*yt.units.Myr

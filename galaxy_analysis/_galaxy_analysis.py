@@ -527,6 +527,7 @@ class Galaxy(object):
         return
 
 
+
     def compute_gas_profiles(self):
 
         junk = self.calculate_dMdt_profile()
