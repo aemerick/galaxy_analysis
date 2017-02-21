@@ -55,7 +55,7 @@ if __name__=='__main__':
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
-    dt = 2.5*yt.units.Myr
+    dt = 2.0*yt.units.Myr
 
     times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr')+dt, dt)
     times = times*yt.units.Myr
