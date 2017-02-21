@@ -461,6 +461,9 @@ class Galaxy(object):
 
     def compute_gas_profiles(self):
 
+        x, c, self.gas_profiles['radiation'] = self.calculate_radiation_profiles()
+        self.gas_profiles['radiation']['rbins'] = x
+
         x, c, self.gas_profiles['outflow_rate']    = self.calculate_dMdt_profile()
         self.gas_profiles['outflow_rate']['zbins'] = x
 
