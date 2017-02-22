@@ -1,5 +1,5 @@
 
-from galaxy_analysis._galaxy_analysis import *
+from analysis._galaxy_analysis import *
 
 import star_analysis
 
