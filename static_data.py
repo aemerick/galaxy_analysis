@@ -169,7 +169,7 @@ PLOT_DATA = {
 
              ('gas','Pe_heating_rate_masked'):
                   (('gas','Pe_heating_rate_masked'),
-                   r'PE Heating Rate (erg s$^{-1}$ cm$^{-3}$)', None, (1.0E-34, 1.0E-24),
+                   r'PE Heating Rate (erg s$^{-1}$ cm$^{-3}$)', None, (1.0E-36, 1.0E-24),
                    u.erg/u.s/u.cm**3, 'cubehelix_r'),
 
              ('gas','G_o'):
