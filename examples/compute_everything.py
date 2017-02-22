@@ -4,6 +4,8 @@ import os
 import numpy as np
 import sys
 
+import re
+
 from galaxy_analysis.misc import process_boundary_flux as pbf
 
 from joblib import Parallel, delayed
