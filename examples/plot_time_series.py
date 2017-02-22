@@ -8,7 +8,7 @@ import os
 def plot_sequestering(directory = './'):
     output_dir = directory + '/sequestering/'
 
-    if not os.path.exists(output_dir)
+    if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     sfields = ['Disk', 'CNM', 'WNM', 'HIM', 'FullBox',
@@ -50,10 +50,10 @@ def plot_sequestering(directory = './'):
     return
 
 
-if __name__ = "__main__":
+if __name__ == "__main__":
 
     directory = './'
     if len(sys.argv) == 2:
         directory = sys.argv[1]
 
-    plot_mass_loading(directory = directory)
+    plot_sequestering(directory = directory)
