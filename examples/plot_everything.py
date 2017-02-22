@@ -21,27 +21,31 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
 
     ds   = yt.load(dsname)
+    if ds.parameters['NumberOfParticles'] < 1:
+        print "Functionality currently broken when no particles exist"
+        return
+
     ga.yt_fields.field_generators.generate_derived_fields(ds)
     ds   = yt.load(dsname)
 
     data = ds.all_data()
 
     for a in axis:
-        sp   = yt.SlicePlot(ds, axis = a, fields = fields, 
-                                width = (2.5,'kpc'))
-        sp.set_buff_size(256)
         for f in fields:
+            sp   = yt.SlicePlot(ds, axis = a, fields = f, 
+                                width = (2.5,'kpc'))
+            sp.set_buff_size(256)
             sp.set_cmap(f, ga.static_data.CMAPS[f])
             sp.set_unit(f, field_units[f].units)
             sp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
             sp.set_colorbar_label(f, cbar_label[f])
 
-        if ('io','particle_position_x') in ds.field_list:
-            sp.annotate_particles(0.9, p_size = 0.25)
+            if ('io','particle_position_x') in ds.field_list:
+                sp.annotate_particles(0.9, p_size = 0.25)
 
-        sp.save('./slice/')
+            sp.save('./slice/')
 
-    del(sp)
+            del(sp)
     del(ds)
 
     return
