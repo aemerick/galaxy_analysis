@@ -288,12 +288,22 @@ def _additional_helper_fields(fields):
 
         return mass
 
+    def _pe_heating_cgs(field,data):
+        pe = data[('enzo','Pe_heating_rate')].value
+
+        energy_unit = data.ds.mass_unit * data.ds.velocity_unit**2
+        pe = pe * energy_unit / data.ds.length_unit**3 / data.ds.time_unit
+
+        return pe.convert_to_units('erg/s/cm**3')
+
     def _pe_heating_rate(field, data):
         pe = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3')
 
-        pe[data['temperature'] > data.ds.parameters['IndividualStarFUVTemperatureCutoff']] = 0.0
+        x = 1.0 * pe
 
-        return pe
+        x[data['temperature'] > data.ds.parameters['IndividualStarFUVTemperatureCutoff']] = 0.0
+
+        return x
 
     def _otlwcgs(field, data):
         lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
@@ -353,6 +363,7 @@ def _additional_helper_fields(fields):
 #    def _H2_total_mass(field, data):
 #        mass = data[('gas',
 
+    yt.add_field(('gas','Pe_heating_rate'), function = _pe_heating_cgs, units = 'erg/s/cm**3')
     yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
