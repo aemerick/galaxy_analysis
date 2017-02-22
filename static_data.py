@@ -135,7 +135,7 @@ PLOT_DATA = {
                    u.Msun, 'algae'),
 
              ('gas', 'number_density'):
-                 ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 500.0),
+                 ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 800.0),
                    u.cm**(-3), 'viridis'),
 
              ('gas', 'Temperature'):
@@ -145,7 +145,7 @@ PLOT_DATA = {
              ('gas', 'velocity_magnitude'):
                  (('gas','velocity_magnitude'),
                     r'$|\rm{v}|$ (km s$^{-1}$)', (1.0, 1.0E3), (1.0, 1.0E3),
-                    u.km / u.s, 'cubehelix'),
+                    u.km / u.s, 'algae'),
 
              ('gas', 'H_total_mass'):
                  (('gas','H_total_mass'),
@@ -165,9 +165,20 @@ PLOT_DATA = {
              ('gas', 'H_p0_mass'):
                   (('gas','H_p0_mass'),
                   r'HI Mass (M$_{\odot}$)', None, None,
-                  u.Msun, 'viridis')
+                  u.Msun, 'viridis'),
+
+             ('gas','Pe_heating_rate_masked'):
+                  (('gas','Pe_heating_rate_masked'),
+                   r'PE Heating Rate (erg s$^{-1}$ cm$^{-3}$)', None, (1.0E-34, 1.0E-24),
+                   u.erg/u.s/u.cm**3, 'cubehelix_r'),
+
+             ('gas','G_o'):
+                  (('gas','G_o'),
+                   r'G$_{\rm o}$', None, (1.0E-2, 1.0E3), u.cm/u.cm, 'cubehelix')
+
              }
 
+PLOT_DATA[('enzo','Temperature')] = PLOT_DATA[('gas','Temperature')]
 #
 # add in definitions for all individual species
 #	
@@ -181,7 +192,7 @@ LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}
 PLOT_LIMITS = {k: v[2] for k, v in six.iteritems(PLOT_DATA)}
 IMAGE_COLORBAR_LIMITS = {k: v[3] for k, v in six.iteritems(PLOT_DATA)}
 FIELD_UNITS  = {k: v[4] for k, v in six.iteritems(PLOT_DATA)}
-
+CMAPS = {k: v[5] for k, v in six.iteritems(PLOT_DATA)}
 
 UNITS = {'Time': u.Myr, 'Mass' : u.Msun, 'Velocity' : u.km/u.s, 'Length' : u.pc}
 
