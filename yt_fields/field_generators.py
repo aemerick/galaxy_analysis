@@ -299,9 +299,11 @@ def _additional_helper_fields(fields):
     def _pe_heating_rate(field, data):
         pe = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3')
 
-        pe[data['temperature'] > data.ds.parameters['IndividualStarFUVTemperatureCutoff']] = 0.0
+        x = 1.0 * pe
 
-        return pe
+        x[data['temperature'] > data.ds.parameters['IndividualStarFUVTemperatureCutoff']] = 0.0
+
+        return x
 
     def _otlwcgs(field, data):
         lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
