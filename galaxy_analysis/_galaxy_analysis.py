@@ -98,8 +98,13 @@ class Galaxy(object):
         self.total_quantities = {}
         self._total_quantities_calculated = False
 
-        self._has_boundary_mass_file, self.boundary_mass_flux =\
-                    process_boundary_flux(data = None, wdir = self.wdir)
+#        self._has_boundary_mass_file, self.boundary_mass_flux =\
+#                    process_boundary_flux(data = None, wdir = self.wdir)
+
+        self._has_boundary_mass_file = os.path.isfile(self.wdir + "filtered_boundary_mass_flux.dat")
+
+        if self._has_boundary_mass_file:
+            self.boundary_mass_flux = np.genfromtxt(self.wdir + "filtered_boundary_mass_flux.dat", names = True)
 
         if os.path.isfile( self.hdf5_filename ):
             self.load()
