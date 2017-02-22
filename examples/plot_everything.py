@@ -31,6 +31,10 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
     data = ds.all_data()
 
     for a in axis:
+        sp   = yt.SlicePlot(ds, axis = a, fields = fields, 
+                                width = (2.5,'kpc'))
+        sp.set_buff_size(1664)
+
         for f in fields:
             sp   = yt.SlicePlot(ds, axis = a, fields = f, 
                                 width = (2.5,'kpc'))
