@@ -1,4 +1,5 @@
-import yt.mods as yt
+#import yt.mods as yt
+import yt
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import Iterable, OrderedDict

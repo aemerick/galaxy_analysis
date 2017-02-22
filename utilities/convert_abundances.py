@@ -1,5 +1,6 @@
 import numpy as np
-import yt.mods as yt
+#import yt.mods as yt
+import yt
 
 from galaxy_analysis.static_data import \
      MOLECULAR_WEIGHT, \
