@@ -1,6 +1,7 @@
 import galaxy_analysis as ga
 import glob
 import os
+import numpy as np
 
 if True:
 
