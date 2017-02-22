@@ -29,7 +29,8 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
     for a in axis:
         sp   = yt.SlicePlot(ds, axis = a, fields = fields, 
                                 width = (2.5,'kpc'))
-        sp.set_buff_size(256)
+        sp.set_buff_size(1664)
+
         for f in fields:
             sp.set_cmap(f, ga.static_data.CMAPS[f])
             sp.set_unit(f, field_units[f].units)
