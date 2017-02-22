@@ -1,11 +1,12 @@
 import galaxy_analysis as ga
 import glob
 import os
+import numpy as np
 
 if True:
 
-    imin = 127
-    imax = 128
+    imin = 100
+    imax = 101
     di   = 1
 
     for i in np.arange(imin,imax+di,di):
