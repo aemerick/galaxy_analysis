@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import glob
 import deepdish as dd
@@ -13,7 +16,7 @@ def plot_sequestering(directory = './'):
 
     sfields = ['Disk', 'CNM', 'WNM', 'HIM', 'FullBox',
                'stars', 'Molecular', 'OutsideBox']
-    all_elements = ['H','He','Fe','metals','O','C','N','Eu','Mg','S','Y','Ca','Si','Mn']
+    all_elements = ['H','He','Fe','Metals','O','C','N','Eu','Mg','S','Y','Ca','Si','Mn']
 
     #
     # get all data
@@ -32,9 +35,15 @@ def plot_sequestering(directory = './'):
         for i in np.arange(len(all_output)):
             t[i] = dd.io.load(all_output[i], '/meta_data/Time')
             x    = dd.io.load(all_output[i], '/gas_meta_data/masses')
-            for s in sfields:
-                plot_data[s][i] = x[s][element]
 
+            for s in sfields:
+                if element == 'Metals' and s == 'stars':
+                    plot_data[s][i] = x[s]['metals']
+                else:
+                    plot_data[s][i] = x[s][element]
+
+        for s in sfields:
+            ax.plot(t, plot_data[s], lw =3, label=s)
 
         ax.set_xlabel(r'Time (Myr')
         ax.set_ylabel(element + r' Mass (M$_{\odot}$)')
@@ -42,6 +51,7 @@ def plot_sequestering(directory = './'):
         plt.minorticks_on()
         fig.set_size_inches(8,8)
         plt.tight_layout()
+        ax.legend(loc='best')
 
         fig.savefig(output_dir + '/' + element + '_sequestering.png')
         plt.close(fig)
