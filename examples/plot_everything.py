@@ -36,15 +36,16 @@ def phase_plots(ds, to_plot = 'all', region = None):
     # list is the following set of 4 items:  [ x-axis field, y-axis field, cbar field, weight_field ]
     #
     pp_def    = { 'T_n' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','cell_mass'), None],
-                  'T_P' :  [ ('enzo','Temperature'), ('gas','Pressure'), ('gas', 'cell_mass'), None],
-                  'Go_n' : [ ('gas','G_o'), ('gas','number_density'), ('gas,','cell_mass'), None],
-                  'Go_r' : [ ('gas','G_o'), ('index','cylindrical_radius'), ('gas','cell_mass'), None]
+                  'P_T' :  [ ('enzo','Temperature'), ('gas','pressure'), ('gas', 'cell_mass'), None],
+                  'Go_n' : [ ('gas','number_density'), ('gas','G_o'), ('gas','cell_mass'), None],
+                  'Go_r' : [ ('index','magnitude_cylindrical_radius'), ('gas','G_o'), ('gas','cell_mass'), None]
                  }
 
-
+    pdict = {}
     if to_plot == 'all':
-        pdict = pp_def
- 
+        for n in ['T_n','P_T','Go_n']:
+            pdict = pp_def[n]
+
     if region is None:
         region = ds.all_data()
 
@@ -54,19 +55,25 @@ def phase_plots(ds, to_plot = 'all', region = None):
         pp = yt.PhasePlot( region, pdef[0], pdef[1], pdef[2],
                            weight_field = pdef[3])
 
+        if pdef[0] == ('gas','magnitude_cylindrical_radius'):
+            pp.set_log('magnitude_cylindrical_radius', False)
+
         # set units on each axis
         for f in pdef[0:2]:
-            pp.set_unit(f, field_units[f].units)
+            pp.set_unit(f[1], field_units[f].units)
 
         # set plot limits for horizonatal and vertical axes
-        pp.set_xlim(plim[pdef[0]][0], plim[pdef[0]][1])
-        pp.set_ylim(plim[pdef[1]][0], plim[pdef[1]][1])
+        if not plim[pdef[0]] is None:
+            pp.set_xlim(plim[pdef[0]][0], plim[pdef[0]][1])
+        if not plim[pdef[1]] is None:
+            pp.set_ylim(plim[pdef[1]][0], plim[pdef[1]][1])
 
         # set color map limits
-        pp.set_zlim( pdef[2], cbar_lim[pdef[2]][0], cbar_lim[pdef[2]][1])
+        if not cbar_lim[pdef[2]] is None:
+            pp.set_zlim( pdef[2], cbar_lim[pdef[2]][0], cbar_lim[pdef[2]][1])
         pp.set_cmap( pdef[2], 'cubehelix')
 
-        pp.save('./phase_plots/' + name)
+        pp.save('./phase_plots/')
 
         del(pp)
 
@@ -160,11 +167,13 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
     has_particles = ('io','particle_position_x') in ds.field_list
 
+
+    phase_plots(ds)
+
     slice_plots(ds, fields, axis, has_particles = has_particles)
 
     projection_plots(ds,fields,axis,has_particles = has_particles)
 
-    phase_plots(ds)
 
     del(ds)
 
