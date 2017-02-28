@@ -27,6 +27,89 @@ def main_sequence(pfilter,data):
 yt.add_particle_filter("main_sequence", function=main_sequence, filtered_type="all", requires=["particle_type"])
 
 
+def phase_plots(ds):
+
+    # construct a list of phase diagrams here. List contains list of tuples, where each
+    # list is the following set of 4 items:  [ x-axis field, y-axis field, cbar field, weight_field ]
+    #
+    all_plots = { 'T_n' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','cell_mass'), None],
+                  'T_P' :  [ ('enzo','Temperature'), ('gas','Pressure'), ('gas', 'cell_mass'), None],
+                  'Go_n' : [ ('gas','G_o'), ('gas','number_density'), ('gas,','cell_mass'), None],
+                }
+
+
+
+
+
+    return
+
+def projection_plots(ds, fields, axis=['x','z'], has_particles = None):
+
+    if has_particles is None:
+        has_particles = ('io','particle_position_x') in ds.field_list 
+
+    m = 0.0
+    t = ds.current_time.convert_to_units('Myr').value
+    if has_particles:
+        m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
+        m = m.value
+
+    for a in axis:
+        pp = yt.ProjectionPlot(ds, axis = a, fields = [('gas','number_density'),('enzo','Temperature')], 
+                               width = (2.5,'kpc'), weight_field = 'density')
+        pp.set_buff_size(1664)
+
+        for f in [('gas','number_density'),('enzo','Temperature')]:
+            pp.set_cmap(f, ga.static_data.CMAPS[f])
+            pp.set_unit(f, field_units[f].units)
+            pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
+            pp.set_colorbar_label(f, cbar_label[f])
+    
+        if has_particles:
+            pp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+
+        pp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
+        pp.save('./proj/')
+        del(pp)
+
+    return
+    
+def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
+
+    if has_particles is None:
+        has_particles = ('io','particle_position_x') in ds.field_list
+
+    m = 0.0
+    t = ds.current_time.convert_to_units('Myr').value
+    if has_particles:
+        m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
+        m = m.value
+
+
+    for a in axis:
+        sp   = yt.SlicePlot(ds, axis = a, fields = fields,
+                                width = (2.5,'kpc'))
+        sp.set_buff_size(1664)
+
+        for f in fields:
+            sp.set_cmap(f, ga.static_data.CMAPS[f])
+            sp.set_unit(f, field_units[f].units)
+            sp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
+            sp.set_colorbar_label(f, cbar_label[f])
+
+
+        if has_particles:
+            sp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+
+        sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
+        sp.save('./slice/')
+
+        del(sp)
+
+    return
+
+
+
 def _parallel_loop(dsname, fields, axis = ['x','z']):
 
 
@@ -45,51 +128,13 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
     data = ds.all_data()
 
-    m = 0.0
-    t = 0.0
-    for a in axis:
-        sp   = yt.SlicePlot(ds, axis = a, fields = fields, 
-                                width = (2.5,'kpc'))
-        sp.set_buff_size(1664)
+    has_particles = ('io','particle_position_x') in ds.field_list
 
-        for f in fields:
-            sp   = yt.SlicePlot(ds, axis = a, fields = f, 
-                                width = (2.5,'kpc'))
-            sp.set_buff_size(1664)
-            sp.set_cmap(f, ga.static_data.CMAPS[f])
-            sp.set_unit(f, field_units[f].units)
-            sp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
-            sp.set_colorbar_label(f, cbar_label[f])
+    slice_plots(ds, fields, axis, has_particles = has_particles)
 
+    projection_plots(ds,fields,axis,has_particles = has_particles)
 
-            m = 0.0
-            t = 0.0  
-            if ('io','particle_position_x') in ds.field_list:
-                sp.annotate_particles(0.9, p_size = 0.4, stride = 1)
-                m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
-                m = m.value
-
-            t = ds.current_time.convert_to_units('Myr').value
-            sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
-            sp.save('./slice/')
-
-            del(sp)
-
-
-        for f in [('gas','number_density'),('enzo','Temperature')]:
-            pp = yt.ProjectionPlot(ds, axis = a, fields = f, width = (2.5,'kpc'), weight_field = 'density')
-            pp.set_buff_size(1664)
-            pp.set_cmap(f, ga.static_data.CMAPS[f])
-            pp.set_unit(f, field_units[f].units)
-            pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
-            pp.set_colorbar_label(f, cbar_label[f])
-            if ('io','particle_position_x') in ds.field_list:
-                pp.annotate_particles(0.9, p_size = 0.4, stride = 1)
-
-            pp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
-            pp.save('./proj/')
-            del(pp)
-            
+    phase_plots(ds)
 
     del(ds)
 
