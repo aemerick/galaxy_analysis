@@ -119,13 +119,13 @@ MAX_R            = 1.0 * u.kpc
 #     6) Desired color map
 
 PLOT_DATA = {
-             ('index','cylindrical_radius') :
-                  (  ('index','cylindrical_radius'),
+             ('index','magnitude_cylindrical_radius') :
+                  (  ('index','magnitude_cylindrical_radius'),
                      r'R$_{\rm disk}$ (kpc)', (0.0, 2.5), (0.0, 2.5),
                      u.kpc, 'spectral'),
 
-             ('index', 'cylindrical_z') :
-                  ( ( 'index', 'cylindrical_z'),
+             ('index', 'magnitude_cylindrical_z') :
+                  ( ( 'index', 'magnitude_cylindrical_z'),
                     r'z$_{\rm disk}$ (kpc)', (0.0, 2.5), (0.0, 2.5),
                      u.kpc, 'spectral'),
 
@@ -142,7 +142,7 @@ PLOT_DATA = {
              ('gas', 'pressure'):
                  ( ('gas','pressure'), r'Pressure (dyne cm$^{-2}$)', 
                    (1.0E-16,1.0E-9), (1.0E-16,1.0E-9),
-                   u.g * u.cm**2 / u.s**2, 'algae'),
+                   u.dyne / u.cm**2, 'algae'),
 
              ('gas', 'cell_mass'):
                  ( ('enzo','cell_mass'),
