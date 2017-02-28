@@ -85,8 +85,7 @@ def _mass_fraction_function_generator(asym):
     nfields = 0
     for a in asym:
 
-        yt.add_field(('gas', a + '_Fraction'), function = return_function(a), units='auto',
-                                               dimensions=dimensions.dimensionless)
+        yt.add_field(('gas', a + '_Fraction'), function = return_function(a), units="")
 
         nfields = nfields + 1
 
@@ -151,7 +150,7 @@ def _particle_abundance_function_generator(ratios):
         fieldname = 'particle_' + ele1 + '_over_' + ele2
 
         yt.add_field(('io', fieldname), function = return_function(ele1,ele2,field1,field2),
-                              units = 'dimensionless', particle_type = True)
+                              units = "", particle_type = True)
         nfields = nfields + 1
 
     return nfields
@@ -226,7 +225,7 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
         fieldname = ele1 + '_over_' + ele2
 
         yt.add_field(('gas', fieldname), function = return_function(ele1,ele2,field1,field2),
-                              units = 'dimensionless')
+                              units = "")
         nfields = nfields + 1
 
     return nfields
@@ -369,15 +368,14 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
     yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate, units='erg/s/cm**3')
-    yt.add_field(('gas','G_o'), function = _G_o, units = 'auto', dimensions = dimensions.dimensionless)
+    yt.add_field(('gas','G_o'), function = _G_o, units = "")
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
     if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
         yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
-        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = 'auto',
-                                                           dimensions = dimensions.dimensionless)
+        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = "")
 
     nfields = 5
 
