@@ -14,6 +14,7 @@ from galaxy_analysis.static_data import AMU,\
 from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
+from galaxy_analysis.misc import dm_halo
 
 FIELDS_DEFINED = False
 
@@ -342,13 +343,25 @@ def _additional_helper_fields(fields):
 
         return x
 
-    def _potential_energy(field,data):
+    def _tot_grav_pot(field,data):
         try:
-            x = (data['PotentialField'] * data['cell_mass']).convert_to_units('erg')
+            x = data['PotentialField']
         except:
-            x = (data['GravPotential'].value *(data.ds.velocity_unit**2)* data['cell_mass']).convert_to_units('erg')
+            x = data['GravPotential'].value * data.ds.velocity_unit**2
 
-        return x
+        x = x + data[('index','DM_background_potential')]
+
+        return x.convert_to_units('erg/g')
+
+    def _pos_tot_grav_pot(field, data):
+
+        return np.abs(data[('gas','total_gravitational_potential')])
+
+    def _potential_energy(field,data):
+
+        x = data[('gas','total_gravitational_potential')] * data['cell_mass']
+
+        return x.convert_to_units('erg')
 
     def _grav_bound(field, data):
         PE = data[('gas','potential_energy')].convert_to_units('erg')
@@ -365,6 +378,28 @@ def _additional_helper_fields(fields):
 
     def _mag_cyl_z(field,data):
         return np.abs( data[('index','cylindrical_z')].convert_to_units('cm') )
+
+    def _dm_density(field, data):
+        r     = data[('index','spherical_r')].convert_to_units('cm')
+        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).convert_to_units('cm')
+        rho_o = (data.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3)
+
+        rho = dm_halo.burkert_density(r, r_s, rho_o)
+
+        return rho.convert_to_cgs()
+
+    def _dm_potential(field, data):
+        r     = data[('index','spherical_r')].convert_to_units('cm')
+        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).convert_to_units('cm')
+        rho_o = (data.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3)
+
+        pot = dm_halo.burkert_potential(r, r_s, rho_o)
+
+        return pot.convert_to_cgs()
+        
+
+    yt.add_field(('index','DM_background_density'), function = _dm_density, units = 'g/cm**3')
+    yt.add_field(('index','DM_background_potential'), function = _dm_potential, units = 'erg/g')
 
     yt.add_field(('index','magnitude_cylindrical_radius'), function = _mag_cyl_r, units = 'cm')
 
@@ -384,6 +419,8 @@ def _additional_helper_fields(fields):
 
     if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','total_gravitational_potential'), function=_tot_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','pos_total_gravitational_potential'), function=_pos_tot_grav_pot, units = 'erg/g')
         yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
         yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = "")
 
