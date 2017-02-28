@@ -359,6 +359,16 @@ def _additional_helper_fields(fields):
 
         return result
 
+
+    def _mag_cyl_r(field,data):
+        return np.abs( data[('index','cylindrical_radius')].convert_to_units('cm'))
+
+    def _mag_cyl_z(field,data):
+        return np.abs( data[('index','cylindrical_z')].convert_to_units('cm') )
+
+    yt.add_field(('index','magnitude_cylindrical_radius'), function = _mag_cyl_r, units = 'cm')
+
+    yt.add_field(('index','magnitude_cylindrical_z'), function = _mag_cyl_z, units = 'cm')
 #    def _H2_total_mass(field, data):
 #        mass = data[('gas',
 
