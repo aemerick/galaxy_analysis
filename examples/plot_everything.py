@@ -3,10 +3,13 @@ from galaxy_analysis.static_data\
      import IMAGE_COLORBAR_LIMITS as cbar_lim
 
 from galaxy_analysis.static_data\
+     import PLOT_LIMITS as plim
+
+from galaxy_analysis.static_data\
      import FIELD_UNITS as field_units
 
 from galaxy_analysis.static_data\
-     import LABELS as cbar_label
+     import LABELS as axis_label
 
 import yt
 import glob
@@ -27,18 +30,45 @@ def main_sequence(pfilter,data):
 yt.add_particle_filter("main_sequence", function=main_sequence, filtered_type="all", requires=["particle_type"])
 
 
-def phase_plots(ds):
+def phase_plots(ds, to_plot = 'all', region = None):
 
     # construct a list of phase diagrams here. List contains list of tuples, where each
     # list is the following set of 4 items:  [ x-axis field, y-axis field, cbar field, weight_field ]
     #
-    all_plots = { 'T_n' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','cell_mass'), None],
+    pp_def    = { 'T_n' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','cell_mass'), None],
                   'T_P' :  [ ('enzo','Temperature'), ('gas','Pressure'), ('gas', 'cell_mass'), None],
                   'Go_n' : [ ('gas','G_o'), ('gas','number_density'), ('gas,','cell_mass'), None],
-                }
+                  'Go_r' : [ ('gas','G_o'), ('index','cylindrical_radius'), ('gas','cell_mass'), None]
+                 }
 
 
+    if to_plot == 'all':
+        pdict = pp_def
+ 
+    if region is None:
+        region = ds.all_data()
 
+    for name in pdict:
+        pdef = pdict[name]
+
+        pp = yt.PhasePlot( region, pdef[0], pdef[1], pdef[2],
+                           weight_field = pdef[3])
+
+        # set units on each axis
+        for f in pdef[0:2]:
+            pp.set_unit(f, field_units[f].units)
+
+        # set plot limits for horizonatal and vertical axes
+        pp.set_xlim(plim[pdef[0]][0], plim[pdef[0]][1])
+        pp.set_ylim(plim[pdef[1]][0], plim[pdef[1]][1])
+
+        # set color map limits
+        pp.set_zlim( pdef[2], cbar_lim[pdef[2]][0], cbar_lim[pdef[2]][1])
+        pp.set_cmap( pdef[2], 'cubehelix')
+
+        pp.save('./phase_plots/' + name)
+
+        del(pp)
 
 
     return
@@ -63,7 +93,7 @@ def projection_plots(ds, fields, axis=['x','z'], has_particles = None):
             pp.set_cmap(f, ga.static_data.CMAPS[f])
             pp.set_unit(f, field_units[f].units)
             pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
-            pp.set_colorbar_label(f, cbar_label[f])
+            pp.set_colorbar_label(f, axis_label[f])
     
         if has_particles:
             pp.annotate_particles(0.9, p_size = 0.4, stride = 1)
@@ -95,7 +125,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
             sp.set_cmap(f, ga.static_data.CMAPS[f])
             sp.set_unit(f, field_units[f].units)
             sp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
-            sp.set_colorbar_label(f, cbar_label[f])
+            sp.set_colorbar_label(f, axis_label[f])
 
 
         if has_particles:
