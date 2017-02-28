@@ -129,6 +129,10 @@ PLOT_DATA = {
                    r'Density (g cm$^{-3}$)', None, None,
                    u.g / u.cm**(3), 'algae'),
 
+             ('gas', 'Pressure'):
+                 ( ('enzo','Pressure'), None, None,
+                   u.g * u.cm**2 / u.s**2, 'algae'),
+
              ('gas', 'cell_mass'):
                  ( ('enzo','cell_mass'),
                    r'Total Mass (M$_{\odot}$)', None, None,
