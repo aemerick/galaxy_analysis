@@ -17,10 +17,25 @@ import sys
 from joblib import Parallel, delayed
 import multiprocessing
 
+#
+# move to yt field defines
+# 
+def main_sequence(pfilter,data):
+    filter = data[(pfilter.filtered_type, "particle_type")] == 11
+    return filter
+
+yt.add_particle_filter("main_sequence", function=main_sequence, filtered_type="all", requires=["particle_type"])
+
+
 def _parallel_loop(dsname, fields, axis = ['x','z']):
 
 
     ds   = yt.load(dsname)
+    yt.add_particle_filter("main_sequence", function=main_sequence, filtered_type="all", requires=["particle_type"])
+    ds.add_particle_filter("main_sequence")
+    ds = yt.load(dsname)
+    ds.add_particle_filter("main_sequence")
+
     if ds.parameters['NumberOfParticles'] < 1:
         print "Functionality currently broken when no particles exist"
         return
@@ -30,6 +45,8 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
     data = ds.all_data()
 
+    m = 0.0
+    t = 0.0
     for a in axis:
         sp   = yt.SlicePlot(ds, axis = a, fields = fields, 
                                 width = (2.5,'kpc'))
@@ -38,18 +55,42 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
         for f in fields:
             sp   = yt.SlicePlot(ds, axis = a, fields = f, 
                                 width = (2.5,'kpc'))
-            sp.set_buff_size(256)
+            sp.set_buff_size(1664)
             sp.set_cmap(f, ga.static_data.CMAPS[f])
             sp.set_unit(f, field_units[f].units)
             sp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
             sp.set_colorbar_label(f, cbar_label[f])
 
-            if ('io','particle_position_x') in ds.field_list:
-                sp.annotate_particles(0.9, p_size = 0.25)
 
+            m = 0.0
+            t = 0.0  
+            if ('io','particle_position_x') in ds.field_list:
+                sp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+                m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
+                m = m.value
+
+            t = ds.current_time.convert_to_units('Myr').value
+            sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
             sp.save('./slice/')
 
             del(sp)
+
+
+        for f in [('gas','number_density'),('enzo','Temperature')]:
+            pp = yt.ProjectionPlot(ds, axis = a, fields = f, width = (2.5,'kpc'), weight_field = 'density')
+            pp.set_buff_size(1664)
+            pp.set_cmap(f, ga.static_data.CMAPS[f])
+            pp.set_unit(f, field_units[f].units)
+            pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
+            pp.set_colorbar_label(f, cbar_label[f])
+            if ('io','particle_position_x') in ds.field_list:
+                pp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+
+            pp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
+            pp.save('./proj/')
+            del(pp)
+            
+
     del(ds)
 
     return
