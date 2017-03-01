@@ -48,10 +48,38 @@ def time_first_star(data = None, t = None, sfr = None):
 
     return t_first
 
-def plot_mass_loading(sim_names = None, species = 'total', z = 500.0):
+def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loading = False):
+    """
+    Given a dictionary that contains list of simulation names and filepaths,
+    go through all simulation data analysis outputs in that path for each
+    simulation and plot the time evolution of the outflow rate. 
+
+    Inputs
+    ------ 
+        sim_names    : dictionary, optional
+        species      : String. Elemental species (or 'total' or 'metal' for all gas or
+                       all metals) of which to plot the outflow rate. optional. default: total
+        z            : Fixed height above / below disk to plot the rate (in pc). Default 100
+        mass_loading : Normalize by SFR to get the mass loading factor instead. Default False
+
+
+    """
 
     if sim_names is None:
         sim_names = DATA_PATHS.keys()
+
+    # do some checking to match desired species with dict names
+    if species = 'total':
+        species = 'total'
+    elif species == 'H':
+        species = 'H_total_mass']
+    elif species == 'metal' or species == 'Metal' or species == 'Metal_Mass':
+        species = 'metal_mass'
+    elif species == 'He':
+        species = 'He_total_mass'
+    elif not '_Mass' in species:
+        species = species + '_Mass'
+
 
     fig, ax = plt.subplots()
 
@@ -67,10 +95,49 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 500.0):
 
         # now go through every data analysis dump
         for i,x in enumerate(ALL_DATA[s]):
-            xdata = dd.io.load(ALL_DATA[i])
-            t[i]  = xdata['meta_data']['Time']
+            xdata = dd.io.load(ALL_DATA[i], '/gas_profiles/outflow_rate')
+            t[i]  = dd.io.load(ALL_DATA[i], '/meta_data/Time')
 
-            ml[i] = xdata['
+            # find the bin whose center is closest to the desired z
+            zbin  = np.argmin( np.abs( (xdata['zbins'][1:] + xdata['zbins'][:-1])*0.5 - z) )
+
+            if species == 'total':
+                ml[i] = xdata['H_total_mass'][zbin] + xdata['He_total_mass'][zbin] + xdata['metal_mass'][zbin]
+            else:
+                ml[i] = xdata[species][zbin]
+
+        # normalize t and plot only after SF occurs
+        t         = t - t_first
+        t_plot    = t[t >= 0.0]
+        mass_plot = mass[t >= 0.0]
+
+        norm = 1.0
+        if mass_loading: # maybe compute as the ~ 20 Myr average on either side of the data point?
+            norm = 1.0 / SFR  
+
+        ax.plot(t_plot, mass_plot*norm, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+
+    ax.set_xlabel(r'Time (Myr)')
+    ax.set_ylabel(species + r' Mass Outflow Rate (M$_{\odot}$)')
+    ax.semilogy()
+
+    ax.set_xlim(0.0, 300.0)
+    ax.legend(loc='best')
+
+    fig.set_size_inches(8,8)
+    plt.tight_layout()
+    plt.minorticks_on()
+
+    plottype = 'outflow'
+    if mass_loading:
+        plottype = 'loading'
+
+    outname = species + '_mass_' + plottype + '_z%2f.png'%(z)
+
+    fig.savefig(outname)
+    plt.close()
+
+    return            
 
 def plot_mass(sim_names = None, species = 'HI'):
 
@@ -206,6 +273,11 @@ def plot_snr(sim_names = None):
 if __name__ == '__main__':
 
     all_s = ['lm','lm_noRT','lm_nowind','mm','mm_3pc','hm', 'lm_xx']
+
+    for species in ['total', 'metals', 'C', 'Fe', 'H']:
+
+        plot_mass_loading(sim_names = all_s, species = species, z = 100)
+        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
     plot_snr(sim_names = all_s) 
     plot_sfr(sim_names = all_s)
