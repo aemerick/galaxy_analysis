@@ -69,10 +69,10 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
         sim_names = DATA_PATHS.keys()
 
     # do some checking to match desired species with dict names
-    if species = 'total':
+    if species == 'total':
         species = 'total'
     elif species == 'H':
-        species = 'H_total_mass']
+        species = 'H_total_mass'
     elif species == 'metal' or species == 'Metal' or species == 'Metal_Mass':
         species = 'metal_mass'
     elif species == 'He':
