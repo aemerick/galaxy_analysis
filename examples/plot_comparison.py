@@ -72,13 +72,13 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
     if species == 'total':
         species = 'total'
     elif species == 'H':
-        species = 'H_total_mass'
-    elif species == 'metal' or species == 'Metal' or species == 'Metal_Mass':
-        species = 'metal_mass'
+        species = ('gas','H_total_mass')
+    elif species == 'metal' or species == 'Metal' or species == 'Metal_Mass' or species == 'metals' or species == 'Metals':
+        species = ('gas','metal_mass')
     elif species == 'He':
-        species = 'He_total_mass'
+        species = ('gas','He_total_mass')
     elif not '_Mass' in species:
-        species = species + '_Mass'
+        species = ('gas', species + '_Mass')
 
 
     fig, ax = plt.subplots()
@@ -95,21 +95,28 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
 
         # now go through every data analysis dump
         for i,x in enumerate(ALL_DATA[s]):
-            xdata = dd.io.load(ALL_DATA[i], '/gas_profiles/outflow_rate')
-            t[i]  = dd.io.load(ALL_DATA[i], '/meta_data/Time')
+            try:
+                xdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/outflow/disk')
+            except:
+                print "outflow rates load failed for " + ALL_DATA[s][i]
+                continue
+
+            t[i]  = dd.io.load(ALL_DATA[s][i], '/meta_data/Time')
 
             # find the bin whose center is closest to the desired z
-            zbin  = np.argmin( np.abs( (xdata['zbins'][1:] + xdata['zbins'][:-1])*0.5 - z) )
+            zbin  = np.argmin( np.abs( (xdata['xbins'][1:].value + xdata['xbins'][:-1].value)*0.5 - z ) )
 
             if species == 'total':
-                ml[i] = xdata['H_total_mass'][zbin] + xdata['He_total_mass'][zbin] + xdata['metal_mass'][zbin]
+                ml[i] = xdata[('gas','H_total_mass')][zbin] +\
+                        xdata[('gas','He_total_mass')][zbin] +\
+                        xdata[('gas','metal_mass')][zbin]
             else:
                 ml[i] = xdata[species][zbin]
 
         # normalize t and plot only after SF occurs
         t         = t - t_first
         t_plot    = t[t >= 0.0]
-        mass_plot = mass[t >= 0.0]
+        mass_plot = ml[t >= 0.0]
 
         norm = 1.0
         if mass_loading: # maybe compute as the ~ 20 Myr average on either side of the data point?
@@ -117,8 +124,12 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
 
         ax.plot(t_plot, mass_plot*norm, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
+    sname = species
+    if len(species) > 1:
+        sname = species[1]
+
     ax.set_xlabel(r'Time (Myr)')
-    ax.set_ylabel(species + r' Mass Outflow Rate (M$_{\odot}$)')
+    ax.set_ylabel(sname + r' Mass Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
 
     ax.set_xlim(0.0, 300.0)
@@ -132,7 +143,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
     if mass_loading:
         plottype = 'loading'
 
-    outname = species + '_mass_' + plottype + '_z%2f.png'%(z)
+    outname = sname + '_mass_' + plottype + '_z%2f.png'%(z)
 
     fig.savefig(outname)
     plt.close()
