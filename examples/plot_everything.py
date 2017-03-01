@@ -44,7 +44,7 @@ def phase_plots(ds, to_plot = 'all', region = None):
     pdict = {}
     if to_plot == 'all':
         for n in ['T_n','P_T','Go_n']:
-            pdict = pp_def[n]
+            pdict[n] = pp_def[n]
 
     if region is None:
         region = ds.all_data()
@@ -87,6 +87,8 @@ def projection_plots(ds, fields, axis=['x','z'], has_particles = None):
 
     m = 0.0
     t = ds.current_time.convert_to_units('Myr').value
+    data = ds.all_data()
+
     if has_particles:
         m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
         m = m.value
@@ -118,6 +120,8 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
 
     m = 0.0
     t = ds.current_time.convert_to_units('Myr').value
+
+    data = ds.all_data()
     if has_particles:
         m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
         m = m.value
