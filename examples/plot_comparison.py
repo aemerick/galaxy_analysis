@@ -35,6 +35,43 @@ ALL_DATA = {}
 for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
 
+def time_first_star(data = None, t = None, sfr = None):
+    if data is None and (t is None or sfr is None):
+        print "If supplying no data set, must supply both time array and sfr array"
+        raise ValueError
+
+    if not data is None:
+        t   = data['time_data']['time']
+        sfr = data['time_data']['SFR']
+
+    t_first = np.min( t[sfr > 0])
+
+    return t_first
+
+def plot_mass_loading(sim_names = None, species = 'total', z = 500.0):
+
+    if sim_names is None:
+        sim_names = DATA_PATHS.keys()
+
+    fig, ax = plt.subplots()
+
+    # loop over simulations
+    for s in sim_names:
+        # always load most recent file to check
+        data = dd.io.load(ALL_DATA[s][-1])
+        t_first = time_first_star(data) / 1.0E6 # now in Myr
+
+        # make arrays for plotting
+        t  = np.zeros(np.size(ALL_DATA[s]))
+        ml = np.zeros(np.size(ALL_DATA[s]))
+
+        # now go through every data analysis dump
+        for i,x in enumerate(ALL_DATA[s]):
+            xdata = dd.io.load(ALL_DATA[i])
+            t[i]  = xdata['meta_data']['Time']
+
+            ml[i] = xdata['
+
 def plot_mass(sim_names = None, species = 'HI'):
 
 
@@ -47,10 +84,7 @@ def plot_mass(sim_names = None, species = 'HI'):
         # always load most recent file in every case
         data = dd.io.load(ALL_DATA[s][-1])
 
-        t    = data['time_data']['time']
-        sfr  = data['time_data']['SFR']
-
-        t_first = np.min( t[sfr > 0]) / 1.0E6
+        t_first = time_first_star(data)
 
         if species == 'HI' or species == 'M_HI':
             fname = 'M_HI'
