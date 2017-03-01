@@ -423,7 +423,7 @@ class Galaxy(object):
         # construct the profiles
         for field in fields:
             profiles[field] = np.zeros(np.size(rbins) - 1)
-q
+
         for i in np.arange(np.size(rbins)-1):
             radial_filter = (r >= rbins[i]) * (r < rbins[i+1])
 
