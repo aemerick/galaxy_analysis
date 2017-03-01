@@ -277,6 +277,20 @@ class Galaxy(object):
 
                 profile[field][i] = Mdot
 
+        #
+        # save profiles
+        #
+	prof_type = 'outflow'
+        mode = 'disk'
+        if not prof_type in self.gas_profiles.keys():
+            self.gas_profiles[prof_type] = {}
+
+        if not mode in self.gas_profiles[prof_type].keys():
+            self.gas_profiles[prof_type][mode] = {}
+
+        self.gas_profiles[prof_type][mode].update( profile )
+        self.gas_profiles[prof_type][mode]['xbins'] = xbins
+
         return xbins, center, profile
 
     def _get_bins_and_data(self, mode = None, axis='z'):
@@ -409,7 +423,7 @@ class Galaxy(object):
         # construct the profiles
         for field in fields:
             profiles[field] = np.zeros(np.size(rbins) - 1)
-
+q
         for i in np.arange(np.size(rbins)-1):
             radial_filter = (r >= rbins[i]) * (r < rbins[i+1])
 
