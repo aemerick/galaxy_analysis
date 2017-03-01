@@ -15,14 +15,14 @@ def plot_sequestering(directory = './'):
         os.makedirs(output_dir)
 
     sfields = ['Disk', 'CNM', 'WNM', 'HIM', 'FullBox',
-               'stars', 'Molecular', 'OutsideBox']
+               'stars', 'Molecular', 'OutsideBox', 'GravBound']
     all_elements = ['H','He','Fe','Metals','O','C','N','Eu','Mg','S','Y','Ca','Si','Mn']
 
     #
     # get all data
     #
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
-    
+
     for element in all_elements:
         fig, ax = plt.subplots()
 
