@@ -8,6 +8,32 @@ import deepdish as dd
 import sys
 import os
 
+purple  = '#7d03a8'
+magenta = '#cb4679'
+blue    = '#0c0887'
+orange  = '#fdc328'
+black   = 'black'
+
+
+colors = {'Disk' : black,
+              'CNM'  : purple,
+              'WNM'  : purple,
+              'HIM'  : purple,
+              'Molecular' : purple,
+          'FullBox'  : magenta,
+          'stars'    : orange,
+          'GravBound' : blue}
+
+ls = {'Disk' : '-',
+         'CNM' : '--',
+         'WNM' : '-.',
+         'HIM' : ':',
+         'Molecular' : '-',
+      'FullBox' : '-',
+      'stars'   : '-',
+      'GravBound' : '-'}
+
+
 def plot_sequestering(directory = './'):
     output_dir = directory + '/sequestering/'
 
@@ -43,7 +69,7 @@ def plot_sequestering(directory = './'):
                     plot_data[s][i] = x[s][element]
 
         for s in sfields:
-            ax.plot(t, plot_data[s], lw =3, label=s)
+            ax.plot(t, plot_data[s], lw = 4, label=s, ls = ls[s], color = colors[s])
 
         ax.set_xlabel(r'Time (Myr')
         ax.set_ylabel(element + r' Mass (M$_{\odot}$)')
