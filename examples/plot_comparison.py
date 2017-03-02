@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import glob
 import numpy as np
 
+# plot style defines
+from galaxy_analysis.plot import plot_styles as ps
 
 workdir = '/mnt/ceph/users/emerick/enzo_runs/stampede/leo_p/fullphysics/fullres'
 
@@ -20,16 +22,9 @@ ls_dict = { 'lm' : '-', 'lm_noRT' : '--', 'lm_nowind' : ':', 'lm_xx' : '--',
              'mm' : '-', 'mm_3pc' : '-.', 'hm' : '-'}
 
 
-purple  = '#7d03a8'
-magenta = '#cb4679'
-blue    = '#0c0887'
-orange  = '#fdc328'
+color_dict = {'lm' : ps.purple, 'lm_noRT' : ps.purple, 'lm_nowind' : ps.purple,
+              'mm' : ps.magenta  , 'mm_3pc' : ps.magenta  , 'hm' : ps.orange, 'lm_xx' : ps.blue}
 
-color_dict = {'lm' : purple, 'lm_noRT' : purple, 'lm_nowind' : purple,
-              'mm' : magenta  , 'mm_3pc'  : magenta  , 'hm' : orange, 'lm_xx' : blue}
-
-
-linewidth = 4.5
 
 ALL_DATA = {}
 for s in DATA_PATHS.keys():
@@ -122,7 +117,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
         if mass_loading: # maybe compute as the ~ 20 Myr average on either side of the data point?
             norm = 1.0 / SFR  
 
-        ax.plot(t_plot, mass_plot*norm, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        ax.plot(t_plot, mass_plot*norm, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
     sname = species
     if len(species) > 1:
@@ -182,7 +177,7 @@ def plot_mass(sim_names = None, species = 'HI'):
         t_plot   = t[t >= 0.0]
         mass_plot = mass[t >= 0.0]
 
-        ax.plot(t_plot, mass_plot, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        ax.plot(t_plot, mass_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(species + r' Mass (M$_{\odot}$)')
@@ -221,7 +216,7 @@ def plot_sfr(sim_names = None):
         t_plot   = t[t >= 0.0] / 1.0E6
         sfr_plot = sfr[t >= 0.0]
 
-        ax.plot(t_plot, sfr_plot, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        ax.plot(t_plot, sfr_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SFR (M$_{\odot}$ yr$^{-1}$)')
@@ -262,7 +257,7 @@ def plot_snr(sim_names = None):
         t_plot   = t[t >= 0.0] / 1.0E6
         snr_plot = snr[t >= 0.0]
 
-        ax.plot(t_plot, snr_plot, lw = linewidth, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        ax.plot(t_plot, snr_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SNR (yr$^{-1}$)')

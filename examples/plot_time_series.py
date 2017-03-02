@@ -8,22 +8,18 @@ import deepdish as dd
 import sys
 import os
 
-purple  = '#7d03a8'
-magenta = '#cb4679'
-blue    = '#0c0887'
-orange  = '#fdc328'
-black   = 'black'
+# some general plot styles for consistency
+from galaxy_analysis.plot import plot_styles as ps
 
-
-colors = {'Disk' : black,
-              'CNM'  : purple,
-              'WNM'  : purple,
-              'HIM'  : purple,
-              'Molecular' : purple,
-          'FullBox'  : magenta,
-          'stars'    : orange,
-          'GravBound' : blue,
-          'OutsideBox' : 'green' }
+colors = {'Disk' : ps.black,
+              'CNM'  : ps.purple,
+              'WNM'  : ps.purple,
+              'HIM'  : ps.purple,
+              'Molecular' : ps.purple,
+          'FullBox'  : ps.magenta,
+          'stars'    : ps.orange,
+          'GravBound' : ps.blue,
+          'OutsideBox' : ps.green }
 
 ls = {'Disk' : '-',
          'CNM' : '--',
@@ -116,7 +112,7 @@ def plot_sequestering(directory = './', fields = None, elements = None,
             if np.max(plot_data[s] * norm) < ymin:
                 continue
 
-            ax.plot(t, plot_data[s] * norm, lw = 4, label=s, ls = ls[s], color = colors[s])
+            ax.plot(t, plot_data[s] * norm, lw = ps.lw, label=s, ls = ls[s], color = colors[s])
 
 
         ax.set_xlabel(r'Time (Myr')
@@ -135,7 +131,7 @@ def plot_sequestering(directory = './', fields = None, elements = None,
 
         outname = output_dir + '/' + element + '_sequestering.png'
         if not fraction is None:
-            outname = output_dir + '/' + element + '_' + fraction + '_fraction_sequestering.png')
+            outname = output_dir + '/' + element + '_' + fraction + '_fraction_sequestering.png'
         
         fig.savefig(outname)
         plt.close(fig)
