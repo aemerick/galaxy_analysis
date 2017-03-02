@@ -131,7 +131,7 @@ def plot_sequestering(directory = './', fields = None, elements = None,
         plt.minorticks_on()
         fig.set_size_inches(8,8)
         plt.tight_layout()
-        ax.legend(loc='best', )
+        ax.legend(loc='best', ncol = 2)
 
         outname = output_dir + '/' + element + '_sequestering.png'
         if not fraction is None:
