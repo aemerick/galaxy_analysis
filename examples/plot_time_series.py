@@ -22,7 +22,8 @@ colors = {'Disk' : black,
               'Molecular' : purple,
           'FullBox'  : magenta,
           'stars'    : orange,
-          'GravBound' : blue}
+          'GravBound' : blue,
+          'OutsideBox' : 'green' }
 
 ls = {'Disk' : '-',
          'CNM' : '--',
@@ -31,7 +32,8 @@ ls = {'Disk' : '-',
          'Molecular' : '-',
       'FullBox' : '-',
       'stars'   : '-',
-      'GravBound' : '-'}
+      'GravBound' : '-',
+      'OutsideBox' : '-'}
 
 
 def plot_sequestering(directory = './'):
