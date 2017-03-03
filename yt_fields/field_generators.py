@@ -264,11 +264,39 @@ def generate_stellar_model_fields(ds):
             return p
 
         return _function
+ 
+    def _model_L0(field, data):
+        Q0 = data[('io','particle_model_Q0')]
+        E0 = data[('io','particle_model_E0')]
+
+        return (E0 * Q0).convert_to_units('erg/s')
+
+    def _model_L1(field, data):
+        Q1 = data[('io','particle_model_Q1')]
+        E1 = data[('io','particle_model_E1')]
+
+        return (E1 * Q1).convert_to_units('erg/s')
+   
+
+    def _age(field, data):
+        p = data(('io','creation_time'))
+        t = data.ds.current_time
+
+        return (t - p).convert_to_units('Myr')
 
     for field in field_names:
         yt.add_field(('io', 'particle_model_' + field),
                      function = _function_generator(field), units=unit_label[field],
-                     particle_type = True)
+                	     particle_type = True)
+
+    yt.add_field(('io', 'particle_age'), function = _age, units = 'Myr',
+                 particle_type = True)
+
+    yt.add_field(('io','particle_model_L0'), function = _model_L0, units = 'erg/s',
+                 particle_type = True)
+
+    yt.add_field(('io','particle_model_L1'), function = _model_L1, units = 'erg/s',
+                 particle_type = True)
 
     return
 
@@ -396,7 +424,7 @@ def _additional_helper_fields(fields):
         pot = dm_halo.burkert_potential(r, r_s, rho_o)
 
         return pot.convert_to_cgs()
-        
+
 
     yt.add_field(('index','DM_background_density'), function = _dm_density, units = 'g/cm**3')
     yt.add_field(('index','DM_background_potential'), function = _dm_potential, units = 'erg/g')

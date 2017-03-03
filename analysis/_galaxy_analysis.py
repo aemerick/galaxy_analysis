@@ -475,6 +475,7 @@ class Galaxy(object):
         """
 
         self.compute_meta_data()
+        self.compute_particle_profiles()
         self.compute_particle_meta_data()
         self.compute_gas_meta_data()
         self.compute_time_evolution()
@@ -738,18 +739,20 @@ class Galaxy(object):
         calculate the half light radius.
         """
 
+        make_profile = False
         if hasattr(self, 'particle_profiles'):
-            if (not 'luminosity' in self.particle_profiles) or (not ('io','particle_model_luminosity') in self.particle_profiles):
-                out = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
-                centers = out[1]; prof = out[2]
-                self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
-
+            if not misc.nested_haskey(self.particle_profiles, ['disk','radial','sum',('io','particle_model_luminosity')]:
+                make_profile = True
         else:
             self.particle_profiles = {}
-            self.particle_profiles['r'], centers, prof = self.particle_profile([('io','particle_model_luminosity')], pt = 11)
-            self.particle_profiles[('io','particle_model_luminosity')] = prof[('io','particle_model_luminosity')]
+            make_profile = True
 
-        cum_luminosity = np.cumsum(self.particle_profiles[('io','particle_model_luminosity')])
+        if make_profile:
+            junk = self.particle_profiles([('io','particle_model_luminosity'),], xtype = 'radial',
+                                          accumulation = True, mode = 'disk', pt = 11)
+
+        centers        = self.particle_profiles['disk']['radial']['xbins']
+        cum_luminosity = np.cumsum( self.particle_profiles['disk']['radial']['sum'][('io','particle_luminosity')] )
 
         frac_luminosity = cum_luminosity / cum_luminosity[-1]
 
@@ -779,7 +782,34 @@ class Galaxy(object):
 
         return
 
-    def particle_profile(self, fields, mode = 'sphere', xtype = 'radial',
+    def compute_particle_profiles(self):
+        """
+        Computes all particle profiles we want, including abundance profiles
+        for the particles. 
+        """
+
+        junk = self.particle_profile( ('io','particle_mass'), mode = 'disk', pt = 11)
+        junk = self.particle_profile( ('io','particle_mass'), mode = 'disk', xtype = 'z', pt = 11)
+
+        junk = self.particle_profile( [('io','particle_age'),
+                                       ('io','metallicity_fraction')],
+                                       mode = 'disk', accumulate = False, pt = 11)
+
+        abundance_fields = ['Fe_over_H', 'C_over_Fe', 'O_over_Fe', 'Mg_over_Fe',
+                            'O_over_Fe']
+
+        for i, a in enumerate( abundance_fields):
+            abundance_fields[i] = ('io','particle_' + a)
+
+        junk = self.particle_profile(abundance_fields, mode = 'disk', pt = 11,
+                                     xtype = 'radial', accumulate = False)
+
+        junk = self.particle_profile(abundance_fields, mode = 'disk', pt = 11,
+                                     xtype = 'z', accumulate = False)
+
+        return
+
+    def particle_profile(self, fields, mode = 'disk', xtype = 'radial',
                          accumulate=True, weight_field = None, pt=None):
         """
         Constructs a radial profile of the corresponding field. xtype = 'radial' for
@@ -831,6 +861,27 @@ class Galaxy(object):
                     weights = data[weight_field][filter]
                     profiles[field][i] = np.average( field_data, weights = weights)
 
+        #
+        # save profiles
+        #
+        prof_type = mode
+        if not prof_type in self.particle_profiles.keys():
+            self.particle_profiles[prof_type] = {}
+
+        if not xtype in self.particle_profiles[prof_type].keys():
+            self.particle_profiles[prof_type][xtype] = {}
+
+        weight = weight_field
+        if weight is None and accumulate:
+            weight = "sum"
+        elif weight is None and not accumulate:
+            weight = "average"
+
+        if not weight in self.particle_profiles[prof_type][xtype].keys():
+            self.particle_profiles[prof_type][xtype][weight] = {}
+
+        self.particle_profiles[prof_type][xtype][weight].update( profiles )
+        self.particle_profiles[prof_type][xtype]['xbins'] = rbins
 
         centers = 0.5 * (xbins[1:] + xbins[:-1])
         return xbins, centers, profiles
