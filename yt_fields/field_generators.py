@@ -244,7 +244,7 @@ def generate_stellar_model_fields(ds):
              'L_FUV' : yt.units.erg/yt.units.s,
              'L_LW'  : yt.units.erg/yt.units.s,
              'Q0' : 1.0 /yt.units.s, 'Q1' : 1.0 / yt.units.s,
-             'E0' : yt.units.eV, 'E1' : 1.0 / yt.units.eV}
+             'E0' : yt.units.eV, 'E1' : yt.units.eV}
 
     unit_label = {'luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
                   'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg'}
