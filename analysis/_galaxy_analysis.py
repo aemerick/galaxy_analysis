@@ -17,7 +17,7 @@ import deepdish as dd
 
 
 # --------- internal imports --------------
-from galaxy_analysis.utilities import utilities
+from galaxy_analysis.utilities import utilities as util
 #from ..utilities import utilities
 from ..static_data import LABELS,\
                         FIELD_UNITS,\
@@ -46,6 +46,7 @@ _all_fields = ['density', 'temperature', 'cell_mass']
 
 __all__ = ['Galaxy']
 
+
 class Galaxy(object):
 
     def __init__(self, dsname, wdir = './'):
@@ -57,7 +58,7 @@ class Galaxy(object):
         self.dsname = dsname
 
         # load, generate fields, reload
-        with utilities.nooutput(): # silence yt for now
+        with util.nooutput(): # silence yt for now
             self.ds     = yt.load(self.wdir + '/' + self.dsname + '/' + self.dsname)
 
         if not fg.FIELDS_DEFINED:
@@ -78,7 +79,7 @@ class Galaxy(object):
         self.hdf5_filename   = self.wdir + '/' + self.dsname + '_galaxy_data.h5'
 
         self._set_data_region_properties()
-        self.species_list = utilities.species_from_fields(self.ds.field_list)
+        self.species_list = util.species_from_fields(self.ds.field_list)
 
         # define some fields that will be used for automatic 
         # computation of profiles when no user supplied field is given
@@ -475,7 +476,7 @@ class Galaxy(object):
         """
 
         self.compute_meta_data()
-        self.compute_particle_profiles()
+        self.compute_all_particle_profiles()
         self.compute_particle_meta_data()
         self.compute_gas_meta_data()
         self.compute_time_evolution()
@@ -523,7 +524,7 @@ class Galaxy(object):
         self.particle_meta_data['N_ionizing']        = np.size(particle_mass[(particle_mass>self.ds.parameters['IndividualStarIonizingRadiationMinimumMass'])*\
                                                                              (MS_stars)])
 
-        self.particle_meta_data['metallicity_stars'] = utilities.compute_stats(self.df['metallicity_fraction'])
+        self.particle_meta_data['metallicity_stars'] = util.compute_stats(self.df['metallicity_fraction'])
         # compute theoretical total IMF and 'observed' IMF of just MS stars
         self.particle_meta_data['IMF_obs']        = pa.compute_IMF(self.ds, self.df, mode='mass',       bins=25)
         self.particle_meta_data['IMF_birth_mass'] = pa.compute_IMF(self.ds, self.df, mode='birth_mass', bins=25)
@@ -741,18 +742,19 @@ class Galaxy(object):
 
         make_profile = False
         if hasattr(self, 'particle_profiles'):
-            if not misc.nested_haskey(self.particle_profiles, ['disk','radial','sum',('io','particle_model_luminosity')]:
+            if not util.nested_haskey(self.particle_profiles, ['disk','radial','sum',('io','particle_model_luminosity')]):
                 make_profile = True
         else:
             self.particle_profiles = {}
             make_profile = True
 
         if make_profile:
-            junk = self.particle_profiles([('io','particle_model_luminosity'),], xtype = 'radial',
-                                          accumulation = True, mode = 'disk', pt = 11)
+            junk = self.compute_particle_profile( [ ('io','particle_model_luminosity'), ], xtype = 'radial',
+                                                  accumulate = True, mode = 'disk', pt = 11)
 
-        centers        = self.particle_profiles['disk']['radial']['xbins']
-        cum_luminosity = np.cumsum( self.particle_profiles['disk']['radial']['sum'][('io','particle_luminosity')] )
+        xbins          = self.particle_profiles['disk']['radial']['xbins']
+        centers        = 0.5 * (xbins[1:] + xbins[:-1])
+        cum_luminosity = np.cumsum( self.particle_profiles['disk']['radial']['sum'][('io','particle_model_luminosity')] )
 
         frac_luminosity = cum_luminosity / cum_luminosity[-1]
 
@@ -782,18 +784,18 @@ class Galaxy(object):
 
         return
 
-    def compute_particle_profiles(self):
+    def compute_all_particle_profiles(self):
         """
         Computes all particle profiles we want, including abundance profiles
         for the particles. 
         """
 
-        junk = self.particle_profile( ('io','particle_mass'), mode = 'disk', pt = 11)
-        junk = self.particle_profile( ('io','particle_mass'), mode = 'disk', xtype = 'z', pt = 11)
+        junk = self.compute_particle_profile( [('io','particle_mass'),], mode = 'disk', pt = 11)
+        junk = self.compute_particle_profile( [('io','particle_mass'),], mode = 'disk', xtype = 'z', pt = 11)
 
-        junk = self.particle_profile( [('io','particle_age'),
-                                       ('io','metallicity_fraction')],
-                                       mode = 'disk', accumulate = False, pt = 11)
+        junk = self.compute_particle_profile( [('io','particle_age'),
+                                              ('io','metallicity_fraction')],
+                                              mode = 'disk', accumulate = False, pt = 11)
 
         abundance_fields = ['Fe_over_H', 'C_over_Fe', 'O_over_Fe', 'Mg_over_Fe',
                             'O_over_Fe']
@@ -801,15 +803,15 @@ class Galaxy(object):
         for i, a in enumerate( abundance_fields):
             abundance_fields[i] = ('io','particle_' + a)
 
-        junk = self.particle_profile(abundance_fields, mode = 'disk', pt = 11,
-                                     xtype = 'radial', accumulate = False)
+        junk = self.compute_particle_profile(abundance_fields, mode = 'disk', pt = 11,
+                                             xtype = 'radial', accumulate = False)
 
-        junk = self.particle_profile(abundance_fields, mode = 'disk', pt = 11,
-                                     xtype = 'z', accumulate = False)
+        junk = self.compute_particle_profile(abundance_fields, mode = 'disk', pt = 11,
+                                             xtype = 'z', accumulate = False)
 
         return
 
-    def particle_profile(self, fields, mode = 'disk', xtype = 'radial',
+    def compute_particle_profile(self, fields, mode = 'disk', xtype = 'radial',
                          accumulate=True, weight_field = None, pt=None):
         """
         Constructs a radial profile of the corresponding field. xtype = 'radial' for
@@ -824,16 +826,16 @@ class Galaxy(object):
 
         if mode == 'sphere':
             xbins = self.rbins_sphere
-            x     = self.sphere['particle_position_spherical_radius'].convert_to_units(xbins.units)
+            x     = self.sphere[('io','particle_position_spherical_radius')].convert_to_units(xbins.units)
             data  = self.sphere
 
         elif mode == 'disk':
             if xtype == 'radial':
                 xbins = self.rbins_disk
-                x     = self.disk['particle_position_cylindrical_radius'].convert_to_units(xbins.units)
+                x     = self.disk[('io','particle_position_cylindrical_radius')].convert_to_units(xbins.units)
             else:
                 xbins = self.zbins_disk
-                x     = np.abs(self.disk['particle_position_cylindrical_height']).convert_to_units(xbins.units)
+                x     = np.abs(self.disk[('io','particle_position_cylindrical_z')]).convert_to_units(xbins.units)
 
             data = self.disk
 
@@ -852,6 +854,9 @@ class Galaxy(object):
                 filter     = x_filter * particle_filter
 
                 field_data = data[field][filter]
+
+                if field in UNITS:
+                    field_data = field_data.convert_to_units(FIELD_UNITS[field].units)
 
                 if accumulate:
                     profiles[field][i] = np.sum( field_data )
@@ -881,7 +886,7 @@ class Galaxy(object):
             self.particle_profiles[prof_type][xtype][weight] = {}
 
         self.particle_profiles[prof_type][xtype][weight].update( profiles )
-        self.particle_profiles[prof_type][xtype]['xbins'] = rbins
+        self.particle_profiles[prof_type][xtype]['xbins'] = xbins
 
         centers = 0.5 * (xbins[1:] + xbins[:-1])
         return xbins, centers, profiles

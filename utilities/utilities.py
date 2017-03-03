@@ -2,6 +2,20 @@ import numpy as np
 import sys
 import contextlib
 
+def nested_haskey(x, keys):
+    """
+    For a nested dictionary 'x' and list of keys, checks
+    if all keys exist in the nested key path.
+    """
+
+    if len(keys) == 1:
+        return (keys[0] in x)
+
+    if keys[0] in x:
+        return nested_haskey( x[keys[0]], keys[1:])
+    else:
+        return False
+
 def filter_dict(self, field, dictionary, level = 2):
     """
     Filter through nested dictionarys like one would do with

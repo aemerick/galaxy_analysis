@@ -279,7 +279,7 @@ def generate_stellar_model_fields(ds):
    
 
     def _age(field, data):
-        p = data(('io','creation_time'))
+        p = data[('io','creation_time')]
         t = data.ds.current_time
 
         return (t - p).convert_to_units('Myr')
