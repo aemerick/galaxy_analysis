@@ -189,7 +189,11 @@ PLOT_DATA = {
 
              ('gas','G_o'):
                   (('gas','G_o'),
-                   r'G$_{\rm o}$', None, (1.0E-2, 1.0E3), u.cm/u.cm, 'cubehelix')
+                   r'G$_{\rm o}$', None, (1.0E-2, 1.0E3), u.cm/u.cm, 'cubehelix'),
+
+             ('io', 'particle_mass'):
+                 ( ('io','particle_mass'), r'M$_{\rm *}$', None, None, u.Msun,
+                   'algae')
 
              }
 
