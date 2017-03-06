@@ -495,7 +495,7 @@ class Galaxy(object):
         """
 
         MS_stars = pt.main_sequence(self.ds, self.df)
-        WD_stars = pt.main_sequence(self.ds, self.df)
+        WD_stars = pt.white_dwarfs(self.ds, self.df)
         SNII     = pt.core_collapse(self.ds, self.df)
         SNIa     = pt.snIa(self.ds, self.df)
 
@@ -815,7 +815,8 @@ class Galaxy(object):
                          accumulate=True, weight_field = None, pt=None):
         """
         Constructs a radial profile of the corresponding field. xtype = 'radial' for
-        mode 'sphere' ONLY. For mode = 'disk', xtype = 'z' or xtype = 'radial'.
+        mode 'sphere' ONLY. For mode = 'disk', xtype = 'z' or xtype = 'radial'. Here, disk
+        is assumed to be stellar disk always
         """
 
         if (not weight_field is None) and accumulate:
@@ -831,13 +832,13 @@ class Galaxy(object):
 
         elif mode == 'disk':
             if xtype == 'radial':
-                xbins = self.rbins_disk
-                x     = self.disk[('io','particle_position_cylindrical_radius')].convert_to_units(xbins.units)
+                xbins = self.rbins_stellar_disk
+                x     = self.stellar_disk[('io','particle_position_cylindrical_radius')].convert_to_units(xbins.units)
             else:
-                xbins = self.zbins_disk
-                x     = np.abs(self.disk[('io','particle_position_cylindrical_z')]).convert_to_units(xbins.units)
+                xbins = self.zbins_stellar_disk
+                x     = np.abs(self.stellar_disk[('io','particle_position_cylindrical_z')]).convert_to_units(xbins.units)
 
-            data = self.disk
+            data = self.stellar_disk
 
         if pt is None:
             particle_filter = [True] * np.size(data['particle_type'])
@@ -891,7 +892,7 @@ class Galaxy(object):
         centers = 0.5 * (xbins[1:] + xbins[:-1])
         return xbins, centers, profiles
 
-    def construct_regions(self, disk_kwargs = None, large_disk_kwargs = None,
+    def construct_regions(self, disk_kwargs = None, large_disk_kwargs = None, stellar_disk_kwargs = None,
                                 sphere_kwargs = None, halo_sphere_kwargs = None):
         """
         Defines the pre-defined (or user modified) geometric regions to 
@@ -904,6 +905,12 @@ class Galaxy(object):
 
             for n in ['normal','radius','height','center']:
                 disk_kwargs[n] = self.disk_region[n]
+
+        if stellar_disk_kwargs is None:
+           stellar_disk_kwargs = {}
+
+           for n in ['normal', 'radius','height','center']:
+               stellar_disk_kwargs[n] = self.stellar_disk_region[n]
 
         if large_disk_kwargs is None:
             large_disk_kwargs = {}
@@ -928,6 +935,8 @@ class Galaxy(object):
 
         self.large_disk = self.ds.disk(**large_disk_kwargs)
 
+        self.stellar_disk = self.ds.disk(**stellar_disk_kwargs)
+
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
         self.halo_sphere = self.ds.sphere(**halo_sphere_kwargs)
@@ -944,6 +953,14 @@ class Galaxy(object):
 
         # dr and dz set spacing for cylindrical or spherical regions
         # to use to construct shells
+
+        self.stellar_disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
+                                    'radius' : 2.0 * yt.units.kpc,
+                                    'height' : 300.0 * yt.units.pc,
+                                    'center' : self.ds.domain_center,
+                                    'dr'     : 5.0 * yt.units.pc,
+                                    'dz'     : 5.0 * yt.units.pc}
+
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                             'radius' : 2.0 * yt.units.kpc,
@@ -1018,6 +1035,26 @@ class Galaxy(object):
         # do data filtering --- code this somewhere else and do it with function call
 
         return
+
+
+
+    @property
+    def rbins_stellar_disk(self):
+        rmin = 0.0
+        rmax = self.stellar_disk.radius
+        dr   = self.stellar_disk_region['dr']
+        rmax = rmax.convert_to_units(dr.units)
+
+        return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
+    @property
+    def zbins_stellar_disk(self):
+        zmin = 0.0
+        zmax = self.stellar_disk.height
+        dz   = self.stellar_disk_region['dz']
+        zmax = zmax.convert_to_units(dz.units)
+
+        return np.arange(zmin, zmax + dz, dz ) * dz.unit_quantity
 
 
     @property
