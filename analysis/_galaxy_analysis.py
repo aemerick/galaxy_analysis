@@ -503,6 +503,8 @@ class Galaxy(object):
                          yt.units.Msun).convert_to_units(UNITS['Mass'].units)
         m = (self.df['particle_mass'].convert_to_units(UNITS['Mass'].units))
 
+        self.particle_meta_data['t_first_star'] = np.min( self.df['creation_time'].convert_to_units(UNITS['Time'].units))
+
         self.particle_meta_data['total_mass'] = np.sum(m)
         self.particle_meta_data['total_mass_MS'] = np.sum(m[MS_stars])
         self.particle_meta_data['total_birth_mass'] = np.sum(particle_mass)
