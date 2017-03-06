@@ -31,17 +31,71 @@ for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):
+
     if data is None and (t is None or sfr is None):
         print "If supplying no data set, must supply both time array and sfr array"
         raise ValueError
 
     if not data is None:
+
+        if ('t_first_star' in data['particle_meta_data']):
+            return data['particle_meta_data']['t_first_star']
+
         t   = data['time_data']['time']
         sfr = data['time_data']['SFR']
 
     t_first = np.min( t[sfr > 0])
 
     return t_first
+
+def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
+    """
+    Plots average stellar abundance as a function of time for all simulations.
+    This is done by passing either
+    """
+    if sim_names is None:
+        sim_names = DATA_PATHS.keys()
+    fig,ax = plt.subplots()
+
+    for s in sim_names:
+        # always load most recent file in every case
+        data = dd.io.load(ALL_DATA[s][-1])
+
+        t_first = time_first_star(data)
+
+        t = np.zeros(np.size(ALL_DATA[s]))
+        mass = np.zeros(np.size(ALL_DATA[s]))
+        for i,x in enumerate(ALL_DATA[s]):
+            xdata = dd.io.load(x)
+            t[i] = xdata['meta_data']['Time']
+            z[i] = xdata['particle_meta_data']['metallicity_stars'][2]
+
+        t = t - t_first
+        t_plot   = t[t >= 0.0]
+        z_plot = z[t >= 0.0]
+
+        ax.plot(t_plot, z_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+
+
+    ax.set_xlabel(r'Time (Myr)')
+    ax.set_ylabel('Average Stellar Abundance: ' + species)
+    ax.semilogy()
+
+    ax.set_xlim(0.0,200.0)
+    ax.legend(loc='best')
+
+    fig.set_size_inches(8,8)
+    plt.tight_layout()
+    plt.minorticks_on()
+
+    fig.savefig('average_stellar_ ' + species + '_comparison.png')
+    plt.close()
+
+    return
+
+
+
+    return
 
 def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loading = False):
     """
@@ -82,7 +136,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
     for s in sim_names:
         # always load most recent file to check
         data = dd.io.load(ALL_DATA[s][-1])
-        t_first = time_first_star(data) / 1.0E6 # now in Myr
+        t_first = time_first_star(data)
 
         # make arrays for plotting
         t  = np.zeros(np.size(ALL_DATA[s]))
@@ -213,7 +267,7 @@ def plot_sfr(sim_names = None):
 
         t = t - t_first
 
-        t_plot   = t[t >= 0.0] / 1.0E6
+        t_plot   = t[t >= 0.0]
         sfr_plot = sfr[t >= 0.0]
 
         ax.plot(t_plot, sfr_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
@@ -254,7 +308,7 @@ def plot_snr(sim_names = None):
 
         t = t - t_first
 
-        t_plot   = t[t >= 0.0] / 1.0E6
+        t_plot   = t[t >= 0.0]
         snr_plot = snr[t >= 0.0]
 
         ax.plot(t_plot, snr_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
