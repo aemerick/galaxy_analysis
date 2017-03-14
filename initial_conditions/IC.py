@@ -1,6 +1,8 @@
 # -- external imports --
 import numpy as np
 from onezone import imf as _imf # to do IMF sampling
+import time
+from fastloop import loop_over_rnum
 
 #
 #
@@ -94,7 +96,7 @@ class particleIC(object):
 
     def __init__(self, M_star, a, b, rmax, zmax,
                        Z = 0.0043, rmin = 0.1, zmin = 0.1,
-                       IMF = _IMF, npoints = 10000):
+                       IMF = _IMF, npoints = 1000):
 
         #
         # Set properties
@@ -160,7 +162,10 @@ class particleIC(object):
 
         self.metallicity = np.ones(self.number_of_particles)*self._metallicity        
         # done
+        start = time.time()
         self.write_IC()
+        end = time.time()
+        print "write out took ", end - start
        
         return
 
@@ -205,15 +210,18 @@ class particleIC(object):
     def write_IC(self, outfile = './particle_IC.in'):
 
         with open(outfile, 'w') as f:
-            header = "# M Z x y z"
+            header = "# M Z x y z\n"
             fmt = "%.3f %3.3E %5.5E %5.5E %5.5E\n"
 
             f.write(header)
 
+            x = self.x
+            y = self.y
+
             for i in np.arange(self.number_of_particles):
              
                 f.write(fmt%(self.M[i], self.metallicity[i],\
-                             self.x[i], self.y[i], self.z[i]))
+                             x[i], y[i], self.z[i]))
 
 
         print "wrote IC's for %i particles to "%(self.number_of_particles) + outfile
@@ -234,15 +242,22 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # perform a test of the IC's and plot
-    M_star = 5.0E5
-    a      = 100.0 # parsec
-    b      =  50.0 # parsec
+    SFR = 1.0E-4
+    dt  = 25.0E6
 
-    rmax   = a*3.0
-    zmax   = b*3.0
+ 
+    M_star = SFR*dt
+    a      = 250.0 # parsec
+    b      = 125.0 # parsec
 
+    rmax   = a*2.0
+    zmax   = b*2.0
+
+    start = time.time()
     IC = particleIC(M_star, a, b, rmax, zmax)
     IC.generate()
+    end = time.time()
+    print "generation took ", end - start
 
     # now plot these
     fig, ax = plt.subplots(1,3)
