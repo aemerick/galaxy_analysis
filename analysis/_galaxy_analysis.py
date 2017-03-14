@@ -110,21 +110,12 @@ class Galaxy(object):
         if os.path.isfile( self.hdf5_filename ):
             self.load()
 
-#        if not os.path.isfile( hdf5_file ):
-#            f = h5py.File(hdf5_file, 'w')
-#
-#            self._create_data_structure()
-#
-#        else:
-#
-#            f = h5py.File(hdf5_file, 'a')
-#            self._update_data_structure()
-#
-#        self.data = f
-
         return
 
     def load(self, filename = None, nocopy = False):
+        """
+        Load the specified hdf5 file.
+        """
         if filename is None:
             filename = self.hdf5_filename
         else:
@@ -143,6 +134,10 @@ class Galaxy(object):
         return
 
     def save(self, filename = None):
+        """
+        Save all of the generated data to file using deepdish.
+        This constructs a nested dictionary which is then outputted to file.
+        """
         if filename is None:
             filename = self.hdf5_filename
         else:
