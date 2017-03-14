@@ -3,14 +3,14 @@ def white_dwarfs(ds, data):
     Returns slicing array to determine white dwarf particles
     """
     pcut = data['particle_type'] == 12
-    pcut = pcut * data['particle_mass'] > 0.0
+    pcut = pcut * (data['particle_mass'] > 0.0)
 
     return pcut
 
 def snIa(ds, data):
 
     pcut = data['particle_type'] == 12
-    pcut = pcut * data['particle_mass'] == 0.0
+    pcut = pcut * (data['particle_mass'] == 0.0)
 
     return pcut
 
