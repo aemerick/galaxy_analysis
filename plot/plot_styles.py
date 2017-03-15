@@ -1,3 +1,8 @@
+"""
+   Defining some constants for plots. Colors and
+   general styles.
+"""
+
 purple  = '#7d03a8'
 magenta = '#cb4679'
 blue    = '#0c0887'
