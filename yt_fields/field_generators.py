@@ -120,6 +120,16 @@ def _number_density_function_generator(asym):
                      function = return_function(a), units='cm**(-3)')
         nfields = nfields + 1
 
+    # make a metal number density field - make an assumption about the metal molecular weight
+    def _metal_number_density(field,data):
+        ele_dens = data[('enzo','Metal_Density')].convert_to_units('g/cm**3')
+        n = ele_dens / (MOLECULAR_WEIGHT['metal'] * AMU * yt.units.g)
+
+        return n.convert_to_cgs()
+
+    yt.add_field(('gas', 'Metal_Number_Density'),
+                 function = _metal_number_density, units = 'cm**(-3)')
+
     return nfields
 
 def _particle_abundance_function_generator(ratios):

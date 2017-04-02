@@ -97,6 +97,10 @@ def _set_molecular_weight_dictionary():
     for anum in x.keys():
         x[anum_to_asym[anum]] = x[anum]
 
+    # make anum = 0 general metals
+    x[0] = 16.0
+    x['metal'] = x[0]
+
     return x
 
 
