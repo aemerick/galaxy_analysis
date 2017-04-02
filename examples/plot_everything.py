@@ -96,7 +96,7 @@ def projection_plots(ds, fields, axis=['x','z'], has_particles = None):
     for a in axis:
         pp = yt.ProjectionPlot(ds, axis = a, fields = [('gas','number_density'),('enzo','Temperature')], 
                                width = (2.5,'kpc'), weight_field = 'density')
-        pp.set_buff_size(1664)
+        pp.set_buff_size(2048)
 
         for f in [('gas','number_density'),('enzo','Temperature')]:
             pp.set_cmap(f, ga.static_data.CMAPS[f])
@@ -130,7 +130,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
     for a in axis:
         sp   = yt.SlicePlot(ds, axis = a, fields = fields,
                                 width = (2.5,'kpc'))
-        sp.set_buff_size(1664)
+        sp.set_buff_size(2048)
 
         for f in fields:
             sp.set_cmap(f, ga.static_data.CMAPS[f])
@@ -205,6 +205,9 @@ if __name__ == "__main__":
 
     if not os.path.exists('./slice'):
         os.makedirs('./slice')
+
+    if not os.path.exists('./proj'):
+        os.makedirs('./proj')
 
     all_ds_list = glob.glob('./DD????/DD????')
     all_ds_list = np.sort(all_ds_list)
