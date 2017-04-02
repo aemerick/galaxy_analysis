@@ -64,7 +64,15 @@ class Galaxy(object):
         if not fg.FIELDS_DEFINED:
             dfiles = glob.glob(self.wdir + '/' + 'DD????/DD????')
             dfiles = np.sort(dfiles)
-            fg.generate_derived_fields(yt.load(dfiles[-1]))
+
+            for i in np.arange(-1, -np.size(dfiles), -1):
+                try:
+                    dstemp = yt.load(dfiles[i])
+                except:
+                    print i
+                    continue
+
+            fg.generate_derived_fields(dstemp)
             fg.FIELDS_DEFINED = True
 
         self.ds     = yt.load(self.wdir + '/' + self.dsname + '/' + self.dsname)
@@ -504,6 +512,13 @@ class Galaxy(object):
         m = (self.df['particle_mass'].convert_to_units(UNITS['Mass'].units))
 
         self.particle_meta_data['t_first_star'] = np.min( self.df['creation_time'].convert_to_units(UNITS['Time'].units))
+
+        if 'GalaxySimulationInitialStellarDist' in self.ds.parameters:
+            if self.ds.parameters['GalaxySimulationInitialStellarDist'] > 0:
+                ct = self.df['creation_time'].convert_to_units('Myr')
+                if np.size(ct[ct>1.0]) > 0:
+                    self.particle_meta_data['t_first_star'] = np.min( ct[ct > 1.0].convert_to_units(UNITS['Time'].units))
+
 
         self.particle_meta_data['total_mass'] = np.sum(m)
         self.particle_meta_data['total_mass_MS'] = np.sum(m[MS_stars])
