@@ -351,7 +351,7 @@ def _additional_helper_fields(fields):
 
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
         Z   = (data['Metal_Density'] / data['Density']).value
-        n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['HM_m1_number_density'] +\
+        n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['HM_p1_number_density'] +\
                data['H2_p0_number_density'] + data['H2_p1_number_density']).convert_to_units('cm**(-3)').value
 
         g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)
