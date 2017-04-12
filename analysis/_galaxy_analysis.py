@@ -51,7 +51,10 @@ class Galaxy(object):
 
     def __init__(self, dsname, wdir = './'):
         """
-        Object for individual data dump analysis
+        Galaxy object to run full analysis on individual data dumps
+        in yt. Defines uniform set of galaxy disk an halo regions, species
+        and abundance fields given field list, and functions for running 
+        a variety of analysis.
         """
 
         self.wdir    = wdir
@@ -61,17 +64,19 @@ class Galaxy(object):
         with util.nooutput(): # silence yt for now
             self.ds     = yt.load(self.wdir + '/' + self.dsname + '/' + self.dsname)
 
+        # define fields if they have not yet been defined
         if not fg.FIELDS_DEFINED:
             dfiles = glob.glob(self.wdir + '/' + 'DD????/DD????')
             dfiles = np.sort(dfiles)
             fg.generate_derived_fields(yt.load(dfiles[-1]))
             fg.FIELDS_DEFINED = True
 
+        # load data set and data
         self.ds     = yt.load(self.wdir + '/' + self.dsname + '/' + self.dsname)
         self.current_time = self.ds.current_time.convert_to_units(UNITS['Time'].units).value
-
         self.df     = self.ds.all_data()
 
+        # check for particles
         self._has_particles = False
         if ('io','particle_position_x') in self.ds.field_list:
             self._has_particles = True
