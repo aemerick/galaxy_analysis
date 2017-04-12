@@ -242,13 +242,29 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # perform a test of the IC's and plot
-    SFR = 1.0E-4
-    dt  = 25.0E6
+
+    #SFR = 5.5E-5 # Msun / yr
+    SFR = 2.5E-4
+    dt  = 50.0E6 # yr
+
+    a = 400.0
+    b =  50.0
+    M_star = SFR * dt
+
+#    a = 700.0 # high 
+#    b = 350.0 # high
+    #a = 450.0 medium
+    #b = 225.0 medium
+#    a      = 300.0 # parsec for lowest mass
+#    b      = 150.0 # parsec for lowest mass
+
+#    SFR = 1.0E-4
+#    dt  = 25.0E6
 
  
-    M_star = SFR*dt
-    a      = 250.0 # parsec
-    b      = 125.0 # parsec
+#    M_star = SFR*dt
+#    a      = 250.0 # parsec
+#    b      = 125.0 # parsec
 
     rmax   = a*2.0
     zmax   = b*2.0
