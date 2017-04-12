@@ -120,6 +120,16 @@ def _number_density_function_generator(asym):
                      function = return_function(a), units='cm**(-3)')
         nfields = nfields + 1
 
+    # make a metal number density field - make an assumption about the metal molecular weight
+    def _metal_number_density(field,data):
+        ele_dens = data[('enzo','Metal_Density')].convert_to_units('g/cm**3')
+        n = ele_dens / (MOLECULAR_WEIGHT['metal'] * AMU * yt.units.g)
+
+        return n.convert_to_cgs()
+
+    yt.add_field(('gas', 'Metal_Number_Density'),
+                 function = _metal_number_density, units = 'cm**(-3)')
+
     return nfields
 
 def _particle_abundance_function_generator(ratios):
@@ -341,7 +351,7 @@ def _additional_helper_fields(fields):
 
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
         Z   = (data['Metal_Density'] / data['Density']).value
-        n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['HM_m1_number_density'] +\
+        n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
                data['H2_p0_number_density'] + data['H2_p1_number_density']).convert_to_units('cm**(-3)').value
 
         g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)

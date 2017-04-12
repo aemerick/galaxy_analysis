@@ -8,27 +8,105 @@ import numpy as np
 # plot style defines
 from galaxy_analysis.plot import plot_styles as ps
 
+
+global_tmin = 0.0
+global_tmax = 150.0
+
+#
+#
+#
+
+workdir  = '/mnt/ceph/users/emerick/enzo_runs'
+stampede  = workdir + '/stampede/leo_p/fullphysics/fullres'
+pleiades  = workdir + '/pleiades/'
+local     = workdir + '/leo_p/fullres'
+
 workdir = '/mnt/ceph/users/emerick/enzo_runs/stampede/leo_p/fullphysics/fullres'
 
-DATA_PATHS = { 'lm'        : workdir + '/run11/200cc',
-               'lm_noRT'   : workdir + '/run11/200cc_noRT',
-               'lm_nowind' : workdir + '/run11/200cc_nowind',
-               'lm_xx'     : workdir + '/run11/othercloudy',
-               'mm'        : workdir + '/run13',
-               'mm_3pc'    : workdir + '/run13/3parsec',
-               'hm'        : workdir + '/run15'}
+
+DATA_PATHS = { 'lm'        : stampede + '/run11/200cc',
+               'lm_noRT'   : stampede + '/run11/200cc_noRT',
+               'lm_nowind' : stampede + '/run11/200cc_nowind',
+               'lm_xx'     : stampede + '/run11/othercloudy',
+               'mm'        : stampede + '/run13',
+               'mm_3pc'    : stampede + '/run13/3parsec',
+               'hm'        : stampede + '/run15'}
+
+PERT_DATA_PATHS = {
+                   'lm_p'      : local    + '/run11/200cc/perturb',
+                   'lm_p_noOT' : local    + '/run11/200cc/perturb_iononly',
+                   'lm_p_sn'   : stampede + '/run11/200cc/perturb_snonly',
+                   'mm_p'      : pleiades + '/run13/no_wind',
+                   'hm_p'      : pleiades + '/run15/no_wind',
+                   'hm_p_sn'   : pleiades + '/run15/sn_only',
+                   'hm_p_noOT' : pleiades + '/run15/no_otrad',
+                   'hm_p_noRT' : pleiades + '/run15/no_ion',
+                   'hm_p_3pc'  : pleiades + '/run15/3parsec',
+                   'vhm_pert'  : stampede + '/run21/perturb',
+                   'vhm_nopert': stampede + '/run21'}
+
+STAR_IC = {
+           'lm_ICs'     : pleiades + '/starIC/run11/lowsf',
+#           'lm_ICs_3pc' : pleiades + '/starIC/run11/lowsf/3parsec',
+           'mm_ICs'     : pleiades + '/starIC/run13/lowsf',
+#           'mm_ICs_3pc' : pleiades + '/starIC/run13/lowsf/3parsec',
+           'hm_ICs'     : pleiades + '/starIC/run15/lowsf',
+           'hm_IC_compact' : pleiades + '/starIC/run15_compact/no_wind',
+           'hm_p_noRT' : pleiades + '/starIC/run15/no_RT',
+           'hm_p_noOT' : pleiades + '/starIC/run15/no_otrad',
+           'hm_p_sn'   : pleiades + '/starIC/run15/sn_only',
+#           'hm_ICs_3pc' : pleiades + '/starIC/run15/lowsf/3parsec',
+           'lm_nostar'  : local + '/run11/200cc/perturb',
+#           'lm_nopert'  : stampede + '/run11/200cc',
+           'mm_nostar'  : pleiades + '/run13/no_wind',
+#           'mm_nopert'  : stampede + '/run13',
+           'hm_nostar'  : pleiades + '/run15/no_wind'}
+#           'hm_nopert'  : stampede + '/run15'}
+
+
 
 ls_dict = { 'lm' : '-', 'lm_noRT' : '--', 'lm_nowind' : ':', 'lm_xx' : '--',
-             'mm' : '-', 'mm_3pc' : '-.', 'hm' : '-'}
+             'mm' : '-', 'mm_3pc' : '-.', 'hm' : '-',
+             'lm_p' : '-', 'lm_p_noOT' : '-.', 'lm_p_sn' : ':',
+             'hm_p' : '-', 'hm_p_sn': ':', 'hm_p_noOT' : '-.', 'hm_p_noRT' : '--',
+             'vhm_pert' : '-', 'vhm_nopert' : ':', 'hm_p_3pc' : '-', 'mm_p' : '-'}
 
+add_to_ls = {'lm_ICs' : '-', 'mm_ICs' : '-', 'hm_ICs' : '-',
+           'lm_nostar' : '--', 'mm_nostar' : '--', 'hm_nostar' : '--',
+           'lm_nopert' : '-.', 'mm_nopert' : '-.', 'hm_nopert' : '-.',
+           'lm_ICs_3pc' : ':', 'mm_ICs_3pc' : ':', 'hm_ICs_3pc' : ':', 'hm_IC_compact' : '-'}
+
+for k in add_to_ls:
+    ls_dict[k] = add_to_ls[k]
 
 color_dict = {'lm' : ps.purple, 'lm_noRT' : ps.purple, 'lm_nowind' : ps.purple,
               'mm' : ps.magenta  , 'mm_3pc' : ps.magenta  , 'hm' : ps.orange, 'lm_xx' : ps.blue}
+
+for k in PERT_DATA_PATHS.keys() + STAR_IC.keys():
+
+    if '3pc' in k:
+        color_dict[k] = 'black'
+    elif '_compact' in k:
+        color_dict[k] = ps.blue
+    elif 'lm' in k:
+        color_dict[k] = ps.purple
+    elif 'mm' in k:
+        color_dict[k] = ps.magenta
+    elif 'vhm' in k:
+        color_dict[k] = ps.blue
+    elif 'hm' in k:
+        color_dict[k] = ps.orange
 
 
 ALL_DATA = {}
 for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
+
+for s in PERT_DATA_PATHS.keys():
+    ALL_DATA[s] = np.sort(glob.glob(PERT_DATA_PATHS[s] + '/DD*.h5'))
+
+for s in STAR_IC.keys():
+    ALL_DATA[s] = np.sort(glob.glob(STAR_IC[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):
 
@@ -81,7 +159,7 @@ def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
     ax.set_ylabel('Average Stellar Abundance: ' + species)
     ax.semilogy()
 
-    ax.set_xlim(0.0,200.0)
+    ax.set_xlim(global_tmin, global_tmax)
     ax.legend(loc='best')
 
     fig.set_size_inches(8,8)
@@ -181,7 +259,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
     ax.set_ylabel(sname + r' Mass Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
 
-    ax.set_xlim(0.0, 300.0)
+    ax.set_xlim(global_tmin, global_tmax)
     ax.legend(loc='best')
 
     fig.set_size_inches(8,8)
@@ -237,7 +315,7 @@ def plot_mass(sim_names = None, species = 'HI'):
     ax.set_ylabel(species + r' Mass (M$_{\odot}$)')
     ax.semilogy()
 
-    ax.set_xlim(0.0,200.0)
+    ax.set_xlim(global_tmin, global_tmax)
     ax.legend(loc='best')
 
     fig.set_size_inches(8,8)
@@ -260,10 +338,10 @@ def plot_sfr(sim_names = None):
         # always load most recent file in every case
         data = dd.io.load(ALL_DATA[s][-1])
 
-        t    = data['time_data']['time']
+        t    = data['time_data']['time'] / 1.0E6
         sfr  = data['time_data']['SFR']
 
-        t_first = np.min( t[sfr > 0])
+        t_first = time_first_star(data)
 
         t = t - t_first
 
@@ -274,7 +352,7 @@ def plot_sfr(sim_names = None):
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SFR (M$_{\odot}$ yr$^{-1}$)')
-    ax.set_xlim(0.0, 75.0)
+    ax.set_xlim(global_tmin, global_tmax)
     ax.semilogy()
 
     ax.legend(loc='best')
@@ -300,7 +378,7 @@ def plot_snr(sim_names = None):
         # always load most recent file in every case
         data = dd.io.load(ALL_DATA[s][-1])
 
-        t    = data['time_data']['time']
+        t    = data['time_data']['time'] / 1.0E6
         sfr  = data['time_data']['SFR']
         snr  = data['time_data']['SNII_snr']
 
@@ -315,7 +393,7 @@ def plot_snr(sim_names = None):
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SNR (yr$^{-1}$)')
-    ax.set_xlim(0.0,100.0)
+    ax.set_xlim(global_tmin, global_tmax)
     ax.semilogy()
     plt.minorticks_on()
 
@@ -332,16 +410,20 @@ def plot_snr(sim_names = None):
 
 if __name__ == '__main__':
 
-    all_s = ['lm','lm_noRT','lm_nowind','mm','mm_3pc','hm', 'lm_xx']
+#    all_s = ['lm','lm_noRT','lm_nowind','mm','mm_3pc','hm']
+
+    all_s = STAR_IC.keys()
+
+#    all_s = PERT_DATA_PATHS.keys()
+
+    plot_sfr(sim_names = all_s)
+    plot_snr(sim_names = all_s)
 
     for species in ['total', 'metals', 'C', 'Fe', 'H']:
 
         plot_mass_loading(sim_names = all_s, species = species, z = 100)
-        plot_mass_loading(sim_names = all_s, species = species, z = 500)
+#        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
-    plot_snr(sim_names = all_s) 
-    plot_sfr(sim_names = all_s)
     plot_mass(sim_names = all_s, species = 'HI')
     plot_mass(sim_names = all_s, species = 'stars')
     plot_mass(sim_names = all_s, species = 'total')
-    
