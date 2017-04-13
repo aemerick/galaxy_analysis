@@ -42,8 +42,11 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
         else:
             bin_spacing = bin_spacing.convert_to_units('Myr')
 
-        times = np.linspace(t_o, currentTime, bin_spacing)
-        times = times
+        t_f = currentTime + bin_spacing
+
+        times = np.arange(t_o, t_f, bin_spacing)
+        if not hasattr(times, 'value'):
+            times = times * yt.units.Myr
 
     sfr   = np.zeros(np.size(times)-1)
 
@@ -82,7 +85,7 @@ if __name__=='__main__':
         ax.semilogy()
     else:
         ax.step(times[:-1]/1.0E6, sfr*1.0E4, color = 'black', lw = 3, where='pre')
-    print sfr*1.0E4
+
     ax.set_xlabel('Time (Myr)')
 
     ax.set_ylabel(r'SFR (10$^{-4}$ M$_{\odot}$/yr)')
