@@ -105,8 +105,8 @@ def enzo_to_onezone(parameters, onez = None):
     onez['config.zone.stochastic_sample_mass']  = parameters['IndividualStarSFGasMassThreshold']/\
                                                   parameters['IndividualStarMassFraction']
 
-    onez['config.zone.M_min'] = parameters['IndividualStarIMFUpperMassCutoff']
-    onez['config.zone.M_max'] = parameters['IndividualStarIMFLowerMassCutoff']
+    onez['config.zone.M_min'] = parameters['IndividualStarIMFLowerMassCutoff']
+    onez['config.zone.M_max'] = parameters['IndividualStarIMFUpperMassCutoff']
 
     onez['config.stars.SNII_mass_threshold']        = parameters['IndividualStarSNIIMassCutoff']
     onez['config.stars.SNIa_candidate_mass_bounds'] = [parameters['IndividualStarSNIaMinimumMass'],
@@ -187,8 +187,9 @@ def generate_sfr(ds, t_o = 0.0):
 
     selection = data['creation_time'].convert_to_units('Myr').value > t_o
 
-    t, SFR = ga.particle_analysis.sfrFromParticles(ds, data = ds.all_data(), selection = selection, times = 10.0, t_o = 0.0)
+    t, SFR = ga.particle_analysis.sfrFromParticles(ds, data = ds.all_data(), selection = selection, times = 5.0, t_o = 0.0)
 
+    t = t / 1.0E6 # convert to Myr
 
     f = open('./onez_model/SFR.in', 'w')
 
