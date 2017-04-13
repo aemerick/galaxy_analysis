@@ -193,10 +193,12 @@ def generate_sfr(ds, t_o = 0.0):
     f = open('./onez_model/SFR.in', 'w')
 
     f.write("#t SFR\n")
-    f.write("%5.5E %5.5E\n"%(t[0], SFR[0]))
+    f.write("%8.8E %8.8E\n"%(t[0], SFR[0]))
 
     for i in np.arange(np.size(SFR)):
-        f.write("%5.5E %5.5E\n"%( 0.5 * (t[i] + t[i+1]), SFR[i]))
+        f.write("%8.8E %8.8E\n"%( 0.5 * (t[i] + t[i+1]), SFR[i]))
+
+    f.write("%8.8E %8.8E\n"%(t[-1], SFR[-1]))
 
     f.close()
 
