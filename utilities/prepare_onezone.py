@@ -168,7 +168,7 @@ def set_default_parameters(onez = None):
     onez['config.io.dt_dump']       = 100.0
     onez['config.io.radiation_binned_output'] = 1
 
-    onez['config.zone.species_to_track'] = ['m_tot', 'm_metal', 'H', 'He', 'C', 'N', 'O',
+    onez['config.zone.species_to_track'] = ['m_tot', 'm_metal', 'H', 'He', 'C', 'N', 'O', 'Mg',
                                             'Si', 'S', 'K', 'Ca', 'Ti', 'V', 'Mn', 'Fe',
                                             'Co', 'Ni', 'Cu', 'Sr', 'Y', 'Ba', 'Eu']
 
@@ -238,10 +238,18 @@ def save_script(onez, outname = 'onez_param_file.py'):
         f.write("\n\n")
 
     f.write("# -------------------- Set up and run the simulation -------------------\n")
-    f.write("sim = zone.Zone()\n"+\
-            "sim.set_initial_abundances(config.zone.species_to_track)\n"+\
-            "# run:\n"+\
-            "sim.evolve()\n")
+    f.write("istart = len(glob.glob('run????_summary_output.txt'))\n")
+    f.write("for i in np.arange(100):\n")
+    f.write("    np.random.seed(i)\n")
+    f.write("    config.io.summary_output_filename = 'run%0004i_summary_output.txt'%(istart + i)\n")
+    f.write("    config.io.dump_output_basename    = 'run%0004i_dump'%(istart + i)\n")
+    f.write("    sim = zone.Zone()\n")
+    f.write("    sim.set_initial_abundances(config.zone.species_to_track)\n")
+    f.write("    try:\n")
+    f.write("        sim.evolve()\n")
+    f.write("    except:\n")
+    f.write("        print 'failing in run ' + str(i) + ' skipping and going to the next one'\n")
+    f.write("    del(sim)\n")
 
     f.close()
 
