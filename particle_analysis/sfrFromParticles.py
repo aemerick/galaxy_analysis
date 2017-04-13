@@ -8,10 +8,10 @@ import glob
 
 __all__ = ['sfrFromParticles']
 
-def sfrFromParticles(ds, data, selection = None, times = None):
+def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
     """
-    Given a dataset, computes the star formation rate as a 
-    function of time 
+    Given a dataset, computes the star formation rate as a
+    function of time
     """
 
     nstars = np.size( data['particle_mass'] )
@@ -23,9 +23,18 @@ def sfrFromParticles(ds, data, selection = None, times = None):
     creation_time = data['creation_time'][selection].convert_to_units('Myr')
     currentTime   = ds.current_time.convert_to_units('Myr')
 
+    # set start time of array
+    if t_o is None:
+        t_o = np.min(creation_time)
+    else:
+        if not hasattr(t_o, 'value'):
+            t_o = t_o * yt.units.Myr
+        else:
+            t_o = t_o.convert_to_units('Myr')
+
     if times is None:
         bin_spacing = 2.0 * yt.units.Myr
-        times = np.arange(np.min(creation_time) - bin_spacing*2.0, currentTime, bin_spacing)*yt.units.Myr
+        times = np.arange(t_o - bin_spacing*2.0, currentTime, bin_spacing)*yt.units.Myr
     elif np.size(times) == 1:
         bin_spacing = times
         if not hasattr(bin_spacing, 'value'):
@@ -33,7 +42,7 @@ def sfrFromParticles(ds, data, selection = None, times = None):
         else:
             bin_spacing = bin_spacing.convert_to_units('Myr')
 
-        times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
+        times = np.linspace(t_o, currentTime, bin_spacing)
         times = times
 
     sfr   = np.zeros(np.size(times)-1)
