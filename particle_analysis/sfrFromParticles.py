@@ -30,9 +30,11 @@ def sfrFromParticles(ds, data, selection = None, times = None):
         bin_spacing = times
         if not hasattr(bin_spacing, 'value'):
             bin_spacing = bin_spacing * yt.units.Myr
+        else:
+            bin_spacing = bin_spacing.convert_to_units('Myr')
 
         times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
-        times = times *yt.units.Myr
+        times = times
 
     sfr   = np.zeros(np.size(times)-1)
 
