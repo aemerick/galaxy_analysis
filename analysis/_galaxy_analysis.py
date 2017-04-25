@@ -235,14 +235,15 @@ class Galaxy(object):
         return
 
 
-    def calculate_dMdt_profile(self, fields = None, mode = 'large_disk', n_cell = 4,
+    def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
                                outflow = True, *args, **kwargs):
         """
         Returns the mass inflow or outflow rate as a function of radius. This can be used
         to compute mass loading factor by dividing by the current SFR.
 
         outflow == True (default) computes outflow rate (requiring that v > 0.0). False
-        computes inflow rate (requiring that v < 0.0).
+        computes inflow rate (requiring that v < 0.0). If using a disk, v is v_z, but 
+        if using a sphere, v is v_r
 
         if no fields are provided, computes total mass flow rate and rate for
         all species.
@@ -255,7 +256,7 @@ class Galaxy(object):
         xbins, xdata, data = self._get_bins_and_data(mode = mode)
 
         # get velocity corresponding to outflow / inflow
-        if mode == 'sphere':
+        if mode == 'sphere' or mode == 'halo_sphere':
             velname = 'velocity_spherical_radius'
         else:
             velname = 'velocity_cylindrical_z'
@@ -266,22 +267,34 @@ class Galaxy(object):
         for field in fields:
             profile[field] = np.zeros(np.size(xbins)-1)
 
-        center = 0.5 * (xbins[1:] + xbins[:-1])
+        #
+        # Following typical definitions, construct bins to be centered at 
+        # 0.25, 0.5, 0.75, 1.0, and 1.25 R_vir, with a width of 0.1 R_vir
+        #
 
-        dx = n_cell * np.min(data['dx'].convert_to_units(xdata.units))
+        center = np.linspace(0.25, 1.30, 0.25) # in units of R_vir
+        dL     = 0.1                           # in units of R_vir
+
+        # convert from r_vir to kpc
+        center = (center * self.R_vir).convert_to_units('kpc')
+        dL     = (dL     * self.R_vir).convert_to_units('kpc')
+
+#        dx = n_cell * np.min(data['dx'].convert_to_units(xdata.units))
 
         if outflow: # compute outflow
             v_filter = vel > 0.0
         else:       # compute inflow
             v_filter = vel < 0.0
 
-        for i in np.arange(np.size(xbins)-1):
-            x_filter = ( xdata >= (center[i] - 0.5*dx)) * ( xdata < (center[i] + 0.5*dx))
+        for i in np.arange(np.size(center)):
+            # define the shell
+            x_filter = ( xdata >= (center[i] - 0.5*dL)) * ( xdata < (center[i] + 0.5*dL))
 
+            # filter out the data
             filter = x_filter * v_filter
             for field in fields:
                 M    = data[field].convert_to_units(UNITS['Mass'].units)
-                Mdot     = np.sum( M[filter] * vel[filter] ) / dx
+                Mdot     = np.sum( M[filter] * vel[filter] ) / dL
                 Mdot     = Mdot.convert_to_units('Msun/yr')
 
                 profile[field][i] = Mdot
@@ -290,7 +303,9 @@ class Galaxy(object):
         # save profiles
         #
 	prof_type = 'outflow'
-        mode = 'disk'
+        if not outflow:
+            prof_type = 'inflow'
+
         if not prof_type in self.gas_profiles.keys():
             self.gas_profiles[prof_type] = {}
 
@@ -298,13 +313,16 @@ class Galaxy(object):
             self.gas_profiles[prof_type][mode] = {}
 
         self.gas_profiles[prof_type][mode].update( profile )
-        self.gas_profiles[prof_type][mode]['xbins'] = xbins
+        self.gas_profiles[prof_type][mode]['centers'] = centers
+        self.gas_profiles[prof_type][mode]['centers_rvir'] = (centers.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
+        self.gas_profiles[prof_type][mode]['dL']      = dL
+        self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.convert_to_units('kpc')/self.R_vir.convert_to_units('kpc')).value
 
         return xbins, center, profile
 
     def _get_bins_and_data(self, mode = None, axis='z'):
 
-        if mode == 'sphere':
+        if mode == 'sphere' or mode == 'halo_sphere':
             xbins  =  self.rbins_halo_sphere
             xdata  =  self.halo_sphere['spherical_radius'].convert_to_units(UNITS["Length"].units)
             data   =  self.halo_sphere
@@ -957,6 +975,7 @@ class Galaxy(object):
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
         self.halo_sphere = self.ds.sphere(**halo_sphere_kwargs)
+        self.R_vir       = self.halo_sphere.radius.convert_to_units(UNITS['Length'].units)
 
         return
 
@@ -998,8 +1017,8 @@ class Galaxy(object):
                                  'dr'     : 25.0 * yt.units.pc   }
 
         self.halo_spherical_region = {'center' :    self.ds.domain_center,
-                                      'radius' : 14.0 * yt.units.kpc,
-                                      'dr'     : 50.0 * yt.units.pc}
+                                      'radius' : 14.255506 * yt.units.kpc,
+                                      'dr'     : 50.0      * yt.units.pc}
 
         return
 
