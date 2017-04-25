@@ -140,13 +140,86 @@ def plot_sequestering(directory = './', fields = None, elements = None,
     return
 
 
+def plot_mass_profiles(directory = './', normalize = False):
+    """
+    Plot cumulative radial profiles at 6 different times (evenly spaced)
+    throughout the simulation.
+    """
+
+    output_dir = directory + '/radial_profiles/'
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    da = dd.io.load('DD0001_galaxy_data.h5')
+    fields = [k[1] for k in da['gas_profiles']['accumulation']['sphere'].keys() if k != 'xbins']
+
+    all_output = np.sort(glob.glob(directory + '/DD*.h5'))
+
+    ls = ['-','--',':']
+    color = ['black',ps.purple,ps.blue,ps.orange]
+
+    for ele in fields:
+        lsi = 0
+        ci  = 0
+
+        norm = 1.0
+
+        if normalize:
+            da = dd.io.load(all_output[0])
+            norm = da['gas_profiles']['accumulation']['sphere'][('gas',ele)]
+
+        fig, ax = plt.subplots()
+
+        for i in np.floor(np.linspace(0, len(all_output) - 1, 12)):
+            i = int(i)
+            da = dd.io.load( all_output[i])
+
+            t = da['meta_data']['Time']
+
+            y = da['gas_profiles']['accumulation']['sphere'][('gas',ele)]
+            x = da['gas_profiles']['accumulation']['sphere']['xbins']
+            x = (x[1:] + x[:-1])*0.5
+
+            ax.plot(x, np.cumsum(y) * norm, lw = 3, ls = ls[lsi], color = color[ci], label = "t = %0.1f Myr"%(t))
+
+            lsi = lsi + 1
+            if lsi >= len(ls):
+                lsi = 0
+                ci = ci + 1
+
+        ax.set_xlabel(r'Radius (pc)')
+        ax.set_ylabel(r'Mass (M$_{\odot}$)')
+        ax.semilogy()
+        ax.semilogx()
+        ax.set_xlim(10.0, 6104)
+
+        plt.minorticks_on()
+        fig.set_size_inches(8,8)
+        plt.tight_layout()
+        ax.legend(loc='best', ncol = 2)
+
+        outname = output_dir + ele
+        if normalize:
+            outname = outname + '_norm_'
+        outname = outname + 'radial_profile.png'
+        fig.savefig(outname)
+        plt.close(fig)
+
+    return
+
+
+
 if __name__ == "__main__":
 
     directory = './'
     if len(sys.argv) == 2:
         directory = sys.argv[1]
 
+    plot_mass_profiles(directory = directory)
+    print "completed mass profiles"
     plot_sequestering(directory = directory)
+    print "completed total sequestering"
 
     # Disk and FullBox are likely the only two fractions that make
     # sense given the way the data is constructed. Other fractions are
