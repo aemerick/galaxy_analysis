@@ -625,6 +625,9 @@ class Galaxy(object):
         # now do this for the halo
         mdict['Halo'] = {}
         for s in fields:
+            print s
+            print fields[s]
+            print self.halo_sphere[fields[s]]
             mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
@@ -975,7 +978,8 @@ class Galaxy(object):
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
         self.halo_sphere = self.ds.sphere(**halo_sphere_kwargs)
-        self.R_vir       = self.halo_sphere.radius.convert_to_units(UNITS['Length'].units)
+        self.R_vir       = self.halo_sphere.radius
+
 
         return
 
