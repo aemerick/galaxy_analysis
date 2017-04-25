@@ -10,7 +10,7 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 150.0
+global_tmax = 110.0
 
 #
 #
@@ -55,12 +55,14 @@ STAR_IC = {
            'hm_p_noRT' : pleiades + '/starIC/run15/no_RT',
            'hm_p_noOT' : pleiades + '/starIC/run15/no_otrad',
            'hm_p_sn'   : pleiades + '/starIC/run15/sn_only',
+           'hm_IC_compact_msf' : pleiades + '/starIC/run15_compact/msf',
+           'hm_IC_compact_hsf' : pleiades + '/starIC/run15_compact/highsf'}
 #           'hm_ICs_3pc' : pleiades + '/starIC/run15/lowsf/3parsec',
-           'lm_nostar'  : local + '/run11/200cc/perturb',
+#           'lm_nostar'  : local + '/run11/200cc/perturb',
 #           'lm_nopert'  : stampede + '/run11/200cc',
-           'mm_nostar'  : pleiades + '/run13/no_wind',
+#           'mm_nostar'  : pleiades + '/run13/no_wind',
 #           'mm_nopert'  : stampede + '/run13',
-           'hm_nostar'  : pleiades + '/run15/no_wind'}
+#           'hm_nostar'  : pleiades + '/run15/no_wind'}
 #           'hm_nopert'  : stampede + '/run15'}
 
 
@@ -74,7 +76,8 @@ ls_dict = { 'lm' : '-', 'lm_noRT' : '--', 'lm_nowind' : ':', 'lm_xx' : '--',
 add_to_ls = {'lm_ICs' : '-', 'mm_ICs' : '-', 'hm_ICs' : '-',
            'lm_nostar' : '--', 'mm_nostar' : '--', 'hm_nostar' : '--',
            'lm_nopert' : '-.', 'mm_nopert' : '-.', 'hm_nopert' : '-.',
-           'lm_ICs_3pc' : ':', 'mm_ICs_3pc' : ':', 'hm_ICs_3pc' : ':', 'hm_IC_compact' : '-'}
+           'lm_ICs_3pc' : ':', 'mm_ICs_3pc' : ':', 'hm_ICs_3pc' : ':', 'hm_IC_compact' : '-',
+           'hm_IC_compact_msf' : '--', 'hm_IC_compact_hsf' : '-.'}
 
 for k in add_to_ls:
     ls_dict[k] = add_to_ls[k]
@@ -269,6 +272,8 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
     plottype = 'outflow'
     if mass_loading:
         plottype = 'loading'
+    else:
+        ax.set_ylim(1.0E-11, 1.0E-1)
 
     outname = sname + '_mass_' + plottype + '_z%2f.png'%(z)
 
@@ -416,6 +421,11 @@ if __name__ == '__main__':
 
 #    all_s = PERT_DATA_PATHS.keys()
 
+    plot_mass(sim_names = all_s, species = 'HI')
+    plot_mass(sim_names = all_s, species = 'stars')
+    plot_mass(sim_names = all_s, species = 'total')
+
+
     plot_sfr(sim_names = all_s)
     plot_snr(sim_names = all_s)
 
@@ -424,6 +434,3 @@ if __name__ == '__main__':
         plot_mass_loading(sim_names = all_s, species = species, z = 100)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
-    plot_mass(sim_names = all_s, species = 'HI')
-    plot_mass(sim_names = all_s, species = 'stars')
-    plot_mass(sim_names = all_s, species = 'total')
