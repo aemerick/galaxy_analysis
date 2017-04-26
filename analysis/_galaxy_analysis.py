@@ -1002,8 +1002,8 @@ class Galaxy(object):
                                     'radius' : 2.0 * yt.units.kpc,
                                     'height' : 300.0 * yt.units.pc,
                                     'center' : self.ds.domain_center,
-                                    'dr'     : 5.0 * yt.units.pc,
-                                    'dz'     : 5.0 * yt.units.pc}
+                                    'dr'     : 10.0 * yt.units.pc,
+                                    'dz'     : 10.0 * yt.units.pc}
 
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
@@ -1022,11 +1022,11 @@ class Galaxy(object):
 
         self.spherical_region = {'center' : self.ds.domain_center,
                                  'radius' : 2.0 * yt.units.kpc,
-                                 'dr'     : 25.0 * yt.units.pc   }
+                                 'dr'     : 50.0 * yt.units.pc   }
 
         self.halo_spherical_region = {'center' :    self.ds.domain_center,
-                                      'radius' : 14.255506 * yt.units.kpc,
-                                      'dr'     : 50.0      * yt.units.pc}
+                                      'radius' : 14.255506 * yt.units.kpc}
+        self.halo_spherical_region['dr'] = self.halo_spherical_region['radius'] * 0.05
 
         return
 
