@@ -587,7 +587,8 @@ class Galaxy(object):
 
     def compute_gas_profiles(self):
 
-        junk = self.calculate_dMdt_profile()
+        junk = self.calculate_dMdt_profile()               # mass outflow rate
+        junk = self.calculate_dMdt_profile(outflow=False)  # mass inflow rate
         junk = self.calculate_surface_density_profile()
         junk = self.calculate_mass_profile(mode = 'disk')
         junk = self.calculate_mass_profile(mode = 'sphere')
@@ -734,6 +735,8 @@ class Galaxy(object):
 
         self.time_data['time'] = 0.5 * (self.time_data['time'][1:] + self.time_data['time'][:-1]) # bin centers
 
+        self.meta_data['SFR']  = self.time_data['SFR'][-1]
+
         return
 
     def instantaneous_SFR(self):
@@ -750,7 +753,7 @@ class Galaxy(object):
             self.compute_time_evolution()
 
         return np.interp(self.ds.current_time.convert_to_units(UNITS['Time'].units),
-                         0.5*(self.time_data['time'][:-1]+self.time_data['time'][1]), self.time_data['SFR']) * yt.units.Msun / self.time_data['time'].unit_quantity
+                         0.5*(self.time_data['time'][:-1]+self.time_data['time'][1:]), self.time_data['SFR']) * yt.units.Msun / self.time_data['time'].unit_quantity
 
     def compute_everything(self):
         """
@@ -767,6 +770,7 @@ class Galaxy(object):
         self.compute_all_meta_data()
         self.compute_gas_profiles()
         self.compute_gas_sequestering()
+
 
         return
 
