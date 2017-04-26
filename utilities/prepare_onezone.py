@@ -182,7 +182,7 @@ def set_default_parameters(onez = None):
 
 def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     """
-    Goes through all available analysis outputs and gathers 
+    Goes through all available analysis outputs and gathers
     the mass loading factor for all species at the defined radius bin.
     """
 
@@ -202,6 +202,7 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     fields = [x[1] for x in fields if (not ('_p0_' in x[1])) and (not ('_p1_' in x[1]))]
     ele    = [x.replace('_Mass','') for x in fields]
     ele    = [x.replace('_total','') for x in fields]
+    ele    = [x.replace('cell_mass','total_mass') for x in fields]
 
     centers_rvir = gal['gas_profiles']['sphere'][mode]['centers_rvir']
     centers      = gal['/gas_profiles/sphere/' + mode + '/centers']
@@ -235,6 +236,29 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
             mass[name][i] = np.sum( mass_data[fields[i]][[0:massbin] ) # total mass of species interior to r
             norm[name][i] = flow[name][i] / mass[name][i] / sfr[i]     # normalized result - intput to onezone
 
+
+    f = open('./onez_model/mass_outflow.in', 'w')
+    f.write("# This output contains time (Myr) and fractional mass outflow rate (f_x) through a shell centered on %.2f R_vir\n"%(r))
+    f.write("# these columns are computed for species x as f_x = (dM_x/dt) / SFR / M_x, where dM_x/dt is the mass outflow\n")
+    f.write("# rate in units of Msun/yr, SFR is the star formation rate in units of Msun/yr, \n")
+    f.write("# and M_x is the total mass of species x in the galaxy interior to R\n")
+    f.write("# To extend to other simulations / models, compute the outflow rate as f_x * SFR * M_x\n")
+    f.write("#t ") # time in first column
+    for e in ele:
+        f.write(e + " ")
+    f.write("\n")
+
+    # fudge the last time a tiny bit to make sure no interpolation issues later on
+    t[-1] = t[-1]*1.0001
+
+    for i in np.arange(Nfiles):
+        f.write("%3.3E"%(t[i] ))
+
+        for e in ele:
+            f.write(" %5.5E"%(norm[e][i]))
+        f.write("\n")
+
+    f.close()
 
     return
 
@@ -356,6 +380,6 @@ if __name__=="__main__":
     onez, t_o = get_parameters_from_analysis(analysis_to_use, onez = onez, gal_files = gal_files)
 
     generate_sfr(ds, t_o = t_o)
-    gather_mass_loading(r = 0.25, analysis_files = gal_files)
+    gather_mass_flow(gal_files, r = 0.25)
 
     save_script(onez, outname = "./onez_model/onez_parameter_file.py")
