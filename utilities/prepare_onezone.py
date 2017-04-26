@@ -180,6 +180,63 @@ def set_default_parameters(onez = None):
 
     return onez
 
+def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
+    """
+    Goes through all available analysis outputs and gathers 
+    the mass loading factor for all species at the defined radius bin.
+    """
+
+    mass_loading = False
+    if mode == 'mass_loading':
+        mass_loading = True
+        mode = 'outflow'
+
+    Nfiles = len(all_files)
+    t   = np.zeros(Nfiles)
+    m   = np.zeros(Nfiles)
+
+    # open up the first file, check which species we are dealing with
+    gal    = dd.io.load(all_files[0])
+    raw_fields = gal['gas_profiles']['sphere'][mode].keys()
+    fields = [x for x in raw_fields if ( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x))]
+    fields = [x[1] for x in fields if (not ('_p0_' in x[1])) and (not ('_p1_' in x[1]))]
+    ele    = [x.replace('_Mass','') for x in fields]
+    ele    = [x.replace('_total','') for x in fields]
+
+    centers_rvir = gal['gas_profiles']['sphere'][mode]['centers_rvir']
+    centers      = gal['/gas_profiles/sphere/' + mode + '/centers']
+
+    flowbin = np.argmin( np.abs( r - centers_rvir) )
+
+    pos  = centers[xbin]
+
+    # clean up field names a bit to just individual species, and not ionization states
+    # e.g. just total, metals, H, He, C, N, O.....
+
+    flow = {}
+    mass = {}
+    norm = {}
+    for k in ele:
+        flow[k] = np.zeros(Nfiles)
+        mass[k] = np.zeros(Nfiles)
+        norm[k] = np.zeros(Nfiles)
+
+    for i, galfile in enumerate(all_files):
+        t[i]   = dd.io.load(galfile, '/meta_data/Time')
+        sfr[i] = dd.io.load(galfile, '/meta_data/SFR')   # 4/26 need to put this as a meta data point
+
+        flow_data = dd.io.load(galfile, '/gas_profiles/sphere/' + mode
+        mass_data = dd.io.load(galfile, '/gas_profiles/accumulation/sphere')
+
+        massbin   = np.argmin( np.abs( pos - mass_data['xbins']) )
+
+        for j, name in enumerate(ele):
+            flow[name][i] = flow_data[fields[i]][flowbin]              # outflow rate in Msun / yr at desired r
+            mass[name][i] = np.sum( mass_data[fields[i]][[0:massbin] ) # total mass of species interior to r
+            norm[name][i] = flow[name][i] / mass[name][i] / sfr[i]     # normalized result - intput to onezone
+
+
+    return
 
 def generate_sfr(ds, t_o = 0.0):
 
@@ -299,5 +356,6 @@ if __name__=="__main__":
     onez, t_o = get_parameters_from_analysis(analysis_to_use, onez = onez, gal_files = gal_files)
 
     generate_sfr(ds, t_o = t_o)
+    gather_mass_loading(r = 0.25, analysis_files = gal_files)
 
     save_script(onez, outname = "./onez_model/onez_parameter_file.py")
