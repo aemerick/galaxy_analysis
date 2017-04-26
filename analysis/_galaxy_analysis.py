@@ -264,16 +264,16 @@ class Galaxy(object):
 
         profile = {}
 
-        for field in fields:
-            profile[field] = np.zeros(np.size(xbins)-1)
-
         #
         # Following typical definitions, construct bins to be centered at 
         # 0.25, 0.5, 0.75, 1.0, and 1.25 R_vir, with a width of 0.1 R_vir
         #
 
-        center = np.linspace(0.25, 1.30, 0.25) # in units of R_vir
+        center = np.arange(0.25, 1.30, 0.25) # in units of R_vir
         dL     = 0.1                           # in units of R_vir
+
+        for field in fields:
+            profile[field] = np.zeros(np.size(center))
 
         # convert from r_vir to kpc
         center = (center * self.R_vir).convert_to_units('kpc')
@@ -313,8 +313,8 @@ class Galaxy(object):
             self.gas_profiles[prof_type][mode] = {}
 
         self.gas_profiles[prof_type][mode].update( profile )
-        self.gas_profiles[prof_type][mode]['centers'] = centers
-        self.gas_profiles[prof_type][mode]['centers_rvir'] = (centers.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
+        self.gas_profiles[prof_type][mode]['centers'] = center
+        self.gas_profiles[prof_type][mode]['centers_rvir'] = (center.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
         self.gas_profiles[prof_type][mode]['dL']      = dL
         self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.convert_to_units('kpc')/self.R_vir.convert_to_units('kpc')).value
 
