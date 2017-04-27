@@ -149,6 +149,7 @@ def set_default_parameters(onez = None):
     onez['config.zone.inflow_factor'] = 0.0
     onez['config.zone.mass_loading_factor'] = 0.0
     onez['config.zone.mass_loading_index']  = 0.0
+    onez['config.zone.mass_outflow_method'] = 2   # read from table
     onez['config.zone.SFR_efficiency']      = 0.0 # zero since using SFH
     onez['config.zone.SFR_dyn_efficiency']  = 0.0 # zero since using SFH
 
@@ -193,23 +194,24 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
 
     Nfiles = len(all_files)
     t   = np.zeros(Nfiles)
+    sfr = np.zeros(Nfiles)
     m   = np.zeros(Nfiles)
 
     # open up the first file, check which species we are dealing with
     gal    = dd.io.load(all_files[0])
-    raw_fields = gal['gas_profiles']['sphere'][mode].keys()
+    raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
     fields = [x for x in raw_fields if ( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x))]
     fields = [x[1] for x in fields if (not ('_p0_' in x[1])) and (not ('_p1_' in x[1]))]
     ele    = [x.replace('_Mass','') for x in fields]
     ele    = [x.replace('_total','') for x in fields]
     ele    = [x.replace('cell_mass','total_mass') for x in fields]
 
-    centers_rvir = gal['gas_profiles']['sphere'][mode]['centers_rvir']
-    centers      = gal['/gas_profiles/sphere/' + mode + '/centers']
+    centers_rvir = gal['gas_profiles'][mode]['sphere']['centers_rvir']
+    centers      = gal['gas_profiles'][mode]['sphere']['centers']
 
     flowbin = np.argmin( np.abs( r - centers_rvir) )
 
-    pos  = centers[xbin]
+    pos  = centers[flowbin]
 
     # clean up field names a bit to just individual species, and not ionization states
     # e.g. just total, metals, H, He, C, N, O.....
@@ -226,15 +228,22 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
         t[i]   = dd.io.load(galfile, '/meta_data/Time')
         sfr[i] = dd.io.load(galfile, '/meta_data/SFR')   # 4/26 need to put this as a meta data point
 
-        flow_data = dd.io.load(galfile, '/gas_profiles/sphere/' + mode
+        flow_data = dd.io.load(galfile, '/gas_profiles/' + mode + '/sphere')
         mass_data = dd.io.load(galfile, '/gas_profiles/accumulation/sphere')
 
         massbin   = np.argmin( np.abs( pos - mass_data['xbins']) )
 
+
         for j, name in enumerate(ele):
-            flow[name][i] = flow_data[fields[i]][flowbin]              # outflow rate in Msun / yr at desired r
-            mass[name][i] = np.sum( mass_data[fields[i]][[0:massbin] ) # total mass of species interior to r
-            norm[name][i] = flow[name][i] / mass[name][i] / sfr[i]     # normalized result - intput to onezone
+            flow[name][i] = flow_data[('gas',fields[i])][flowbin]              # outflow rate in Msun / yr at desired r
+            mass[name][i] = np.sum( mass_data[('gas',fields[i])][0:massbin] )  # total mass of species interior to r
+
+        if sfr[i] > 0:
+            for name in enumerate(ele):
+                norm[name][i] = flow[name][i] / mass[name][i] / sfr[i]             # normalized result - intput to onezone
+        else:
+            for name in enumerate(ele):
+                norm[name][i] = 0.0
 
 
     f = open('./onez_model/mass_outflow.in', 'w')
