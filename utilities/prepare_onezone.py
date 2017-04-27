@@ -170,8 +170,8 @@ def set_default_parameters(onez = None):
     onez['config.io.radiation_binned_output'] = 1
 
     onez['config.zone.species_to_track'] = ['m_tot', 'm_metal', 'H', 'He', 'C', 'N', 'O', 'Mg',
-                                            'Si', 'S', 'K', 'Ca', 'Ti', 'V', 'Mn', 'Fe',
-                                            'Co', 'Ni', 'Cu', 'Sr', 'Y', 'Ba', 'Eu']
+                                            'Si', 'S',  'Ca', 'Mn', 'Fe',
+                                            'Ni', 'Y', 'Ba', 'Eu']
 
     #
     # set these to none to ensure they are set somehow
@@ -203,8 +203,12 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     fields = [x for x in raw_fields if ( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x))]
     fields = [x[1] for x in fields if (not ('_p0_' in x[1])) and (not ('_p1_' in x[1]))]
     ele    = [x.replace('_Mass','') for x in fields]
-    ele    = [x.replace('_total','') for x in fields]
-    ele    = [x.replace('cell_mass','total_mass') for x in fields]
+    ele    = [x.replace('_total','') for x in ele]
+    ele    = [x.replace('_mass','') for x in ele]
+    ele    = [x.replace('cell', 'm_tot') for x in ele]
+    ele    = [x.replace('metal', 'm_metal') for x in ele]
+
+
 
     centers_rvir = gal['gas_profiles'][mode]['sphere']['centers_rvir']
     centers      = gal['gas_profiles'][mode]['sphere']['centers']
@@ -235,14 +239,14 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
 
 
         for j, name in enumerate(ele):
-            flow[name][i] = flow_data[('gas',fields[i])][flowbin]              # outflow rate in Msun / yr at desired r
-            mass[name][i] = np.sum( mass_data[('gas',fields[i])][0:massbin] )  # total mass of species interior to r
+            flow[name][i] = flow_data[('gas',fields[j])][flowbin]              # outflow rate in Msun / yr at desired r
+            mass[name][i] = np.sum( mass_data[('gas',fields[j])][0:massbin] )  # total mass of species interior to r
 
         if sfr[i] > 0:
-            for name in enumerate(ele):
+            for name in ele:
                 norm[name][i] = flow[name][i] / mass[name][i] / sfr[i]             # normalized result - intput to onezone
         else:
-            for name in enumerate(ele):
+            for name in ele:
                 norm[name][i] = 0.0
 
 
@@ -259,6 +263,12 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
 
     # fudge the last time a tiny bit to make sure no interpolation issues later on
     t[-1] = t[-1]*1.0001
+
+    if t[0] > 0.0:
+        f.write("%3.3E"%(0.0))
+        for e in ele:
+            f.write(" %5.5E"%(0.0))
+        f.write("\n")
 
     for i in np.arange(Nfiles):
         f.write("%3.3E"%(t[i] ))
@@ -313,6 +323,8 @@ def save_script(onez, outname = 'onez_param_file.py'):
             "# The onezone model can be run simply as:\n" +\
             "#      python onez_parameter_file.py\n")
 
+    f.write("import glob\n")
+    f.write("import numpy as np\n")
     f.write("from onezone import zone\n")
     f.write("from onezone import imf\n")
     f.write("from onezone import config\n\n\n\n")
