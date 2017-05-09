@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import optimize as opt
 from yt import physical_constants as const
 import yt.units as u
 
@@ -7,6 +8,33 @@ import yt.units as u
 # given parameters known to the data set already
 #
 #
+
+def burkert_solve_virial(r_s, rho_o, rho_crit = 9.74E-30 * u.g/u.cm**3):
+    """
+    Returns M200 in Msun, R200 in same units as r_s.
+    """
+
+
+    f_M = lambda x : 1.5* (0.5*np.log(1.0 + x**2) +\
+                     np.log(1.0 + x)  -\
+                     np.arctan(x) )
+
+    # Solve the profile for radius with average density equal to
+    # 200 * rho_crit (i.e. solve for R200) 
+    if hasattr(rho_o, 'value'):
+        rho_o    = (rho_o.convert_to_cgs()).value
+
+    if hasattr(rho_crit, 'value'):
+        rho_crit = (rho_crit.convert_to_cgs()).value
+
+    eq_solve = lambda x : (rho_o)*f_M(x)/(x**3)-200.0*rho_crit
+
+    R200 = r_s * opt.bisect(eq_solve, .1, 10000.0, xtol=1.0E-12)
+    rho_crit = rho_crit * u.g / u.cm**3
+    M200 = 4.0 * np.pi * R200**3 * (200.0 * rho_crit) / 3.0
+    
+
+    return M200.convert_to_units('Msun') , R200
 
 def burkert_density(r, r_s, rho_o):
     """
