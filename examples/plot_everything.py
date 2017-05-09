@@ -36,6 +36,9 @@ def phase_plots(ds, to_plot = 'all', region = None):
     # list is the following set of 4 items:  [ x-axis field, y-axis field, cbar field, weight_field ]
     #
     pp_def    = { 'T_n' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','cell_mass'), None],
+                  'T_n_Fe' :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','Fe_Mass'), None],
+                  'T_n_O'  :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','O_Mass'), None],
+                  'T_n_C'  :  [ ('gas','number_density'), ('enzo','Temperature'), ('gas','C_Mass'), None],
                   'P_T' :  [ ('enzo','Temperature'), ('gas','pressure'), ('gas', 'cell_mass'), None],
                   'Go_n' : [ ('gas','number_density'), ('gas','G_o'), ('gas','cell_mass'), None],
                   'Go_r' : [ ('index','magnitude_cylindrical_radius'), ('gas','G_o'), ('gas','cell_mass'), None]
@@ -43,11 +46,13 @@ def phase_plots(ds, to_plot = 'all', region = None):
 
     pdict = {}
     if to_plot == 'all':
-        for n in ['T_n','P_T','Go_n']:
+        for n in ['T_n_Fe','T_n_O','T_n','P_T','Go_n','T_n_C']:
             pdict[n] = pp_def[n]
 
     if region is None:
         region = ds.all_data()
+
+    print cbar_lim
 
     for name in pdict:
         pdef = pdict[name]
@@ -59,7 +64,7 @@ def phase_plots(ds, to_plot = 'all', region = None):
             pp.set_log('magnitude_cylindrical_radius', False)
 
         # set units on each axis
-        for f in pdef[0:2]:
+        for f in pdef[:3]:
             pp.set_unit(f[1], field_units[f].units)
 
         # set plot limits for horizonatal and vertical axes
@@ -69,8 +74,10 @@ def phase_plots(ds, to_plot = 'all', region = None):
             pp.set_ylim(plim[pdef[1]][0], plim[pdef[1]][1])
 
         # set color map limits
-        if not cbar_lim[pdef[2]] is None:
+        print cbar_lim[pdef[2]], pdef[2]
+        if not (cbar_lim[pdef[2]] is None):
             pp.set_zlim( pdef[2], cbar_lim[pdef[2]][0], cbar_lim[pdef[2]][1])
+
         pp.set_cmap( pdef[2], 'cubehelix')
 
         pp.save('./phase_plots/')
