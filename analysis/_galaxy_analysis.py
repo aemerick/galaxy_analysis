@@ -109,6 +109,8 @@ class Galaxy(object):
 
         self.construct_regions()
 
+        self.R_vir = self._compute_virial_radius()
+
         self.total_quantities = {}
         self._total_quantities_calculated = False
 
@@ -122,6 +124,16 @@ class Galaxy(object):
 
         if os.path.isfile( self.hdf5_filename ):
             self.load()
+
+        return
+
+    def _compute_virial_radius(self):
+        """
+        Using the data set parameters, compute the virial radius
+        """
+
+        
+        
 
         return
 
@@ -196,6 +208,9 @@ class Galaxy(object):
         self.time_data          = _verify_and_add(self.time_data, 'time_data')
         self.gas_profiles       = _verify_and_add(self.gas_profiles, 'gas_profiles')
         self.particle_profiles  = _verify_and_add(self.particle_profiles, 'particle_profiles')
+
+        if 'R_vir' in self.meta_data.keys():
+            self.R_vir = self.meta_data['R_vir']
 
         return
 
@@ -1024,6 +1039,10 @@ class Galaxy(object):
                                  'radius' : 2.0 * yt.units.kpc,
                                  'dr'     : 25.0 * yt.units.pc   }
 
+        # 
+        # need to not hard code virial radius
+        #
+
         self.halo_spherical_region = {'center' :    self.ds.domain_center,
                                       'radius' : 14.255506 * yt.units.kpc,
                                       'dr'     : 50.0      * yt.units.pc}
@@ -1157,4 +1176,5 @@ class Galaxy(object):
         rmax = rmax.convert_to_units(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
+
 
