@@ -505,7 +505,6 @@ def generate_derived_fields(ds):
         nfields =  _particle_abundance_function_generator(ratios)
         print nfields, "particle abundance ratio fields defined"
 
-    print "no particle fields found"
 
     generate_stellar_model_fields(ds)
 
@@ -514,3 +513,4 @@ def generate_derived_fields(ds):
 
     FIELDS_DEFINED = True
     return
+

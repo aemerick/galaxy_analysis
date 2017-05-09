@@ -15,15 +15,15 @@ colors = {'Disk' : ps.black,
               'CNM'  : ps.purple,
               'WNM'  : ps.purple,
               'HIM'  : ps.purple,
-              'Molecular' : ps.purple,
+              'Molecular' : 'red',
           'FullBox'  : ps.magenta,
           'stars'    : ps.orange,
           'GravBound' : ps.blue,
           'OutsideBox' : ps.green }
 
 ls = {'Disk' : '-',
-         'CNM' : '--',
-         'WNM' : '-.',
+         'CNM' : '-',
+         'WNM' : '--',
          'HIM' : ':',
          'Molecular' : '-',
       'FullBox' : '-',
@@ -66,13 +66,13 @@ def plot_sequestering(directory = './', fields = None, elements = None,
     if sfields is None:
         sfields = ['Disk', 'CNM', 'WNM', 'HIM', 'FullBox',
                    'stars', 'Molecular', 'OutsideBox', 'GravBound']
-    
+
     all_elements = elements
-    if all_elements is None:   
+    if all_elements is None:
         all_elements = ['H','He','Fe','Metals','O','C','N','Eu','Mg','S','Y','Ca','Si','Mn']
 
     #
-    # get all data 
+    # get all data
     #
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
 
@@ -104,7 +104,9 @@ def plot_sequestering(directory = './', fields = None, elements = None,
             norm = 1.0 / plot_data[fraction]
 
         ymax = np.max(plot_data['FullBox'] * norm)
-        ymin = 1.0E-10 * ymax
+        ymin = 1.0E-8 * ymax
+
+        ymin = np.max( [ymin, np.min(plot_data['FullBox'] * norm)] )
 
         for s in sfields:
 
@@ -132,12 +134,96 @@ def plot_sequestering(directory = './', fields = None, elements = None,
         outname = output_dir + '/' + element + '_sequestering.png'
         if not fraction is None:
             outname = output_dir + '/' + element + '_' + fraction + '_fraction_sequestering.png'
-        
+
         fig.savefig(outname)
         plt.close(fig)
         del(plot_data)
 
     return
+
+
+def plot_surface_density_profiles(directory = './', normalize = False):
+
+    output_dir = directory + '/radial_profiles/'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_dir = output_dir + 'surface_density/'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    all_output = np.sort(glob.glob(directory + '/DD*.h5'))
+
+    da = dd.io.load(all_output[-1])
+    fields = [k[1] for k in da['gas_profiles']['surface_density']['disk'].keys() if k != 'xbins']
+
+    ls = ['-','--',':']
+    color = ['black',ps.purple,ps.blue,ps.orange]
+
+    for ele in fields:
+        lsi = 0
+        ci  = 0
+
+        norm = 1.0
+        ymin = 1.0E99
+        ymax = -1.0E99
+
+
+        k1 = 'gas'
+        try:
+            temp = da['gas_profiles']['surface_density']['disk'][(k1,ele)]
+        except:
+            k1 = 'enzo'
+
+        if normalize:
+            da = dd.io.load(all_output[0])
+            norm = da['gas_profiles']['surface_density']['disk'][(k1,ele)]
+
+        fig, ax = plt.subplots()
+
+        for i in np.floor(np.linspace(0, len(all_output) - 1, 12)):
+            i = int(i)
+            da = dd.io.load( all_output[i])
+
+            t = da['meta_data']['Time']
+
+            y = da['gas_profiles']['surface_density']['disk'][(k1,ele)]
+            x = da['gas_profiles']['surface_density']['disk']['xbins']
+            x = (x[1:] + x[:-1])*0.5
+
+            ax.plot(x, y * norm, lw = 3, ls = ls[lsi], color = color[ci], label = "t = %0.1f Myr"%(t))
+
+            ymax = np.max( [ymax, np.max(y * norm)])
+            ymin = np.min( [ymin, np.min(y * norm)])
+
+            lsi = lsi + 1
+            if lsi >= len(ls):
+                lsi = 0
+                ci = ci + 1
+
+        ax.set_xlabel(r'Radius (pc)')
+        ax.set_ylabel(r'$\Sigma_{\rm ' + ele + '}$ (M$_{\odot}$ pc$^{-2}$)')
+        ax.semilogy()
+#        ax.semilogx()
+        ax.set_xlim(0.0, 2000.0)
+
+        ymin = np.max( [ymin, 1.0E-10*ymax])
+        ax.set_ylim(ymin, ymax)
+
+        plt.minorticks_on()
+        fig.set_size_inches(8,8)
+        plt.tight_layout()
+        ax.legend(loc='best', ncol = 2)
+
+        outname = output_dir + ele
+        if normalize:
+            outname = outname + '_norm'
+        outname = outname + '_radial_profile.png'
+        fig.savefig(outname)
+        plt.close(fig)
+
+    return
+
+
 
 
 def plot_mass_profiles(directory = './', normalize = False):
@@ -151,10 +237,10 @@ def plot_mass_profiles(directory = './', normalize = False):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    da = dd.io.load('DD0001_galaxy_data.h5')
-    fields = [k[1] for k in da['gas_profiles']['accumulation']['sphere'].keys() if k != 'xbins']
-
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
+
+    da = dd.io.load(all_output[-1])
+    fields = [k[1] for k in da['gas_profiles']['accumulation']['sphere'].keys() if k != 'xbins']
 
     ls = ['-','--',':']
     color = ['black',ps.purple,ps.blue,ps.orange]
@@ -188,11 +274,11 @@ def plot_mass_profiles(directory = './', normalize = False):
                 lsi = 0
                 ci = ci + 1
 
-        ax.set_xlabel(r'Radius (pc)')
+        ax.set_xlabel(r'Radius (kpc)')
         ax.set_ylabel(r'Mass (M$_{\odot}$)')
         ax.semilogy()
-        ax.semilogx()
-        ax.set_xlim(10.0, 6104)
+#        ax.semilogx()
+        ax.set_xlim(0.0, 15.0)
 
         plt.minorticks_on()
         fig.set_size_inches(8,8)
@@ -216,6 +302,8 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         directory = sys.argv[1]
 
+    plot_surface_density_profiles(directory = directory)
+    print "completed surface density profiles"
     plot_mass_profiles(directory = directory)
     print "completed mass profiles"
     plot_sequestering(directory = directory)

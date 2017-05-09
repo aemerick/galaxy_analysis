@@ -10,7 +10,7 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 110.0
+global_tmax = 125.0
 
 #
 #
@@ -101,6 +101,102 @@ for k in PERT_DATA_PATHS.keys() + STAR_IC.keys():
         color_dict[k] = ps.orange
 
 
+run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
+             'r11_pert'   : local + '/run11/200cc/perturb',
+             'r11_lowsf'  : pleiades + '/starIC/run11/lowsf',
+             'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind' }
+
+color_dict['r11_smooth'] = ps.blue
+color_dict['r11_pert'  ] = ps.blue
+ls_dict['r11_smooth'] = '-'
+ls_dict['r11_pert'  ] = '--'
+
+color_dict['r11_lbox'] = ps.black
+ls_dict['r11_lbox']    = '-'
+
+color_dict['r11_lowsf'] = ps.purple
+color_dict['r11_lbox']  = ps.purple
+ls_dict['r11_lowsf']    = '-'
+ls_dict['r11_lowsf']    = ':'
+
+
+#
+# run11_feedback models
+#
+
+run11_feedback = { 'r11 - No Wind' : pleiades + '/starIC/run11_largebox/no_wind',
+                   'r11 - No Wind 2': pleiades + '/starIC/run11_largebox/stampede/no_wind',
+                   'r11 - No Ionizing'  : pleiades + '/starIC/run11_largebox/no_ion',
+                   'r11 - No FUV/LW'    : pleiades + '/starIC/run11_largebox/no_otrad',
+                   'r11 - SN only'      : pleiades + '/starIC/run11_largebox/sn_only',
+                   'r11 - Full Physics' : pleiades + '/starIC/run11_largebox/fullphys'}
+
+color_dict['r11 - No Wind'] = ps.black
+color_dict['r11 - No Wind 2'] = ps.black
+color_dict['r11 - No Ionizing'] = ps.magenta
+color_dict['r11 - No FUV/LW']   = ps.blue
+color_dict['r11 - SN only']     = ps.orange
+color_dict['r11 - Full Physics'] = 'green'
+
+for k in run11_feedback:
+    ls_dict[k] = '-'
+ls_dict['r11 - No Wind 2'] = '--'
+
+run11_stampede_feedback = { 'r11 - st - No Wind' : pleiades + '/starIC/run11_largebox/stampede/no_wind',
+                   'r11 - st - No Ionizing'  : pleiades + '/starIC/run11_largebox/stampede/no_ion',
+                   'r11 - st - No FUV/LW'    : pleiades + '/starIC/run11_largebox/stampede/no_otrad',
+                   'r11 - st - SN only'      : pleiades + '/starIC/run11_largebox/stampede/sn_only'}
+
+color_dict['r11 - st - No Wind'] = ps.black
+color_dict['r11 - st - No Ionizing'] = ps.magenta
+color_dict['r11 - st - No FUV/LW']   = ps.blue
+color_dict['r11 - st - SN only']     = ps.orange
+for k in run11_stampede_feedback:
+    ls_dict[k] = '-'
+
+
+run15_feedback = {'r15 - No Wind' : pleiades + '/starIC/run15/lowsf',
+                  'r15 - No Ionizing' : pleiades + '/starIC/run15/no_RT',
+                  'r15 - No FUV/LW'   : pleiades + '/starIC/run15/no_otrad',
+                  'r15 - SN only'     : pleiades + '/starIC/run15/sn_only',
+                  'r15 - No Wind Compact' : pleiades + '/starIC/run15_compact/no_wind'}
+
+color_dict['r15 - No Wind'] = ps.black
+color_dict['r15 - No Ionizing'] = ps.magenta
+color_dict['r15 - No FUV/LW'] = ps.blue
+color_dict['r15 - SN only'] = ps.orange
+color_dict['r15 - No Wind Compact'] = 'green'
+
+for k in run15_feedback:
+    ls_dict[k] = '-'
+
+
+
+run15_IC = {'r15_smooth'   : stampede + '/run15',
+            'r15_pert'     : pleiades + '/run15/no_wind',
+            'r15_lowsf'    : pleiades + '/starIC/run15/lowsf',
+            'r15_lowsf_c'  : pleiades + '/starIC/run15_compact/no_wind',
+            'r15_medsf_c'  : pleiades + '/starIC/run15_compact/msf',
+            'r15_highsf_c' : pleiades + '/starIC/run15_compact/highsf',
+            'r15_lowsf_large' : pleiades + '/starIC/run15_largebox/no_wind/compact'}
+
+color_dict['r15_smooth'] = ps.blue
+color_dict['r15_pert']   = ps.blue
+ls_dict['r15_smooth'] = '-'
+ls_dict['r15_pert'] = '--'
+
+color_dict['r15_lowsf'] = ps.black
+color_dict['r15_lowsf_c'] = ps.orange
+color_dict['r15_medsf_c'] = ps.orange
+color_dict['r15_highsf_c'] = ps.orange
+ls_dict['r15_lowsf'] = '-'
+ls_dict['r15_lowsf_c'] = '-'
+ls_dict['r15_medsf_c'] = '--'
+ls_dict['r15_highsf_c'] = ':'
+
+color_dict['r15_lowsf_large'] = ps.magenta
+ls_dict['r15_lowsf_large'] = '-'
+
 ALL_DATA = {}
 for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
@@ -110,6 +206,21 @@ for s in PERT_DATA_PATHS.keys():
 
 for s in STAR_IC.keys():
     ALL_DATA[s] = np.sort(glob.glob(STAR_IC[s] + '/DD*.h5'))
+
+for s in run11_IC.keys():
+    ALL_DATA[s] = np.sort(glob.glob(run11_IC[s] + '/DD*.h5'))
+
+for s in run15_IC.keys():
+    ALL_DATA[s] = np.sort(glob.glob(run15_IC[s] + '/DD*.h5'))
+
+for s in run11_feedback.keys():
+    ALL_DATA[s] = np.sort(glob.glob(run11_feedback[s] + '/DD*.h5'))
+
+for s in run11_stampede_feedback.keys():
+    ALL_DATA[s] = np.sort(glob.glob(run11_stampede_feedback[s] + '/DD*.h5'))
+
+for s in run15_feedback.keys():
+    ALL_DATA[s] = np.sort(glob.glob(run15_feedback[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):
 
@@ -140,6 +251,7 @@ def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
 
     for s in sim_names:
         # always load most recent file in every case
+        print s
         data = dd.io.load(ALL_DATA[s][-1])
 
         t_first = time_first_star(data)
@@ -176,20 +288,19 @@ def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
 
 
 
-    return
 
-def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loading = False):
+def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loading = False):
     """
     Given a dictionary that contains list of simulation names and filepaths,
     go through all simulation data analysis outputs in that path for each
     simulation and plot the time evolution of the outflow rate. 
 
     Inputs
-    ------ 
+    ------
         sim_names    : dictionary, optional
         species      : String. Elemental species (or 'total' or 'metal' for all gas or
                        all metals) of which to plot the outflow rate. optional. default: total
-        z            : Fixed height above / below disk to plot the rate (in pc). Default 100
+        z            : Fixed fraction of virial radius to plot the outflow from. Default 0.25
         mass_loading : Normalize by SFR to get the mass loading factor instead. Default False
 
 
@@ -226,7 +337,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
         # now go through every data analysis dump
         for i,x in enumerate(ALL_DATA[s]):
             try:
-                xdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/outflow/disk')
+                xdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/outflow/sphere')
             except:
                 print "outflow rates load failed for " + ALL_DATA[s][i]
                 continue
@@ -234,12 +345,15 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
             t[i]  = dd.io.load(ALL_DATA[s][i], '/meta_data/Time')
 
             # find the bin whose center is closest to the desired z
-            zbin  = np.argmin( np.abs( (xdata['xbins'][1:].value + xdata['xbins'][:-1].value)*0.5 - z ) )
+            zbin  = np.argmin( np.abs( (xdata['centers_rvir'][1:] + xdata['centers_rvir'][:-1])*0.5 - z ) )
 
             if species == 'total':
-                ml[i] = xdata[('gas','H_total_mass')][zbin] +\
-                        xdata[('gas','He_total_mass')][zbin] +\
-                        xdata[('gas','metal_mass')][zbin]
+                try:
+                    ml[i] = xdata[('gas','cell_mass')][zbin]
+                except:
+                    ml[i] = xdata[('gas','H_total_mass')][zbin] +\
+                            xdata[('gas','He_total_mass')][zbin] +\
+                            xdata[('gas','metal_mass')][zbin]
             else:
                 ml[i] = xdata[species][zbin]
 
@@ -250,7 +364,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 100.0, mass_loadi
 
         norm = 1.0
         if mass_loading: # maybe compute as the ~ 20 Myr average on either side of the data point?
-            norm = 1.0 / SFR  
+            norm = 1.0 / SFR
 
         ax.plot(t_plot, mass_plot*norm, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
@@ -290,8 +404,12 @@ def plot_mass(sim_names = None, species = 'HI'):
 
     fig,ax = plt.subplots()
 
+    ymin = 1.0E99
+    ymax = -1.0E99
+
     for s in sim_names:
         # always load most recent file in every case
+        print s
         data = dd.io.load(ALL_DATA[s][-1])
 
         t_first = time_first_star(data)
@@ -316,9 +434,18 @@ def plot_mass(sim_names = None, species = 'HI'):
 
         ax.plot(t_plot, mass_plot, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
 
+        ymin = np.min(  [ymin, np.min(mass_plot)])
+        ymax = np.max(  [ymax, np.max(mass_plot)])
+
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(species + r' Mass (M$_{\odot}$)')
     ax.semilogy()
+
+    ymin = np.min( [ymin, 1.0E-2*ymin])
+
+    ymin = np.max( [ymin, 1.0E-10*ymin])
+
+    ax.set_ylim(ymin, ymax)
 
     ax.set_xlim(global_tmin, global_tmax)
     ax.legend(loc='best')
@@ -417,13 +544,17 @@ if __name__ == '__main__':
 
 #    all_s = ['lm','lm_noRT','lm_nowind','mm','mm_3pc','hm']
 
-    all_s = STAR_IC.keys()
+#    all_s = STAR_IC.keys()
+#    all_s = run15_IC.keys()
+    all_s = run11_stampede_feedback.keys()
 
 #    all_s = PERT_DATA_PATHS.keys()
 
     plot_mass(sim_names = all_s, species = 'HI')
     plot_mass(sim_names = all_s, species = 'stars')
     plot_mass(sim_names = all_s, species = 'total')
+#    plot_mass(sim_names = all_s, species = 'metals')
+#    plot_mass(sim_names = all_s, species = 'Fe')
 
 
     plot_sfr(sim_names = all_s)
@@ -431,6 +562,7 @@ if __name__ == '__main__':
 
     for species in ['total', 'metals', 'C', 'Fe', 'H']:
 
-        plot_mass_loading(sim_names = all_s, species = species, z = 100)
+        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
+        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
