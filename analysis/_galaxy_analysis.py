@@ -39,6 +39,7 @@ from ..particle_analysis import particle_types as pt
 from ..yt_fields import field_generators as fg
 
 from ..misc import process_boundary_flux
+from ..misc import dm_halo as dmprof
 
 _hdf5_compression = 'lzf'
 
@@ -111,7 +112,7 @@ class Galaxy(object):
 
         self.construct_regions()
 
-        self.R_vir = self._compute_virial_radius()
+        self._compute_virial_parameters()
 
         self.total_quantities = {}
         self._total_quantities_calculated = False
@@ -129,13 +130,18 @@ class Galaxy(object):
 
         return
 
-    def _compute_virial_radius(self):
+    def _compute_virial_parameters(self):
         """
-        Using the data set parameters, compute the virial radius
+        Assuming standard cosmology and z = 0, compute virial mass
+        and radius from input parameters. Burkert profile only
         """
+        r_s = self.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc
+        r_s = r_s.convert_to_units('kpc')
 
-        
-        
+        rho_o = self.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3
+
+        self.M_vir, self.R_vir = \
+                   dmprof.burkert_solve_virial(r_s, rho_o)
 
         return
 
@@ -213,6 +219,8 @@ class Galaxy(object):
 
         if 'R_vir' in self.meta_data.keys():
             self.R_vir = self.meta_data['R_vir']
+        if 'M_vir' in self.meta_data.keys():
+            self.M_vir = self.meta_data['M_vir']
 
         return
 
@@ -999,8 +1007,6 @@ class Galaxy(object):
         self.sphere = self.ds.sphere(**sphere_kwargs)
 
         self.halo_sphere = self.ds.sphere(**halo_sphere_kwargs)
-        self.R_vir       = self.halo_sphere.radius
-
 
         return
 
@@ -1046,7 +1052,7 @@ class Galaxy(object):
         #
 
         self.halo_spherical_region = {'center' :    self.ds.domain_center,
-                                      'radius' : 14.255506 * yt.units.kpc}
+                                      'radius' :    self.R_vir}
         self.halo_spherical_region['dr'] = self.halo_spherical_region['radius'] * 0.05
 
         return
