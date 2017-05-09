@@ -76,6 +76,8 @@ class Galaxy(object):
                     print i
                     continue
 
+                break
+
             fg.generate_derived_fields(dstemp)
             fg.FIELDS_DEFINED = True
 
