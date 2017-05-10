@@ -94,6 +94,8 @@ class Galaxy(object):
 
         self.hdf5_filename   = self.wdir + '/' + self.dsname + '_galaxy_data.h5'
 
+        self._compute_virial_parameters()
+
         self._set_data_region_properties()
         self.species_list = util.species_from_fields(self.ds.field_list)
 
@@ -111,8 +113,6 @@ class Galaxy(object):
         self.time_data          = {}
 
         self.construct_regions()
-
-        self._compute_virial_parameters()
 
         self.total_quantities = {}
         self._total_quantities_calculated = False
