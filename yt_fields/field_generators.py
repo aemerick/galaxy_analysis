@@ -541,11 +541,11 @@ def load_and_define(name):
     generate_gradient_fields(ds)
 
     def _grav_accel_x(field,data):
-        return data[('gas','gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
     def _grav_accel_y(field,data):
-        return data[('gas','gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
     def _grav_accel_z(field,data):
-        return data[('gas','gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
     def _grav_accel(field,data):
         return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
 
@@ -564,7 +564,7 @@ def generate_gradient_fields(ds):
     something sensible
     """
 
-    ds.add_gradient_fields(("gas","gravitational_potential"))
+    ds.add_gradient_fields(("gas","gas_gravitational_potential"))
 
     return
 
