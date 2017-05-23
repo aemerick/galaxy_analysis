@@ -63,14 +63,14 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
 
 
 if __name__=='__main__':
-    log = False
+    log = True
 
     ds_list = np.sort( glob.glob('./DD????/DD????'))
 
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
-    dt = 2.0*yt.units.Myr
+    dt = 10.0*yt.units.Myr
 
     times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr')+dt, dt)
     times = times*yt.units.Myr
@@ -81,7 +81,7 @@ if __name__=='__main__':
     center = 0.5 * (times[1:]+times[:-1])
 
     if log:
-        ax.plot(center/1.0E6, sfr*1.0E4, color = 'black', lw = 3)
+        ax.plot(center/1.0E6, sfr, color = 'black', lw = 3)
         ax.semilogy()
     else:
         ax.step(times[:-1]/1.0E6, sfr*1.0E4, color = 'black', lw = 3, where='pre')
@@ -89,7 +89,12 @@ if __name__=='__main__':
     ax.set_xlabel('Time (Myr)')
 
     ax.set_ylabel(r'SFR (10$^{-4}$ M$_{\odot}$/yr)')
-    ax.set_ylim(0.0, np.max(sfr)*1.1 * 1.0E4)
+
+    if log:
+        ax.set_ylim(1.0E-5, 1.0E-2)
+    else:
+
+        ax.set_ylim(0.0, np.max(sfr)*1.1*1.0E4)
     ax.minorticks_on()
     plt.savefig('sfr.png')
 
