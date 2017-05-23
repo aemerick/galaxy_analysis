@@ -392,6 +392,15 @@ def _additional_helper_fields(fields):
 
         return x.convert_to_units('erg/g')
 
+    def _gas_grav_pot(field,data):
+        try:
+            x = data['PotentialField']
+        except:
+            x = data['GravPotential'].value * data.ds.velocity_unit**2
+
+        return x.convert_to_units('erg/g')
+
+
     def _pos_tot_grav_pot(field, data):
 
         return np.abs(data[('gas','total_gravitational_potential')])
@@ -458,6 +467,7 @@ def _additional_helper_fields(fields):
 
     if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','gas_gravitational_potential'), function=_gas_grav_pot, units = 'erg/g')
         yt.add_field(('gas','total_gravitational_potential'), function=_tot_grav_pot, units = 'erg/g')
         yt.add_field(('gas','pos_total_gravitational_potential'), function=_pos_tot_grav_pot, units = 'erg/g')
         yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
@@ -514,3 +524,24 @@ def generate_derived_fields(ds):
     FIELDS_DEFINED = True
     return
 
+
+def generate_gradient_fields(ds):
+    """
+    generate gas self gravity gradient fields and rename them to
+    something sensible
+    """
+
+
+    return
+
+def generate_particle_filters(ds):
+    """
+    Make filter definitions for the various particle types:
+        Main Sequence :
+        White Dwarf   :
+        SNIa remnant  :
+        SNII remnant  :
+        AGB phase (likely very few or none since short lived) :
+    """ 
+
+    return
