@@ -83,7 +83,7 @@ class Galaxy(object):
             fg.FIELDS_DEFINED = True
 
         # load data set and data
-        self.ds     = yt.load(self.wdir + '/' + self.dsname + '/' + self.dsname)
+        self.ds     = fg.load_and_define(self.wdir + '/' + self.dsname + '/' + self.dsname)
         self.current_time = self.ds.current_time.convert_to_units(UNITS['Time'].units).value
         self.df     = self.ds.all_data()
 

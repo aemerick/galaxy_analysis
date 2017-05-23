@@ -445,6 +445,10 @@ def _additional_helper_fields(fields):
 
         return pot.convert_to_cgs()
 
+    def _rad_accel(field, data):
+        return np.sqrt(data['RadAccel1']**2 + data['RadAccel2']**2 + data['RadAccel3']**2).convert_to_units('cm/s**2')
+
+    yt.add_field(("gas","a_rad"), function=_rad_accel, units="cm/s**2")
 
     yt.add_field(('index','DM_background_density'), function = _dm_density, units = 'g/cm**3')
     yt.add_field(('index','DM_background_potential'), function = _dm_potential, units = 'erg/g')
@@ -525,12 +529,42 @@ def generate_derived_fields(ds):
     return
 
 
+def load_and_define(name):
+    """
+    Wrapper around yt to load a data set and define gradient
+    fields and particle filters which must be defined for each 
+    simulation file separately (unlike the above)
+    """
+
+    ds = yt.load(name)
+
+    generate_gradient_fields(ds)
+
+    def _grav_accel_x(field,data):
+        return data[('gas','gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
+    def _grav_accel_y(field,data):
+        return data[('gas','gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
+    def _grav_accel_z(field,data):
+        return data[('gas','gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
+    def _grav_accel(field,data):
+        return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
+
+    def _a_rad_a_grav(field,data):
+        a = data[('gas','a_rad')] / data[('gas','a_grav')]
+    
+        a[data[('gas','a_grav')] == 0.0] = 0.0
+
+    generate_particle_filters(ds)
+    
+    return ds
+
 def generate_gradient_fields(ds):
     """
     generate gas self gravity gradient fields and rename them to
     something sensible
     """
 
+    ds.add_gradient_fields(("gas","gravitational_potential"))
 
     return
 
@@ -543,5 +577,13 @@ def generate_particle_filters(ds):
         SNII remnant  :
         AGB phase (likely very few or none since short lived) :
     """ 
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    def main_sequence_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 11
+        return filter
+
+    ds.add_particle_filter('main_sequence_stars')
+
 
     return
