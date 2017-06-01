@@ -153,6 +153,18 @@ PLOT_DATA = {
                    r'Total Mass (M$_{\odot}$)', None, None,
                    u.Msun, 'algae'),
 
+             ('gas','Fe_Mass'):
+                  ( ('gas', 'Fe_Mass'), r'Fe Mass (M$_{\odot}$)', None, (1.0E-5, 10.0),
+                   u.Msun, 'algae'),
+
+             ('gas','C_Mass'):
+                  ( ('gas', 'C_Mass'), r'C Mass (M$_{\odot}$)', None, (1.0E-5, 10.0),
+                   u.Msun, 'algae'),
+
+             ('gas','O_Mass'):
+                  ( ('gas', 'O_Mass'), r'O Mass (M$_{\odot}$)', None, (1.0E-5, 10.0),
+                   u.Msun, 'algae'),
+
              ('gas', 'number_density'):
                  ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 800.0),
                    u.cm**(-3), 'viridis'),
@@ -208,7 +220,7 @@ PLOT_DATA[('enzo','Temperature')] = PLOT_DATA[('gas','Temperature')]
 for asym in asym_to_anum:
     PLOT_DATA[('gas', asym + '_Mass')] =\
               ( ('gas', asym + '_Mass'), r' ' + asym + ' Mass (M$_{\odot}$)',
-                (0.01, 100.0), (1.0E-3, 1.0E3), u.Msun, 'viridis')
+                None, (1.0E-8, 1.0E-2), u.Msun, 'viridis')
 
 
 LABELS = {k: v[1] for k,v in six.iteritems(PLOT_DATA)}

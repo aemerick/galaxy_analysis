@@ -130,6 +130,21 @@ def _number_density_function_generator(asym):
     yt.add_field(('gas', 'Metal_Number_Density'),
                  function = _metal_number_density, units = 'cm**(-3)')
 
+    def _H_total_number_density(field,data):
+        n_H = data['H_p0_number_density'] + data['H_p1_number_density']
+
+        try:
+            n_H += data['H_m1_number_density'] +\
+             0.5 * (data['H2_p0_number_density'] + data['H2_p1_number_density'])
+
+        except:
+            n_H += np.zeros(np.shape(n_H))
+
+        return n_H.convert_to_units('cm**(-3)')
+
+    yt.add_field(('gas','H_total_number_density'),
+                 function = _H_total_number_density, units = 'cm**(-3)')
+
     return nfields
 
 def _particle_abundance_function_generator(ratios):
@@ -541,11 +556,11 @@ def load_and_define(name):
     generate_gradient_fields(ds)
 
     def _grav_accel_x(field,data):
-        return data[('gas','gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
     def _grav_accel_y(field,data):
-        return data[('gas','gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
     def _grav_accel_z(field,data):
-        return data[('gas','gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
+        return data[('gas','gas_gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
     def _grav_accel(field,data):
         return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
 
@@ -564,7 +579,7 @@ def generate_gradient_fields(ds):
     something sensible
     """
 
-    ds.add_gradient_fields(("gas","gravitational_potential"))
+    ds.add_gradient_fields(("gas","gas_gravitational_potential"))
 
     return
 

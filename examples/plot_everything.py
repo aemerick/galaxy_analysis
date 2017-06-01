@@ -87,39 +87,81 @@ def phase_plots(ds, to_plot = 'all', region = None):
 
     return
 
-def projection_plots(ds, fields, axis=['x','z'], has_particles = None):
+def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, thin = False,
+                         width = 2.5*yt.units.kpc, ndx = 10):
 
     if has_particles is None:
         has_particles = ('io','particle_position_x') in ds.field_list 
 
+    if fields is None:
+        fields = [('gas','number_density'), ('enzo','Temperature')]
+
+#        if thin:
+#            fields += [('gas','a_rad_over_a_grav')]
+
     m = 0.0
     t = ds.current_time.convert_to_units('Myr').value
-    data = ds.all_data()
+    data   = ds.all_data()
+    dx_min = np.min(data['dx'].convert_to_units('pc'))
 
     if has_particles:
         m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
         m = m.value
 
     for a in axis:
-        pp = yt.ProjectionPlot(ds, axis = a, fields = [('gas','number_density'),('enzo','Temperature')], 
-                               width = (2.5,'kpc'), weight_field = 'density')
+
+        #
+        # set up thin projection definitions if needed
+        #
+        if thin:
+            center = ds.domain_center.convert_to_units('kpc')
+            depth  = (ndx * dx_min).convert_to_units('kpc')
+            width  = width.convert_to_units('kpc')
+
+            if a == 'x':
+                dl = np.array([depth, width, width])
+            elif a == 'y':
+                dl = np.array([width, depth, width])
+            elif a =='z':
+                dl = np.array([width, width, depth])
+
+            if not hasattr(dl, 'value'):
+                dl = dl * yt.units.kpc
+
+            data_source = ds.box( center - dl, center + dl)
+        else:
+            data_source = data
+
+        pp = yt.ProjectionPlot(ds, axis = a, fields = fields,
+                               width = width, weight_field = 'density', data_source = data_source)
         pp.set_buff_size(2048)
 
-        for f in [('gas','number_density'),('enzo','Temperature')]:
+        print fields
+        for f in fields:
+            print f
             pp.set_cmap(f, ga.static_data.CMAPS[f])
             pp.set_unit(f, field_units[f].units)
             pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
             pp.set_colorbar_label(f, axis_label[f])
-    
+
         if has_particles:
-            pp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+            particle_depth = 0.9
+            if thin:
+                particle_depth = (ndx * dx_min)
+            pp.annotate_particles(particle_depth, p_size = 0.4, stride = 1, ptype = 'main_sequence_stars')
 
         pp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
-        pp.save('./proj/')
+
+        if thin:
+            outdir = './thin_proj/'
+        else:
+            outdir = './proj/'
+
+        pp.save(outdir)
         del(pp)
 
     return
-    
+
 def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
 
     if has_particles is None:
@@ -147,7 +189,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
 
 
         if has_particles:
-            sp.annotate_particles(0.9, p_size = 0.4, stride = 1)
+            sp.annotate_particles(0.9, p_size = 0.4, stride = 1, ptype = 'main_sequence_stars')
 
         sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
         sp.save('./slice/')
@@ -162,28 +204,28 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
 
     ds   = yt.load(dsname)
-    yt.add_particle_filter("main_sequence", function=main_sequence, filtered_type="all", requires=["particle_type"])
-    ds.add_particle_filter("main_sequence")
-    ds = yt.load(dsname)
-    ds.add_particle_filter("main_sequence")
 
     if ds.parameters['NumberOfParticles'] < 1:
         print "Functionality currently broken when no particles exist"
         return
 
     ga.yt_fields.field_generators.generate_derived_fields(ds)
-    ds   = yt.load(dsname)
+    ds   = ga.yt_fields.field_generators.load_and_define(dsname)
 
     data = ds.all_data()
 
     has_particles = ('io','particle_position_x') in ds.field_list
 
 
-    phase_plots(ds)
+#    phase_plots(ds)
 
-    slice_plots(ds, fields, axis, has_particles = has_particles)
+    #slice_plots(ds, fields, axis, has_particles = has_particles)
 
-    projection_plots(ds,fields,axis,has_particles = has_particles)
+    projection_plots(ds, axis = axis, has_particles = has_particles,
+                     thin = True)
+    projection_plots(ds, axis = axis, has_particles = has_particles,
+                     thin = False)
+
 
 
     del(ds)
@@ -192,7 +234,7 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
 
 def make_plots(ds_list, fields, axis = ['x', 'z'], n_jobs = None):
-    
+
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
 
@@ -215,6 +257,9 @@ if __name__ == "__main__":
 
     if not os.path.exists('./proj'):
         os.makedirs('./proj')
+
+    if not os.path.exists('./thin_proj'):
+        os.makedirs('./thin_proj')
 
     all_ds_list = glob.glob('./DD????/DD????')
     all_ds_list = np.sort(all_ds_list)

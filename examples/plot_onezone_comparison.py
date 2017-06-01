@@ -15,6 +15,13 @@ def load_galaxy_data(data_path = './../'):
     """
 
     dfiles = glob.glob(data_path + 'DD????_galaxy_data.h5')
+    if len(dfiles) < 1 and data_path == './../':
+        dfiles = glob.glob(data_path + '../DD????_galaxy_data.h5')
+
+    if len(dfiles) < 1:
+        print "No galaxy analysis files found"
+        return
+
     dfiles = np.sort(dfiles)
 
     gal    = dd.io.load(dfiles[-1])
@@ -108,7 +115,7 @@ def plot_masses(sim_data, onez_data):
     plt.tight_layout()
     fig.savefig('total_mass.png')
 
-    ax.set_ylim(1.0E-3, 1.0E7)
+    ax.set_ylim(1.0E-3, 1.0E4)
     fig.savefig('total_mass_compact.png')
     plt.close()
 
