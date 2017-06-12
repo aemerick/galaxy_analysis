@@ -569,6 +569,14 @@ def load_and_define(name):
     
         a[data[('gas','a_grav')] == 0.0] = 0.0
 
+        return a
+
+    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2')
+    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '')
+
     generate_particle_filters(ds)
     
     return ds
