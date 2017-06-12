@@ -178,7 +178,7 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
         txy_1 = (0.75*logdx,0.3)
         txy_2 = (txy_1[0]  ,0.25)
 
-        ax.annotate('%0.2f %%'%(100.0*vg_unres), xy = txy_1, xytext = txy_1,
+        ax.annotate('%0.2f %%'%(100.0*avg_unres), xy = txy_1, xytext = txy_1,
                         color = 'black')
         ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
                         color = 'orange')
