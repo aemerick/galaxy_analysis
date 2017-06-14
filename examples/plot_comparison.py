@@ -10,7 +10,7 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 125.0
+global_tmax = 1000.0
 
 #
 #
@@ -79,6 +79,7 @@ add_to_ls = {'lm_ICs' : '-', 'mm_ICs' : '-', 'hm_ICs' : '-',
            'lm_ICs_3pc' : ':', 'mm_ICs_3pc' : ':', 'hm_ICs_3pc' : ':', 'hm_IC_compact' : '-',
            'hm_IC_compact_msf' : '--', 'hm_IC_compact_hsf' : '-.'}
 
+
 for k in add_to_ls:
     ls_dict[k] = add_to_ls[k]
 
@@ -104,7 +105,17 @@ for k in PERT_DATA_PATHS.keys() + STAR_IC.keys():
 run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
              'r11_pert'   : local + '/run11/200cc/perturb',
              'r11_lowsf'  : pleiades + '/starIC/run11/lowsf',
-             'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind' }
+             'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind',
+             'r11 fiducial' : pleiades + '/starIC/run11_largebox/sndriving',
+             'r11 2xr_s'    : pleiades + '/starIC/run11_2rs/sndriving',
+             'r11 30km'     : pleiades + '/starIC/run11_30km/sndriving' }
+
+color_dict['r11 fiducial'] = ps.black
+color_dict['r11 2xr_s'] = ps.blue
+color_dict['r11 30km']  = ps.purple
+ls_dict['r11 fiducial'] = '-'
+ls_dict['r11 2xr_s'] = '-'
+ls_dict['r11 30km'] = '-'
 
 color_dict['r11_smooth'] = ps.blue
 color_dict['r11_pert'  ] = ps.blue
@@ -180,6 +191,7 @@ run15_IC = {'r15_smooth'   : stampede + '/run15',
             'r15_highsf_c' : pleiades + '/starIC/run15_compact/highsf',
             'r15_lowsf_large' : pleiades + '/starIC/run15_largebox/no_wind/compact'}
 
+
 color_dict['r15_smooth'] = ps.blue
 color_dict['r15_pert']   = ps.blue
 ls_dict['r15_smooth'] = '-'
@@ -196,6 +208,40 @@ ls_dict['r15_highsf_c'] = ':'
 
 color_dict['r15_lowsf_large'] = ps.magenta
 ls_dict['r15_lowsf_large'] = '-'
+
+
+comparison_sim = {'Hu et. al. 2017' : pleiades + '/hu',
+                  'Forbes et. al. 1 kpc' : pleiades + '/forbes/starIC',
+                  'run11 2 x r_s'  : pleiades + '/starIC/run11_2rs/no_wind',
+                  'run11 sndriving' : pleiades + '/starIC/run11_largebox/sndriving',
+                  'Hu sndriving' : pleiades +'/hu/sndriving',
+                  'Hu shortrad'  : pleiades +'/hu/sndriving_shortrad',
+#                  'run11 no radpressure' : pleiades + '/starIC/run11_largebox/no_radpressure',
+                  'run11 original' : pleiades + '/starIC/run11_largebox/no_wind',
+                  'run15 lbox' : pleiades + '/starIC/run15_largebox/better_IC'}
+
+ls_dict['Hu et. al. 2017'] = '-'
+color_dict['Hu et. al. 2017'] = ps.black
+ls_dict['Hu sndriving'] = '-'
+color_dict['Hu sndriving'] = ps.black
+ls_dict['Hu shortrad'] = '-'
+color_dict['Hu shortrad'] = ps.blue
+
+ls_dict['Forbes et. al. 1 kpc'] = '-'
+color_dict['Forbes et. al. 1 kpc'] = ps.blue
+color_dict['run15 lbox'] = 'red'
+
+ls_dict['run11 2 x r_s'] = '-'
+ls_dict['run11 no radpressure'] = ':'
+ls_dict['run11 original'] = '-'
+ls_dict['run11 sndriving'] = ':'
+ls_dict['run15 lbox'] = '-'
+
+color_dict['run11 sndriving'] = ps.orange
+color_dict['run11 2 x r_s'] = 'green'
+color_dict['run11 no radpressure'] = ps.orange
+color_dict['run11 original'] = ps.orange
+
 
 ALL_DATA = {}
 for s in DATA_PATHS.keys():
@@ -221,6 +267,9 @@ for s in run11_stampede_feedback.keys():
 
 for s in run15_feedback.keys():
     ALL_DATA[s] = np.sort(glob.glob(run15_feedback[s] + '/DD*.h5'))
+
+for s in comparison_sim.keys():
+    ALL_DATA[s] = np.sort(glob.glob(comparison_sim[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):
 
@@ -441,7 +490,7 @@ def plot_mass(sim_names = None, species = 'HI'):
     ax.set_ylabel(species + r' Mass (M$_{\odot}$)')
     ax.semilogy()
 
-    ymin = np.min( [ymin, 1.0E-2*ymin])
+    ymin = np.min( [ymin, 1.0E-2*ymax])
 
     ymin = np.max( [ymin, 1.0E-10*ymin])
 
@@ -546,7 +595,10 @@ if __name__ == '__main__':
 
 #    all_s = STAR_IC.keys()
 #    all_s = run15_IC.keys()
-    all_s = run11_stampede_feedback.keys()
+#    all_s = run11_stampede_feedback.keys()
+#    all_s = comparison_sim.keys()
+    all_s = ['Hu sndriving','Hu shortrad']
+    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km']
 
 #    all_s = PERT_DATA_PATHS.keys()
 
@@ -560,9 +612,9 @@ if __name__ == '__main__':
     plot_sfr(sim_names = all_s)
     plot_snr(sim_names = all_s)
 
-    for species in ['total', 'metals', 'C', 'Fe', 'H']:
+#    for species in ['total', 'metals', 'C', 'Fe', 'H']:
 
-        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
-        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
+#        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
+#        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
