@@ -104,9 +104,13 @@ def plot_sequestering(directory = './', fields = None, elements = None,
             norm = 1.0 / plot_data[fraction]
 
         ymax = np.max(plot_data['FullBox'] * norm)
+        if fraction is None:
+            ymax = 5.0 * ymax
+
         ymin = 1.0E-8 * ymax
 
-        ymin = np.max( [ymin, np.min(plot_data['FullBox'] * norm)] )
+        # try and set something reasonable for minimum if it exists
+        ymin = np.max( [ymin, np.min(plot_data['stars'] * norm)*10.0] )
 
         for s in sfields:
 
@@ -206,7 +210,7 @@ def plot_surface_density_profiles(directory = './', normalize = False):
 #        ax.semilogx()
         ax.set_xlim(0.0, 2000.0)
 
-        ymin = np.max( [ymin, 1.0E-10*ymax])
+        ymin = np.max( [ymin, 1.0E-5*ymax])
         ax.set_ylim(ymin, ymax)
 
         plt.minorticks_on()
@@ -302,12 +306,13 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         directory = sys.argv[1]
 
+
+    plot_sequestering(directory = directory)
+    print "completed total sequestering"
     plot_surface_density_profiles(directory = directory)
     print "completed surface density profiles"
     plot_mass_profiles(directory = directory)
     print "completed mass profiles"
-    plot_sequestering(directory = directory)
-    print "completed total sequestering"
 
     # Disk and FullBox are likely the only two fractions that make
     # sense given the way the data is constructed. Other fractions are
