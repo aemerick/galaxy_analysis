@@ -130,6 +130,21 @@ def _number_density_function_generator(asym):
     yt.add_field(('gas', 'Metal_Number_Density'),
                  function = _metal_number_density, units = 'cm**(-3)')
 
+    def _H_total_number_density(field,data):
+        n_H = data['H_p0_number_density'] + data['H_p1_number_density']
+
+        try:
+            n_H += data['H_m1_number_density'] +\
+             0.5 * (data['H2_p0_number_density'] + data['H2_p1_number_density'])
+
+        except:
+            n_H += np.zeros(np.shape(n_H))
+
+        return n_H.convert_to_units('cm**(-3)')
+
+    yt.add_field(('gas','H_total_number_density'),
+                 function = _H_total_number_density, units = 'cm**(-3)')
+
     return nfields
 
 def _particle_abundance_function_generator(ratios):
@@ -553,6 +568,14 @@ def load_and_define(name):
         a = data[('gas','a_rad')] / data[('gas','a_grav')]
     
         a[data[('gas','a_grav')] == 0.0] = 0.0
+
+        return a
+
+    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2')
+    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '')
 
     generate_particle_filters(ds)
     

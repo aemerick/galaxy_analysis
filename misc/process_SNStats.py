@@ -71,15 +71,22 @@ def read_data(filename, filter = True):
 
     return
 
-def read_all_data(directory, filter = True):
+def read_all_data(directory = '.', filter = True):
     """
     Go through all files in directory and combine
     """
 
-#    outputs = glob.glob(directory + '/*.o*')
-    # merge the output files into one with just the data we want
-    bash_command = "grep -h 'IndividualStarSNStats:' " + directory + "/*.o* > combined_output.txt"
-    subprocess.call(bash_command, shell=True)
+    # grep for IndividualStarSNStats flag in output files, combine to one
+    bash_commands = ["grep --no-filename -e '^IndividualStarSNStats' " + directory + "/*.o* > temp_combined_output_o.txt",
+                     "grep --no-filename -e '^IndividualStarSNStats' " + directory + "/*.e* > temp_combined_output_e.txt",
+                     "cat " + directory + "/temp_combined_output_e.txt " + directory + "/temp_combined_output_o.txt > " + directory + "/temp_combined_output.txt",
+                     "sed '/P/d' " + directory + "/temp_combined_output.txt > " + directory + "/temp_combined_output_2.txt",
+                     "sed '/Load/d' " + directory + "/temp_combined_output_2.txt > " + directory + "/combined_output.txt",
+                     "rm " + directory + "/temp_combined_output*.txt"]
+
+    # execute commands
+    for bc in bash_commands:
+        subprocess.call(bc, shell=True)
 
     data = np.genfromtxt(directory + '/combined_output.txt', dtype = _ndtype)
 
@@ -90,7 +97,7 @@ def read_all_data(directory, filter = True):
     else:
         return data
 
-def save_data(directory, data):
+def save_data(data, directory = '.'):
     np.savetxt(directory + '/filtered_data.txt', data)
     return
 
@@ -121,7 +128,7 @@ def rho_to_n(rho, mu= 1.3):
 
     return rho / (m_p * mu)
 
-def plot_rpds(data, dx = None, ncell = 1):
+def plot_rpds(data, dx = None, ncell = 3, norm = False):
     fig, ax = plt.subplots(figsize=(8,8))
 
     avg_dens = data['avg_rho']
@@ -135,34 +142,61 @@ def plot_rpds(data, dx = None, ncell = 1):
     R_avg = R_PDS(avg_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
     R_max = R_PDS(max_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
 
-    avg_hist, bins = np.histogram(np.log10(R_avg), bins = np.linspace(-0.5, 2, 20))
+    avg_hist, bins = np.histogram(np.log10(R_avg), bins = np.linspace(-0.5, 2.5, 25))
     max_hist, bins = np.histogram(np.log10(R_max), bins = bins)
     cent = 0.5 * (bins[1:] + bins[:-1])
 
     ax.set_xlabel(r'log[Supernova PDS Radius (pc)]')
     ax.set_ylabel(r'Count')
 
-    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = 'average density', where = 'post')
-    ax.step(cent, max_hist, lw = 3, ls = '-', color = 'red',   label = 'max density', where='post')
+    normalization = 1.0
+    if norm:
+        normalization = 1.0 / (1.0 * np.sum(avg_hist))
+    ax.step(cent, avg_hist * normalization , lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
 
-    ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
+    if norm:
+        normalization = 1.0 / (1.0 * np.sum(max_hist))
+
+    ax.step(cent, max_hist * normalization, lw = 3, ls = '-', color = 'orange',   label = r'$n_{\rm max}$', where='post')
+
+    if norm:
+        ax.set_ylim(0, 0.4)
+    else:
+        ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
 
     if dx is not None:
         logdx = np.log10(dx)
-        ax.plot( [logdx,logdx], ax.get_ylim(), ls = ':', color = 'black', lw =3) 
-        logdx = np.log10(3.0*dx)
-        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '--', color = 'black', lw =3)
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '--', color = 'black', lw =3) 
+        logdx = np.log10(4.5*dx)
+        ax.plot( [logdx,logdx], ax.get_ylim(), ls = '-', color = 'black', lw =3)
+
+    # find fraction that are unresolved
+    if norm:
+        avg_unres = np.size(R_avg[R_avg < 4.5 *dx]) / (1.0 *np.size(R_avg))
+        max_unres = np.size(R_max[R_max < 4.5 *dx]) / (1.0 *np.size(R_max))
+
+        txy_1 = (0.75*logdx,0.3)
+        txy_2 = (txy_1[0]  ,0.25)
+
+        ax.annotate('%0.2f %%'%(100.0*vg_unres), xy = txy_1, xytext = txy_1,
+                        color = 'black')
+        ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
+                        color = 'orange')
+
 
 
     ax.legend(loc='best')
     plt.tight_layout()
     ax.minorticks_on()
-    plt.savefig('sn_radius_distribution.png')
+
+    if norm:
+        plt.savefig('sn_radius_dist_fraction.png')
+    else:
+        plt.savefig('sn_radius_distribution.png')
 
     plt.close()
 
     return
-    
 
 def plot_density(data, estimate_n = True):
     fig, ax = plt.subplots(figsize=(8,8))
@@ -170,8 +204,6 @@ def plot_density(data, estimate_n = True):
     avg_dens = data['avg_rho']
     max_dens = data['max_rho']
 
-    print avg_dens
-    print max_dens
     if estimate_n:
         avg_dens = rho_to_n(avg_dens)
         max_dens = rho_to_n(max_dens)
@@ -180,19 +212,17 @@ def plot_density(data, estimate_n = True):
     else:
         bins = 10
 
-    print avg_dens
-    print max_dens
 
     avg_hist, bins = np.histogram(np.log10(avg_dens), bins = bins)
     max_hist, bins = np.histogram(np.log10(max_dens), bins = bins)
     cent = 0.5 * (bins[1:] + bins[:-1])
 
-    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = 'average density', where = 'pre')
-    ax.step(cent, max_hist, lw = 3 , ls = '-', color = 'red', label = 'max density', where = 'pre')
+    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
+    ax.step(cent, max_hist, lw = 3 , ls = '-', color = 'orange', label = r'$n_{\rm max}$', where = 'post')
 
     ax.set_xlabel(r'log[ n (cm$^{-3}$)]')
     ax.set_ylabel(r'Count')
-    
+
     ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
     ax.legend(loc='best')
     plt.tight_layout()
@@ -200,7 +230,7 @@ def plot_density(data, estimate_n = True):
     plt.savefig('density_distribution.png')
 
     plt.close()
-    
+
     return
 
 
@@ -209,6 +239,7 @@ if __name__ == "__main__":
     directory = '.'
 
     data = read_all_data(directory)
-    save_data(directory, data)
+    save_data(data, directory)
     plot_density(data)
-    plot_rpds(data, dx = 1.5)
+    plot_rpds(data, dx = 2.5)
+    plot_rpds(data, dx = 2.5, norm = True)
