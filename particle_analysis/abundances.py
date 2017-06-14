@@ -1,6 +1,8 @@
 #import yt.mods as yt
 import yt
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 from collections import Iterable, OrderedDict
 
