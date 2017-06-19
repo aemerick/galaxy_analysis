@@ -1,6 +1,15 @@
 import deepdish as dd
+from matplotlib import rc
+
+fsize = 17
+rc('text', usetex=False)
+rc('font', size=fsize)#, ftype=42)
+line_width = 3
+point_size = 30
+
 import matplotlib as mpl
 mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import glob
 import numpy as np
@@ -108,14 +117,17 @@ run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
              'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind',
              'r11 fiducial' : pleiades + '/starIC/run11_largebox/sndriving',
              'r11 2xr_s'    : pleiades + '/starIC/run11_2rs/sndriving',
-             'r11 30km'     : pleiades + '/starIC/run11_30km/sndriving' }
+             'r11 30km'     : pleiades + '/starIC/run11_30km/sndriving' ,
+             'r11 40km'     : pleiades + '/starIC/run11_40km/sndriving'}
 
-color_dict['r11 fiducial'] = ps.black
-color_dict['r11 2xr_s'] = ps.blue
+color_dict['r11 fiducial'] = ps.orange
+color_dict['r11 2xr_s'] = ps.magenta
 color_dict['r11 30km']  = ps.purple
+color_dict['r11 40km']  = ps.black
 ls_dict['r11 fiducial'] = '-'
 ls_dict['r11 2xr_s'] = '-'
 ls_dict['r11 30km'] = '-'
+ls_dict['r11 40km'] = '-'
 
 color_dict['r11_smooth'] = ps.blue
 color_dict['r11_pert'  ] = ps.blue
@@ -282,8 +294,12 @@ def time_first_star(data = None, t = None, sfr = None):
         if ('t_first_star' in data['particle_meta_data']):
             return data['particle_meta_data']['t_first_star']
 
-        t   = data['time_data']['time']
-        sfr = data['time_data']['SFR']
+        if ('SFR_1' in data['time_data']):
+            t   = data['time_data']['time_1']
+            sfr = data['time_data']['SFR_1']
+        else:
+            t   = data['time_data']['time']
+            sfr = data['time_data']['SFR']
 
     t_first = np.min( t[sfr > 0])
 
@@ -469,14 +485,33 @@ def plot_mass(sim_names = None, species = 'HI'):
             fname = 'M_gas'
         elif species == 'star' or species == 'stars' or species == 'stellar' or species == 'M_star':
             fname = 'M_star'
+        else:
+            if species == 'Metals' or species == 'Metal' or species == 'metals':
+                species = 'metal'
+
+            fname = 'M_' + species
 
         t = np.zeros(np.size(ALL_DATA[s]))
         mass = np.zeros(np.size(ALL_DATA[s]))
         for i,x in enumerate(ALL_DATA[s]):
-            xdata = dd.io.load(x)
-            t[i] = xdata['meta_data']['Time']
-            mass[i] = xdata['meta_data'][fname]
-        
+            xdata = dd.io.load(x, '/meta_data')
+            t[i] = xdata['Time']
+
+            if fname in xdata: # new style
+                mass[i] = xdata[fname]
+            else: # for backwards compatability
+                tempdata = dd.io.load(x, '/gas_profiles/accumulation/disk')
+                if not (species == 'metal'):
+                    fname = ('gas', species + '_Mass')
+                else:
+                    fname = ('gas', species + '_mass')
+
+                if not (fname in tempdata):
+                    print "Breaking for field ", fname, " in plot mass evolution"
+                    break
+
+                mass[i] = np.sum(tempdata[fname])
+
         t = t - t_first
         t_plot   = t[t >= 0.0]
         mass_plot = mass[t >= 0.0]
@@ -508,7 +543,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 
     return
 
-def plot_sfr(sim_names = None):
+def plot_sfr(sim_names = None, sampling = None):
 
     if sim_names is None:
         sim_names = DATA_PATHS.keys()
@@ -519,8 +554,15 @@ def plot_sfr(sim_names = None):
         # always load most recent file in every case
         data = dd.io.load(ALL_DATA[s][-1])
 
-        t    = data['time_data']['time'] / 1.0E6
-        sfr  = data['time_data']['SFR']
+        if sampling is None or (sampling == 10):  # load default (10 Myr)
+            t    = data['time_data']['time'] / 1.0E6
+            sfr  = data['time_data']['SFR']
+        elif sampling == 1:
+            t = data['time_data']['time_1'] / 1.0E6
+            sfr = data['time_data']['SFR_1']
+        elif sampling == 100:
+            t = data['time_data']['time_100'] / 1.0E6
+            sfr = data['time_data']['SFR_100']
 
         t_first = time_first_star(data)
 
@@ -542,7 +584,14 @@ def plot_sfr(sim_names = None):
     plt.tight_layout()
     plt.minorticks_on()
 
-    fig.savefig('sfr_comparison.png')
+    outstr = 'sfr_comparison'
+    if not (sampling is None):
+        if sampling == 1:
+            outstr += '_1'
+        elif sampling == 100:
+            outstr += '_100'
+
+    fig.savefig(outstr  + '.png')
     plt.close()
 
     return
@@ -598,23 +647,27 @@ if __name__ == '__main__':
 #    all_s = run11_stampede_feedback.keys()
 #    all_s = comparison_sim.keys()
     all_s = ['Hu sndriving','Hu shortrad']
-    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km']
+    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
 
 #    all_s = PERT_DATA_PATHS.keys()
 
     plot_mass(sim_names = all_s, species = 'HI')
     plot_mass(sim_names = all_s, species = 'stars')
     plot_mass(sim_names = all_s, species = 'total')
-#    plot_mass(sim_names = all_s, species = 'metals')
-#    plot_mass(sim_names = all_s, species = 'Fe')
+    plot_mass(sim_names = all_s, species = 'metals')
+    plot_mass(sim_names = all_s, species = 'Fe')
+    plot_mass(sim_names = all_s, species = 'O')
+    plot_mass(sim_names = all_s, species = 'C')
+    plot_mass(sim_names = all_s, species = 'Mg')
 
 
     plot_sfr(sim_names = all_s)
+    plot_sfr(sim_names = all_s, sampling = 1)
+    plot_sfr(sim_names = all_s, sampling = 100)
     plot_snr(sim_names = all_s)
 
-#    for species in ['total', 'metals', 'C', 'Fe', 'H']:
-
-#        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
-#        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
+    for species in ['total', 'metals', 'O', 'C', 'Mg', 'Fe']:
+        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
+        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
