@@ -606,6 +606,13 @@ class Galaxy(object):
                                            self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units))/\
                                                   self.meta_data['M_gas']
 
+        #
+        # compute total mass in disk for all species
+        #
+        for e in self.species_list:
+            fname = e + '_Mass'
+            self.meta_data['M_' + e] = np.sum(self.disk[fname]).convert_to_units(UNITS["Mass"].units)
+
         return
 
 
@@ -758,7 +765,7 @@ class Galaxy(object):
         #
         # x is temp dummy variable
         self.time_data['time'], self.time_data['SFR'] = pa.sfrFromParticles(self.ds, self.df)
-        x, self.time_data['SFH'] = pa.sfhFromParticles(self.ds, self.df, times=x)
+        x, self.time_data['SFH'] = pa.sfhFromParticles(self.ds, self.df, times=self.time_data['time'])
         x, self.time_data['SNII_snr'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
         x, self.time_data['SNIa_snr'] = pa.snr(self.ds, self.df ,times=x, sn_type ='Ia')
 
@@ -770,7 +777,7 @@ class Galaxy(object):
         # Make a set of SFR and SNR evolutions with longer bin spacing (100 Myr)
         #
         self.time_data['time_100'], self.time_data['SFR_100'] = pa.sfrFromParticles(self.ds, self.df, times = 100.0 * yt.units.Myr)
-        x, self.time_data['SFH_100'] = pa.sfhFromParticles(self.ds, self.df, times=x)
+        x, self.time_data['SFH_100'] = pa.sfhFromParticles(self.ds, self.df, times=self.time_data['time_100'])
         x, self.time_data['SNII_snr_100'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
         x, self.time_data['SNIa_snr_100'] = pa.snr(self.ds, self.df ,times=x, sn_type ='Ia')
 
@@ -782,7 +789,7 @@ class Galaxy(object):
         # Make a set of SFR and SNR evolutions with very short bin spacing (1 Myr)
         #
         self.time_data['time_1'], self.time_data['SFR_1'] = pa.sfrFromParticles(self.ds, self.df, times = 1.0 * yt.units.Myr)
-        x, self.time_data['SFH_1'] = pa.sfhFromParticles(self.ds, self.df, times=x)
+        x, self.time_data['SFH_1'] = pa.sfhFromParticles(self.ds, self.df, times=self.time_data['time_1'])
 	x, self.time_data['SNII_snr_1'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
         x, self.time_data['SNIa_snr_1'] = pa.snr(self.ds, self.df ,times=x, sn_type ='Ia')
 
