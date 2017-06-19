@@ -64,6 +64,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
     hf = h5py.File(dir + h5file, 'r')
 
+    # add new labels for plot types here, (e.g. X / Mg vs. Mg / H)
     xlabels = {'standard': r'log [Fe / H]'}
     ylabels = {'standard': r'log [X / Fe]'}
 
@@ -107,10 +108,10 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
             if color_by_age:
                 age = np.array(t - hf[dsname]['creation_time'].value)
-                c = ax[(i,j)].scatter( np.array(abund[ele][denom2].value), np.array(abund[ele][denom1].value), s = 7.5, alpha = 0.25,
+                c = ax[(i,j)].scatter( np.array(abund[ele][denom1].value), np.array(abund[denom1][denom2].value), s = 7.5, alpha = 0.25,
                                    c = age, label=ele, cmap='algae')
             else:
-                ax[(i,j)].scatter( abund[ele][denom2].value, abund[ele][denom1].value, s =15, alpha =0.75,
+                ax[(i,j)].scatter( abund[ele][denom1].value, abund[denom1][denom2].value, s =15, alpha =0.75,
                                                        color = 'black', label = ele)
 
             ax[(i,j)].set_xlabel(xlabels[plot_type])
