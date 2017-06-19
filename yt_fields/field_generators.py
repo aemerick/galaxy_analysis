@@ -147,7 +147,11 @@ def _number_density_function_generator(asym):
 
     return nfields
 
-def _particle_abundance_function_generator(ratios):
+def _particle_abundance_function_generator(ratios, ds = None):
+
+    if not (ds is None):
+        if not (ds.parameters['NumberOfParticles'] > 0):
+            return
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -258,6 +262,9 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
 
 def generate_stellar_model_fields(ds):
+
+    if not (ds.parameters['NumberOfParticles'] > 0):
+        return
 
     #
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
@@ -531,7 +538,7 @@ def generate_derived_fields(ds):
     print nfields, "abundance ratio fields defined"
 
     if ds.parameters['NumberOfParticles'] > 0:
-        nfields =  _particle_abundance_function_generator(ratios)
+        nfields =  _particle_abundance_function_generator(ratios, ds)
         print nfields, "particle abundance ratio fields defined"
 
 
