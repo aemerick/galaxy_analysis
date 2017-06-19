@@ -108,16 +108,21 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
             if color_by_age:
                 age = np.array(t - hf[dsname]['creation_time'].value)
-                c = ax[(i,j)].scatter( np.array(abund[ele][denom1].value), np.array(abund[denom1][denom2].value), s = 7.5, alpha = 0.25,
+                c = ax[(i,j)].scatter( np.array(abund[denom1][denom2].value), np.array(abund[ele][denom1].value), s = 7.5, alpha = 0.25,
                                    c = age, label=ele, cmap='algae')
             else:
-                ax[(i,j)].scatter( abund[ele][denom1].value, abund[denom1][denom2].value, s =15, alpha =0.75,
+                ax[(i,j)].scatter( abund[denom1][denom2].value, abund[ele][denom1].value, s =15, alpha =0.75,
                                                        color = 'black', label = ele)
 
             ax[(i,j)].set_xlabel(xlabels[plot_type])
             ax[(i,j)].set_ylabel(ylabels[plot_type])
-            ax[(i,j)].set_xlim(-10, 1)
-            ax[(i,j)].set_ylim(-4,4)
+
+            if ele in ['Eu','Ba','Y']:
+                ax[(i,j)].set_ylim(-8,0)
+            else:
+                ax[(i,j)].set_ylim(-4,4)
+
+            ax[(i,j)].set_xlim(-15, 0)
             ax[(i,j)].minorticks_on()
 
             ax[(i,j)].legend(loc='upper right')
