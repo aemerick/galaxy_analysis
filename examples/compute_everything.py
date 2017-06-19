@@ -74,5 +74,4 @@ if __name__ == "__main__":
         imax  = np.max(ivals)
         di    = np.min(ivals[1:] - ivals[:-1])
 
-        
     run_analysis(imin, imax, di, n_jobs = n_jobs)

@@ -142,7 +142,7 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
     R_avg = R_PDS(avg_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
     R_max = R_PDS(max_dens, data['metallicity'], E_51 = 1 / (ncell_vol))
 
-    avg_hist, bins = np.histogram(np.log10(R_avg), bins = np.linspace(-0.5, 2.5, 25))
+    avg_hist, bins = np.histogram(np.log10(R_avg), bins = np.linspace(0.0, 3.0, 25))
     max_hist, bins = np.histogram(np.log10(R_max), bins = bins)
     cent = 0.5 * (bins[1:] + bins[:-1])
 
@@ -159,10 +159,7 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
 
     ax.step(cent, max_hist * normalization, lw = 3, ls = '-', color = 'orange',   label = r'$n_{\rm max}$', where='post')
 
-    if norm:
-        ax.set_ylim(0, 0.4)
-    else:
-        ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
+    ax.set_ylim(0, np.max([np.max(avg_hist*normalization),np.max(max_hist*normalization)])*1.5)
 
     if dx is not None:
         logdx = np.log10(dx)
@@ -175,10 +172,10 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
         avg_unres = np.size(R_avg[R_avg < 4.5 *dx]) / (1.0 *np.size(R_avg))
         max_unres = np.size(R_max[R_max < 4.5 *dx]) / (1.0 *np.size(R_max))
 
-        txy_1 = (0.75*logdx,0.3)
-        txy_2 = (txy_1[0]  ,0.25)
+        txy_1 = (0.75*logdx, ax.get_ylim()[1]*0.8)
+        txy_2 = (txy_1[0]  , txy_1[1] - 0.05)
 
-        ax.annotate('%0.2f %%'%(100.0*vg_unres), xy = txy_1, xytext = txy_1,
+        ax.annotate('%0.2f %%'%(100.0*avg_unres), xy = txy_1, xytext = txy_1,
                         color = 'black')
         ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
                         color = 'orange')
