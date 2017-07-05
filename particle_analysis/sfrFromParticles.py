@@ -33,8 +33,8 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
             t_o = t_o.convert_to_units('Myr')
 
     if times is None:
-        bin_spacing = 2.0 * yt.units.Myr
-        times = np.arange(t_o - bin_spacing*2.0, currentTime, bin_spacing)*yt.units.Myr
+        bin_spacing = 10.0 * yt.units.Myr
+        times = np.arange(t_o - bin_spacing*2.0, currentTime + bin_spacing, bin_spacing)*yt.units.Myr
     elif np.size(times) == 1:
         bin_spacing = times
         if not hasattr(bin_spacing, 'value'):
@@ -44,7 +44,7 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
 
         t_f = currentTime + bin_spacing
 
-        times = np.arange(t_o, t_f, bin_spacing)
+        times = np.arange(t_o - bin_spacing*2.0, t_f, bin_spacing)
         if not hasattr(times, 'value'):
             times = times * yt.units.Myr
 

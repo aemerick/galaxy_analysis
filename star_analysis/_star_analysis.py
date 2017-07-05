@@ -73,3 +73,9 @@ def get_star_property(ds, data, AllStars = None, property_names = None,
         return properties[field]
     else:
         return properties
+
+def generate_CMD():
+
+    print "Placeholder / reminder to do this"
+
+    return

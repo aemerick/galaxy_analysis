@@ -32,18 +32,18 @@ def run_analysis(imin, imax, di, n_jobs = None):
         n_jobs = multiprocessing.cpu_count()
 
     pbf(filename = 'boundary_mass_flux.dat')
-
-    with open('filtered_boundary_mass_flux.dat') as oldfile, open('temp.txt', 'w') as newfile:
-        for line in oldfile:
-            if not any(badword in line for badword in ['NAN',"#  "]):
-                newfile.write(line)
-
-
-    with open('filtered_boundary_mass_flux.dat','w') as outfile, open('temp.txt') as tempfile:
-        for line in tempfile:
-            outfile.write(line)
-
-
+#
+#    with open('filtered_boundary_mass_flux.dat') as oldfile, open('temp.txt', 'w') as newfile:
+#        for line in oldfile:
+#            if not any(badword in line for badword in ['NAN',"#  "]):
+#                newfile.write(line)
+#
+#
+#    with open('filtered_boundary_mass_flux.dat','w') as outfile, open('temp.txt') as tempfile:
+#        for line in tempfile:
+#            outfile.write(line)
+#
+#
     print "Beginning analysis on %i files on %i processors"%((imax+di-imin)/(1.0*di),n_jobs)
 
     Parallel(n_jobs=n_jobs)(delayed(_parallel_loop)(i) for i in np.arange(imin,imax+di,di))
@@ -74,5 +74,4 @@ if __name__ == "__main__":
         imax  = np.max(ivals)
         di    = np.min(ivals[1:] - ivals[:-1])
 
-        
     run_analysis(imin, imax, di, n_jobs = n_jobs)

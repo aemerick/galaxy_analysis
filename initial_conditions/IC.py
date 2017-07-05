@@ -4,6 +4,8 @@ from onezone import imf as _imf # to do IMF sampling
 import time
 from fastloop import loop_over_rnum
 
+MASS_THRESHOLD = 8.0
+
 #
 #
 #
@@ -219,7 +221,10 @@ class particleIC(object):
             y = self.y
 
             for i in np.arange(self.number_of_particles):
-             
+        
+                if self.M[i] < MASS_THRESHOLD:
+                    continue
+     
                 f.write(fmt%(self.M[i], self.metallicity[i],\
                              x[i], y[i], self.z[i]))
 
@@ -244,11 +249,12 @@ if __name__ == "__main__":
     # perform a test of the IC's and plot
 
     #SFR = 5.5E-5 # Msun / yr
-    SFR = 2.5E-4
-    dt  = 50.0E6 # yr
+    SFR = 1.0E-3
+    dt  = 25.0E6 # yr
 
-    a = 400.0
-    b =  50.0
+    a = 1.0
+    b = 0.030
+   # b = 350.0
     M_star = SFR * dt
 
 #    a = 700.0 # high 
@@ -270,7 +276,7 @@ if __name__ == "__main__":
     zmax   = b*2.0
 
     start = time.time()
-    IC = particleIC(M_star, a, b, rmax, zmax)
+    IC = particleIC(M_star, a, b, rmax, zmax, Z = 0.1 * 0.0183)
     IC.generate()
     end = time.time()
     print "generation took ", end - start

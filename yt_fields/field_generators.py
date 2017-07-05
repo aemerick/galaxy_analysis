@@ -147,7 +147,11 @@ def _number_density_function_generator(asym):
 
     return nfields
 
-def _particle_abundance_function_generator(ratios):
+def _particle_abundance_function_generator(ratios, ds = None):
+
+    if not (ds is None):
+        if not (ds.parameters['NumberOfParticles'] > 0):
+            return
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -259,8 +263,9 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
 def generate_stellar_model_fields(ds):
 
-    if ds.parameters['NumberOfParticles'] < 1:
+    if not (ds.parameters['NumberOfParticles'] > 0):
         return
+
     #
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
     #
@@ -550,7 +555,7 @@ def generate_derived_fields(ds):
     print nfields, "abundance ratio fields defined"
 
     if ds.parameters['NumberOfParticles'] > 0:
-        nfields =  _particle_abundance_function_generator(ratios)
+        nfields =  _particle_abundance_function_generator(ratios, ds)
         print nfields, "particle abundance ratio fields defined"
 
 
@@ -587,6 +592,14 @@ def load_and_define(name):
         a = data[('gas','a_rad')] / data[('gas','a_grav')]
     
         a[data[('gas','a_grav')] == 0.0] = 0.0
+
+        return a
+
+    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2')
+    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2')
+    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '')
 
     generate_particle_filters(ds)
     

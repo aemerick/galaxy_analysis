@@ -162,7 +162,7 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
 
     return
 
-def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
+def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*yt.units.kpc):
 
     if has_particles is None:
         has_particles = ('io','particle_position_x') in ds.field_list
@@ -178,7 +178,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
 
     for a in axis:
         sp   = yt.SlicePlot(ds, axis = a, fields = fields,
-                                width = (2.5,'kpc'))
+                                width = width)
         sp.set_buff_size(2048)
 
         for f in fields:
@@ -188,8 +188,8 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None):
             sp.set_colorbar_label(f, axis_label[f])
 
 
-        if has_particles:
-            sp.annotate_particles(0.9, p_size = 0.4, stride = 1, ptype = 'main_sequence_stars')
+    #    if has_particles:
+    #        sp.annotate_particles(0.9, p_size = 0.4, stride = 1, ptype = 'main_sequence_stars')
 
         sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
         sp.save('./slice/')
@@ -205,9 +205,9 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
     ds   = yt.load(dsname)
 
-    if ds.parameters['NumberOfParticles'] < 1:
-        print "Functionality currently broken when no particles exist"
-        return
+#    if ds.parameters['NumberOfParticles'] < 1:
+#        print "Functionality currently broken when no particles exist"
+#        return
 
     ga.yt_fields.field_generators.generate_derived_fields(ds)
     ds   = ga.yt_fields.field_generators.load_and_define(dsname)
@@ -216,15 +216,24 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
 
     has_particles = ('io','particle_position_x') in ds.field_list
 
+    # hack to separate out Hu / Forbes et. al. galaxies from other
+    # simulations. This should be done in a better way
+    if ds.parameters['DiskGravityDarkMatterMassInteriorR'] > 0.501E-3:
+        width = 5.0 * yt.units.kpc
+    else:
+        width = 2.5 * yt.units.kpc
 
-#    phase_plots(ds)
+    region = ds.disk(ds.domain_center, [0,0,1], radius = width / 1.5, height = 2.0*yt.units.kpc)
 
-    #slice_plots(ds, fields, axis, has_particles = has_particles)
+    #phase_plots(ds, region = region)
 
+    slice_plots(ds, [('gas','number_density'),('enzo','Temperature')], axis,
+                has_particles = has_particles, width = width)
+
+#    projection_plots(ds, axis = axis, has_particles = has_particles,
+#                     thin = True)
     projection_plots(ds, axis = axis, has_particles = has_particles,
-                     thin = True)
-    projection_plots(ds, axis = axis, has_particles = has_particles,
-                     thin = False)
+                     thin = False, width = width)
 
 
 
