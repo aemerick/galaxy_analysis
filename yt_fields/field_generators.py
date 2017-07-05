@@ -485,7 +485,6 @@ def _additional_helper_fields(fields):
 
     yt.add_field(('gas','is_star_forming'), function = _is_star_forming,
                          units = "")
-        
 
     yt.add_field(("gas","a_rad"), function=_rad_accel, units="cm/s**2")
 

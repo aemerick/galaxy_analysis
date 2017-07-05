@@ -70,14 +70,17 @@ class Galaxy(object):
             dfiles = glob.glob(self.wdir + '/' + 'DD????/DD????')
             dfiles = np.sort(dfiles)
 
-            for i in np.arange(-1, -np.size(dfiles), -1):
-                try:
-                    dstemp = yt.load(dfiles[i])
-                except:
-                    print i
-                    continue
+            if len(dfiles) == 1:
+                dstemp = yt.load(dfiles[0])
+            else:
+                for i in np.arange(-1, -np.size(dfiles), -1):
+                    try:
+                        dstemp = yt.load(dfiles[i])
+                    except:
+                        print i
+                        continue
 
-                break
+                    break
 
             fg.generate_derived_fields(dstemp)
             fg.FIELDS_DEFINED = True
