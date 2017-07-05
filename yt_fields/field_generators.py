@@ -259,6 +259,8 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
 def generate_stellar_model_fields(ds):
 
+    if ds.parameters['NumberOfParticles'] < 1:
+        return
     #
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
     #
@@ -462,6 +464,23 @@ def _additional_helper_fields(fields):
 
     def _rad_accel(field, data):
         return np.sqrt(data['RadAccel1']**2 + data['RadAccel2']**2 + data['RadAccel3']**2).convert_to_units('cm/s**2')
+
+    def _is_star_forming(field, data):
+        n      = data[('gas','number_density')].convert_to_units('cm**(-3)')
+        T      = data['Temperature']
+        divv   = data[('gas','velocity_divergence')]
+        l      = data['grid_level']
+
+        answer = 1 * ((n > data.ds.parameters['StarMakerOverDensityThreshold']) *\
+                       (T < data.ds.parameters['IndividualStarTemperatureThreshold']) *\
+                        (divv < 0) *\
+                          (l == data.ds.parameters['MaximumRefinementLevel']))
+
+        return answer
+
+    yt.add_field(('gas','is_star_forming'), function = _is_star_forming,
+                         units = "")
+        
 
     yt.add_field(("gas","a_rad"), function=_rad_accel, units="cm/s**2")
 
