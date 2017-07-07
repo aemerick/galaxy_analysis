@@ -269,8 +269,8 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
 
                 ax[axi].set_ylim(-5, 0)
                 ax[axi].set_xlim(-15, -2)
-                ax[axi].set_ylabel('log (Fraction of ' + phase + ' Volume)')
-                ax[axi].set_xlabel('log (' + field + ' Fraction By Number)')
+                ax[axi].set_ylabel('log [Volume Fraction]')
+                ax[axi].set_xlabel('log [' + field + ' Fraction By Number)')
 
         ax[(0,0)].legend(loc='best')
 
