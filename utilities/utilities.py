@@ -2,6 +2,18 @@ import numpy as np
 import sys
 import contextlib
 
+def extract_nested_dict(dict, key_list):
+    """
+    Given a list of kwargs, extracts the information requested
+    from a nested dictionary
+    """
+    x = dict
+    for k in key_list:
+        x = x[k]
+
+    return x
+
+
 def nested_haskey(x, keys):
     """
     For a nested dictionary 'x' and list of keys, checks
@@ -16,7 +28,7 @@ def nested_haskey(x, keys):
     else:
         return False
 
-def filter_dict(self, field, dictionary, level = 2):
+def filter_dict(field, dictionary, level = 2):
     """
     Filter through nested dictionarys like one would do with
     arrays. Only works if sub-dictionaries all have same 
