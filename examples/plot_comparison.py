@@ -19,8 +19,8 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 1000.0
-
+global_tmax = 1250.0
+#global_tmax = 270.0
 #
 #
 #
@@ -115,19 +115,22 @@ run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
              'r11_pert'   : local + '/run11/200cc/perturb',
              'r11_lowsf'  : pleiades + '/starIC/run11/lowsf',
              'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind',
-             'r11 fiducial' : pleiades + '/starIC/run11_largebox/sndriving',
-             'r11 2xr_s'    : pleiades + '/starIC/run11_2rs/sndriving',
-             'r11 30km'     : pleiades + '/starIC/run11_30km/sndriving' ,
-             'r11 40km'     : pleiades + '/starIC/run11_40km/sndriving'}
+             '17' : pleiades + '/starIC/run11_largebox/sndriving',
+             '25'    : pleiades + '/starIC/run11_2rs/sndriving',
+             'r11 ibug'     : pleiades + '/starIC/run11_2rs/ion_bugfix',
+             '30'     : pleiades + '/starIC/run11_30km/sndriving' ,
+             '40'     : pleiades + '/starIC/run11_40km/sndriving'}
 
-color_dict['r11 fiducial'] = ps.orange
-color_dict['r11 2xr_s'] = ps.magenta
-color_dict['r11 30km']  = ps.purple
-color_dict['r11 40km']  = ps.black
-ls_dict['r11 fiducial'] = '-'
-ls_dict['r11 2xr_s'] = '-'
-ls_dict['r11 30km'] = '-'
-ls_dict['r11 40km'] = '-'
+color_dict['17'] = ps.orange
+color_dict['25'] = ps.magenta
+color_dict['r11 ibug']  = ps.magenta
+color_dict['30']  = ps.purple
+color_dict['40']  = ps.black
+ls_dict['17'] = '-'
+ls_dict['25'] = '-'
+ls_dict['r11 ibug']  = '--'
+ls_dict['30'] = '-'
+ls_dict['40'] = '-'
 
 color_dict['r11_smooth'] = ps.blue
 color_dict['r11_pert'  ] = ps.blue
@@ -646,9 +649,11 @@ if __name__ == '__main__':
 #    all_s = run15_IC.keys()
 #    all_s = run11_stampede_feedback.keys()
 #    all_s = comparison_sim.keys()
-    all_s = ['Hu sndriving','Hu shortrad']
-    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
+#    all_s = ['Hu sndriving','Hu shortrad']
+#    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
 
+    all_s = ['17','25','30','40']
+#    all_s = ['30']
 #    all_s = PERT_DATA_PATHS.keys()
 
     plot_mass(sim_names = all_s, species = 'HI')
