@@ -3,12 +3,13 @@ from matplotlib import rc
 fsize = 17
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
+
 line_width = 3
 point_size = 30
 
 import matplotlib as mpl
 mpl.use('Agg')
-
+mpl.rcParams['hatch.linewidth'] = 8
 import matplotlib.pyplot as plt
 
 import deepdish as dd
@@ -78,14 +79,18 @@ def compute_time_average(field_path,
 
     return x, avg, min, max, std
 
-def plot_time_average(x, y, std = None, min = None, max = None):
+def plot_time_average(x, y, std = None, min = None, max = None,
+                            facecolor = 'none', color = 'black', hatch = None, hatchcolor=None,
+                            label = None, fig = None, ax = None):
 
-    fig, ax = plt.subplots()
+    if fig is None and ax is None:
+        fig, ax = plt.subplots()
 
     fill = False
     if (not std is None):
         fillmin = y - std
         fillmax = y + std
+        fillmin[fillmin<0] = 0.0
         fill = True
     elif ( not min is None) and (not max is None):
         fillmin = min
@@ -93,13 +98,13 @@ def plot_time_average(x, y, std = None, min = None, max = None):
         fill = True
 
     if fill:
-        ax.fill_between(x, fillmin, fillmax, facecolor = 'black', interpolate=True,
-                           alpha = 0.5)
+        ax.fill_between(x, fillmin, fillmax, facecolor = facecolor, interpolate=True,
+                           hatch = hatch, edgecolor = hatchcolor, lw = 0.0)
 
-        ax.plot(x, fillmin, color = 'black', lw = 1.5, ls = '-')
-        ax.plot(x, fillmax, color = 'black', lw = 1.5, ls = '-')
+        ax.plot(x, fillmin, color = color, lw = 1.5, ls = '-')
+        ax.plot(x, fillmax, color = color, lw = 1.5, ls = '-')
 
-    ax.plot(x, avg, color = 'black', lw = 3, ls = '--')
+    ax.plot(x, y, color = color, lw = 3, ls = '--')
 
     return fig, ax
 
