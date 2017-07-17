@@ -59,6 +59,7 @@ def compute_onezone_stats(all_data, element):
     mass = np.zeros(len(all_data))
     for i in np.arange(len(all_data)):
         mass[i] = all_data[i][field_name][-1]
+    print len(all_data)
 
     stats_dict['average'] = np.average(mass)
     stats_dict['min']     = np.min(mass)
@@ -66,6 +67,19 @@ def compute_onezone_stats(all_data, element):
     stats_dict['std']     = np.std(mass)
 
     return stats_dict
+
+def save_onezone_stats(stats_dict):
+
+    f = open('onezone_element_stats.dat','w')
+
+    f.write('#element avg min max std frac_min frac_max frac_std\n')
+    for k in stats_dict.keys():
+        x = stats_dict[k]
+        f.write("%-8s  %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E\n"%(k,x['average'],x['min'],x['max'],x['std'], x['min']/x['average'], x['max']/x['average'],x['std']/x['average']))
+
+    f.close()
+
+    return
 
 def compute_all_data():
     """
@@ -84,6 +98,8 @@ def compute_all_data():
         if k == 'Total':
             continue
         onezone_data[k] = compute_onezone_stats( onez_data_files, k)
+
+    save_onezone_stats(onezone_data)
 
     return simulation_data, onezone_data
 
