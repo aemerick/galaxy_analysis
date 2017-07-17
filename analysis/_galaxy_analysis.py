@@ -1076,6 +1076,12 @@ class Galaxy(object):
                             'dr'     : 25.0 * yt.units.pc,
                             'dz'     : 50.0 * yt.units.pc }
 
+        # HACK HACK HACK:
+        if self.ds.parameters['DiskGravityStellarDiskMass'] > 1.0E7:
+            self.disk_region['height'] = 2.0 * yt.units.kpc
+            self.disk_region['radius'] = 1.5 * yt.units.kpc
+
+
         self.large_disk_region = {'normal' : np.array([0,0,1]),
                                   'radius' : 2.0 * yt.units.kpc,
                                   'height' : 2.0 * yt.units.kpc,
