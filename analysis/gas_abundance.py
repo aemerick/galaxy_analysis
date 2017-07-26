@@ -132,36 +132,52 @@ def compute_abundance_stats(ds, data_source, mask = None,
     fbins = np.logspace(-20, 0, 401)
 
     data_dict = {}
-    data_dict['fraction']  = {}
+    data_dict['volume_fraction']  = {}
+    data_dict['mass_fraction'] = {}
     data_dict['abundance'] = {}
 
-    data_dict['fraction']['bins'] = fbins
+    data_dict['volume_fraction']['bins'] = fbins
+    data_dict['mass_fraction']['bins'] = fbins
 
     mask = np.array(mask).astype(bool)
 
     mask_empty = not any(mask)
 
     cv = data_source['cell_volume'][mask]
+    cm = data_source['cell_mass'][mask]
     total_volume = np.sum(cv) * 1.0
+    total_mass   = np.sum(cm) * 1.0
+
     for field in fraction_fields:
 
         if mask_empty or len(data_source['Density']) < 1:
-            data_dict['fraction'][field] = [np.zeros(np.size(fbins)-1),
+            data_dict['volume_fraction'][field] = [np.zeros(np.size(fbins)-1),
+                                            np.zeros(5)]
+            data_dict['mass_fraction'][field] = [np.zeros(np.size(fbins)-1),
                                             np.zeros(5)]
         else:
 
             fdata = data_source[field][mask]
 
             # compute volume fraction
-            hist = np.zeros(np.size(fbins) -1)
+            hist  = np.zeros(np.size(fbins) -1)
+            hist2 = np.zeros(np.size(fbins) -1)
+
 
             for i in np.arange(np.size(fbins) - 1):
-                hist[i] = np.sum( cv[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / total_volume
+                hist[i]  = np.sum( cv[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / total_volume
+                hist2[i] = np.sum( cm[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / total_mass
+#                hist3[i] = np.sum( cm[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / phase_mass
+
 #            hist, bins = np.histogram(fdata, bins = fbins)
 
-            stats = utilities.compute_stats(fdata)
+            stats = utilities.compute_stats(hist)
 
-            data_dict['fraction'][field] = [hist, stats]
+            data_dict['volume_fraction'][field] = [hist, stats]
+
+            data_dict['mass_fraction'][field]   = [hist2, stats]
+
+#            data_dict['phase_mass_fraction'][field] = [hist3, stats]
 
     #
     # general properties
@@ -232,7 +248,8 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
     return
 
-def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overwrite = False):
+def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overwrite = False,
+                       fraction_type = 'volume'):
     """
     Panel plot showing distributions of gas mass fractions for regions
     in galaxy
@@ -260,7 +277,7 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
 
         for j,phase in enumerate(all_phases):
             print j, phase
-            phase_data = data[phase]['fraction']
+            phase_data = data[phase][fraction_type + '_fraction']
             logbins = np.log10(phase_data['bins'])
             for i, field in enumerate(plot_fields):
                 axi = index[i]
@@ -269,7 +286,7 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
 
                 ax[axi].set_ylim(-5, 0)
                 ax[axi].set_xlim(-15, -2)
-                ax[axi].set_ylabel('log [Volume Fraction]')
+                ax[axi].set_ylabel('log [' + fraction_type + ' Fraction]')
                 ax[axi].set_xlabel('log [' + field + ' Fraction By Number)')
 
         ax[(0,0)].legend(loc='best')
@@ -278,7 +295,7 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
         fig.set_size_inches(40,16)
         plt.tight_layout()
         plt.minorticks_on()
-        fig.savefig(dsname + '_metal_fractions.png')
+        fig.savefig(dsname + '_metal_' + fraction_type +'_fractions.png')
 
         plt.close()
 
@@ -286,8 +303,9 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False)
+    generate_all_stats(overwrite=True)
 
-    plot_gas_fractions(overwrite=True)
+    plot_gas_fractions(overwrite=True, fraction_type = 'volume')
+    plot_gas_fractions(overwrite=True, fraction_type = 'mass')
 
     plot_abundances(plot_type = 'standard')
