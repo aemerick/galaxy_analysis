@@ -1,6 +1,7 @@
 import deepdish as dd
 import glob as glob
 import numpy as np
+import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import rc
 
@@ -47,16 +48,17 @@ def process_yield_data(dname, norm_data = None):
     return yield_dict
 
 def plot_yield_data(data, xnames, fig = None, ax = None,
-                    color = 'black', label = None, marker = None, s = 25,
+                    color = 'black', label = None, marker = 'o', s = 25,
                     norm_data = None):
 
     if fig is None and ax is None:
         fig,ax = plt.subplots()
+        fig.set_size_inches(8,6)
 
     if norm_data is None:
         norm_data = np.ones(len(data))
 
-    x = np.arange(1, len(data),+1)
+    x = np.arange(1, len(data)+1)
     ax.scatter(x, data / norm_data, c = color, s = s, label = label,
                                     marker = marker)
 
@@ -69,10 +71,26 @@ def plot_yield_data(data, xnames, fig = None, ax = None,
     return fig, ax
 
 
+
 if __name__ == "__main__":
 
-    data_dict = process_yield_data('DD0483_galaxy_data.h5',norm_data='DD0039_galaxy_data.h5')
-    fig, ax = plot_yield_data(data_dict['Disk'], norm_data = data_dict['FullBox'], c = 'black', label = "Disk")
-    fig, ax = plot_yield_data(data_dict['Stars'], norm_data = data_dict['FullBox'], c = 'organge', marker = '*', fig = fig, ax = ax, label = "Stars")
-    fig, ax = plot_yield_data(data_dict['Halo'], norm_data = data_dict['FullBox'], c = 'purple', marker = 's', label = "Halo", fig = fig, ax = ax)
-    fig.save('element_yield_analysis.png')
+    data_list = np.sort(glob.glob('DD????_galaxy_data.h5'))
+    dfinal    = data_list[-1]
+    dinitial  = data_list[0]
+
+    data_dict = process_yield_data(dfinal,norm_data= dinitial)
+    xn = data_dict['elements']
+    fig, ax = plot_yield_data(data_dict['Disk'], xn,  color = 'black', label = "Disk")
+    fig, ax = plot_yield_data(data_dict['stars'], xn, color = 'orange', marker = '*', fig = fig, ax = ax, label = "Stars")
+    fig, ax = plot_yield_data(data_dict['Halo'], xn,  color = 'purple', marker = 's', label = "Halo", fig = fig, ax = ax)
+    ax.semilogy()
+    ax.legend(loc='best')
+    fig.savefig('element_yield_analysis.png')
+    plt.close()
+
+    fig, ax = plot_yield_data(data_dict['Disk'], xn, norm_data = data_dict['FullBox'], color = 'black', label = "Disk")
+    fig, ax = plot_yield_data(data_dict['stars'], xn, norm_data = data_dict['FullBox'], color = 'orange', marker = '*', fig = fig, ax = ax, label  = "Stars")
+    fig, ax = plot_yield_data(data_dict['Halo'], xn, norm_data = data_dict['FullBox'], color = 'purple', marker = 's', label = "Halo", fig = fig ,ax = ax)
+    ax.semilogy()
+    ax.legend(loc='best')
+    fig.savefig('fractional_element_yield_analysis.png')
