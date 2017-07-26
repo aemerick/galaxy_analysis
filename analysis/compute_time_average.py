@@ -22,16 +22,37 @@ from galaxy_analysis.utilities import utilities as util
 def compute_time_average(field_path,
                          dir = '.', tmin = None, tmax = None,
                          times = None, data_list = None,
+                         self_contained = False, index = None,
                          x_field = 'xbins'):
+    """
+    If self_contained is true, then the data is all contained in a single
+    file, rather than one file per output. This is currently a hacky way
+    to handle this, btu that works. If self_contained is true, then
+    data_list must be the filename of the global hdf5 file containing all
+    data.
+    """
+
+    if data_list is None and self_contained:
+        print "Must provide name of file as `data_list' if self_contained is True"
+        raise ValueError
 
     if data_list is None:
         data_list = np.sort(glob.glob(dir + '/DD????_galaxy_data.h5'))
 
+    if self_contained:
+        sc_data   = dd.io.load(data_list)
+        data_list = np.sort(sc_data.keys())
+
     # get list of times from all data sets
     if times is None:
         times = np.zeros(len(data_list))
-        for i, d in enumerate(data_list):
-            times[i] = dd.io.load(d, '/meta_data/Time')
+
+        if self_contained:
+            for i, d in enumerate(data_list):
+                times[i] = sc_data[d]['general']['Time']
+        else:
+            for i, d in enumerate(data_list):
+                times[i] = dd.io.load(d, '/meta_data/Time')
 
     # now select which data sets to average
     if tmin is None and tmax is None:
@@ -44,8 +65,14 @@ def compute_time_average(field_path,
         avg_data_list = data_list[(times<tmax)*(times>=tmin)]
 
     # now load all fields, avg, compute min and max
-    temp = dd.io.load(avg_data_list[0])
+    if self_contained:
+        temp = sc_data[avg_data_list[0]]
+    else:
+        temp = dd.io.load(avg_data_list[0])
+
     sum  = util.extract_nested_dict(temp, field_path)
+    if not (index is None):
+        sum = sum[index]
     min  =  np.inf * np.ones(np.size(sum))
     max  = -1 * min
     std  = 0.0 * sum
@@ -57,8 +84,15 @@ def compute_time_average(field_path,
     avg = 0.0 * sum
     M2  = 0.0 * sum
     for d in avg_data_list:
-        data = dd.io.load(d)
+        if self_contained:
+            data = sc_data[ d ]
+        else:
+            data = dd.io.load(d)
+
         y    = util.extract_nested_dict(data, field_path)
+        if not (index is None):
+            y = y[index]
+
         sum += y
 
         min  = np.min( [y,min], axis=0)
@@ -104,7 +138,7 @@ def plot_time_average(x, y, std = None, min = None, max = None,
         ax.plot(x, fillmin, color = color, lw = 1.5, ls = '-')
         ax.plot(x, fillmax, color = color, lw = 1.5, ls = '-')
 
-    ax.plot(x, y, color = color, lw = 3, ls = '--')
+    ax.plot(x, y, color = color, lw = 3, ls = '--', label = label)
 
     return fig, ax
 
