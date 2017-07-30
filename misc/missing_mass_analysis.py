@@ -57,6 +57,7 @@ def compute_SNII_error(ds, data, uselog = True):
     wind_error   = np.zeros(np.size(bm))
     sn_error     = np.zeros(np.size(bm))
     for i,s in enumerate(all_stars):
+        s.set_SNII_properties()
         wind = s.wind_ejecta_masses()
         sn   = s.sn_ejecta_masses
 
