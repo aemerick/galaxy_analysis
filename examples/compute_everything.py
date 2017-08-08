@@ -11,6 +11,10 @@ from galaxy_analysis.misc import process_boundary_flux as pbf
 from joblib import Parallel, delayed
 import multiprocessing
 
+import yt
+yt.funcs.mylog.setLevel(10)
+
+
 def _parallel_loop(i):
     if not os.path.isfile('DD%0004i/DD%0004i'%(i,i)):
         print "File path not found : DD%0004i/DD%0004i"%(i,i)
