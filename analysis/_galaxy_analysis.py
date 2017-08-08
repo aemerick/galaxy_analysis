@@ -1,6 +1,9 @@
 from __future__ import division
 
 import yt
+yt.funcs.mylog.setLevel(50)
+
+
 import numpy as np
 from scipy import optimize
 import glob
@@ -298,6 +301,7 @@ class Galaxy(object):
         #
 
         center = np.arange(0.25, 1.30, 0.25) # in units of R_vir
+        center = np.array([0.1, 0.2, 0.25, 0.5, 0.75, 1.0, 1.25]) # in units of R_Vir
         dL     = 0.1                           # in units of R_vir
 
         for field in fields:
@@ -602,8 +606,17 @@ class Galaxy(object):
 
         self.gas_meta_data['masses'] = self.compute_gas_sequestering()
 
-        self.meta_data['M_HI']  = np.sum(self.disk['HI_Density'] *\
-                                  self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units)
+        # save individual specise masses from non-equillibrium chemistry
+        for e in ['HI','HII','HeI','HeII','HeIII','H2I','H2II','HM']:
+            self.meta_data['M_' + e]  = np.sum(self.disk[e + '_Density'] *\
+                                        self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units)
+
+        # total masses for species where ionization statest are tracked
+        self.meta_data['M_H_total'] = self.meta_data['M_HI'] + self.meta_data['M_HII'] + self.meta_data['M_H2I'] +\
+                                      self.meta_data['M_H2II'] + self.meta_data['M_HM']
+        self.meta_data['M_He_total'] = self.meta_data['M_HeI'] + self.meta_data['M_HeII'] + self.meta_data['M_HeIII']
+        self.meta_data['M_H2_total'] = self.meta_data['M_H2I'] + self.meta_data['M_H2II']
+
         self.meta_data['M_gas'] = np.sum((self.disk['cell_mass']).convert_to_units(UNITS['Mass'].units))
         self.meta_data['Z_avg'] = np.sum( (self.disk[('gas','Metal_Density')]*\
                                            self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units))/\
@@ -638,9 +651,10 @@ class Galaxy(object):
         """
 
         mdict = {}
-        
-        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']        
-        fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass','Metals':'metal_mass'}
+
+        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']
+        fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass','Metals':'metal_mass', 'H2' : 'H2_mass',
+                  'HI':'H_p0_mass', 'HII': 'H_p1_mass'}
 
         # do this for the disk ISM regions
         for crtype in cut_region_names:
@@ -657,13 +671,13 @@ class Galaxy(object):
             mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
-   
+
         # now do this for the halo
         mdict['Halo'] = {}
         for s in fields:
-            print s
-            print fields[s]
-            print self.halo_sphere[fields[s]]
+            #print s
+            #print fields[s]
+            #print self.halo_sphere[fields[s]]
             mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
@@ -1114,7 +1128,8 @@ class Galaxy(object):
 
         self._accumulation_fields = [('gas','H_total_mass'), ('gas','He_total_mass'),
                                      ('gas','metal_mass'), ('gas','cell_mass'),
-                                     ('gas','H_p0_mass')]
+                                     ('gas','H_p0_mass'), ('gas','H2_mass'),
+                                     ('gas','H_p1_mass')]
 
         for e in self.species_list:
             self._accumulation_fields += [('gas', e +'_Mass')]
