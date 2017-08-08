@@ -47,10 +47,18 @@ def abundance_ratio(x1, x2, input_type = 'abundance'):
         x1_abund = elemental_abundance(x1[0], x1[1])
         x2_abund = elemental_abundance(x2[0], x2[1])
 
+    #
+    # solar dictionary gives log(e_x), where
+    # log(e_x) = log(N_x / N_H) + 12.0
+    #
+    # so log(N_x / N_y) = log(e_x) - log(e_y)
+    # 
+    #
+    #
     x1_solar = SOLAR_ABUNDANCE[x1[0]]
     x2_solar = SOLAR_ABUNDANCE[x2[0]]
 
-    aratio = np.log10(x1_abund / x2_abund) - np.log10( x1_solar / x2_solar)
+    aratio = np.log10(x1_abund / x2_abund) - (x1_solar - x2_solar) # np.log10( x1_solar / x2_solar)
 
     return aratio
 
