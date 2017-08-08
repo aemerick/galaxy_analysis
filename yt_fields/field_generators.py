@@ -389,6 +389,58 @@ def _additional_helper_fields(fields):
 
         return G_o * (data['Density'] / data['Density'])
 
+    def _FUV_flux(field, data):
+        # 1.59E-3 converts from MW normalized flux density to flux dens in cgs
+        G_o = data[('gas','G_o')] # relative to MW
+        G   = (G_o.value * 1.59E-3) * yt.units.erg / yt.units.cm**2 /yt.units.s
+        return G
+
+    def _LW_flux(field, data):
+        LW_energy = 12.8 * yt.units.eV
+        H2Isigma  = 3.71E-18 * yt.units.cm**(2)
+
+        kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+
+        LW_flux = kdissH2I / H2Isigma * LW_energy
+
+        return LW_flux.convert_to_units('erg/cm**2/s')
+
+    def _Q0_flux(field, data):
+        E_HI = 13.6 * yt.units.eV
+        kph = data[('enzo','HI_kph')].convert_to_cgs()
+        n   = data[('gas','H_p0_number_density')].convert_to_cgs()
+        dt  = data.ds.parameters['dtPhoton']
+        V   = data['cell_volume'].convert_to_cgs()
+        dx  = data['dx'].convert_to_cgs()
+        s   = 6.34629E-18 * yt.units.cm**(2) # cross section of HI at 13.6 eV
+
+        tau   = s * n * dx
+        denom = 1.0 - np.exp(-tau)
+
+        Q = kph * n * V / denom  # this gives number of photons / s
+
+        flux = Q * E_HI / dx**2
+
+        return flux.convert_to_units('erg/cm**2/s')
+
+    def _Q1_flux(ds,data):
+	E_HeI = 24.6 * yt.units.eV
+	kph = data[('enzo','HeI_kph')].convert_to_cgs()
+	n   = data[('gas','H_p0_number_density')].convert_to_cgs()
+	dt  = data.ds.parameters['dtPhoton']
+	V   = data['cell_volume'].convert_to_cgs()
+	dx  = data['dx'].convert_to_cgs()
+        s   = 7.4300459E-18 * yt.units.cm**(2) # cross section of HeI at 24.6 eV
+
+	tau   = s * n * dx
+        denom = 1.0 - np.exp(-tau)
+
+        Q = kph * n * V / denom  # this gives number of photons / s
+
+        flux = Q * E_HeI / dx**2
+
+        return flux.convert_to_units('erg/cm**2/s')
+
 
     def _metal_total_mass(field, data):
         mass = data['Metal_Density'] * data['cell_volume']
@@ -504,6 +556,10 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
+    yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','Q0_flux'), function = _Q0_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','Q1_flux'), function = _Q1_flux, units = "erg/s/cm**2")
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
