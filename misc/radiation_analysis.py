@@ -8,8 +8,14 @@ def load_and_define_fields(dsname):
 
        ds = load_and_define_fields("DD0000/DD0000")
 
-    Defines 5 different fields:
+    Defines 7 different fields:
 
+       ('gas','Pe_heating_rate') : Local photoelectric heating rate (erg/s/cm**3)
+                                   uncorrected for temperature. Above a threshold T,
+                                   in the simulation, this field is zeroed. This
+                                   is usually at about 10^4 K.
+       ('gas','Pe_heating_rate_masked') : The correct heating rate as applied in sim
+                                          corrected for temperature (erg/s/cm**3)
        ('gas','G_o')      : ISRF normalized to the Milky Way value (unitless)
        ('gas','FUV_flux') : FUV band flux (in erg/s/cm**2)
        ('gas','LW_flux')  : LW band flux (in erg/s/cm**2)
@@ -22,6 +28,29 @@ def load_and_define_fields(dsname):
         ds : yt data set object
     """
 
+    def _pe_heating_rate(field, data):
+        """
+        Correct units for PE heating rate from dataset
+        """
+        eu = data.ds.mass_unit * data.ds.velocity_unit**2
+        lu = data.ds.length_unit
+        tu = data.ds.time_unit
+
+        pe = data[('enzo','Pe_heating_rate')] * eu / lu / tu
+        pe = pe.convert_to_units('erg/s/cm**3')
+
+        return pe
+
+    def _pe_heating_rate_masked(field,data):
+        """
+        Mask PE heating rate for temperatures above threshold, like it
+        is actually done in code.
+        """
+
+        x = data[('gas','Pe_heating_rate')]
+        x[data['temperature'] > data.ds.parameters['IndividualStarFUVTemperatureCutoff']] = 0.0
+
+        return x
 
     def _G_o(field,data):
 
@@ -97,6 +126,8 @@ def load_and_define_fields(dsname):
 
 
     ds = yt.load(dsname)
+    yt.add_field(('gas','Pe_heating_rate'), function = _pe_heating_rate, units = 'erg/s/cm**3')
+    yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate_masked, units = 'erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
     yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2")
