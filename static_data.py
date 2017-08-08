@@ -197,6 +197,14 @@ PLOT_DATA = {
                   (('gas','H_p0_mass'),
                   r'HI Mass (M$_{\odot}$)', None, None,
                   u.Msun, 'viridis'),
+             ('gas', 'H_p1_mass'):
+                  (('gas','H_p1_mass'),
+                  r'HII Mass (M$_{\odot}$)', None, None,
+                  u.Msun, 'viridis'),
+             ('gas', 'H2_mass'):
+                  (('gas','H2_mass'),
+                  r'H$_{2}$ Mass (M$_{\odot}$)', None, None,
+                  u.Msun, 'viridis'),
 
              ('gas','Pe_heating_rate_masked'):
                   (('gas','Pe_heating_rate_masked'),
