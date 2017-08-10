@@ -36,7 +36,7 @@ def load_and_define_fields(dsname):
         lu = data.ds.length_unit
         tu = data.ds.time_unit
 
-        pe = data[('enzo','Pe_heating_rate')] * eu / lu / tu
+        pe = data[('enzo','Pe_heating_rate')] * eu / lu**3 / tu
         pe = pe.convert_to_units('erg/s/cm**3')
 
         return pe

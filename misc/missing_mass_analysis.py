@@ -57,7 +57,7 @@ def generate_model_stars(m, z, abund = ['m_tot','m_metal']):
         all_star[i] = s
     return all_star
 
-def check_all_masses(ds, data, d0 = None):
+def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     bm = data['birth_mass'].value
     pm = data['particle_mass'].convert_to_units('Msun').value
@@ -85,6 +85,7 @@ def check_all_masses(ds, data, d0 = None):
     factor = age / lifetime
     factor[factor>1.0] = 1.0
 
+    time_select = birth > time_cut
 
     for k in model_wind_ejecta.keys():
         model_wind_ejecta[k][AGB]        = 0.0
@@ -94,7 +95,7 @@ def check_all_masses(ds, data, d0 = None):
 
     total_model_ejecta = {}
     for k in model_wind_ejecta.keys():
-        total_model_ejecta[k] = np.sum(model_sn_ejecta[k]) + np.sum(model_wind_ejecta[k])
+        total_model_ejecta[k] = np.sum(model_sn_ejecta[k][time_select]) + np.sum(model_wind_ejecta[k][time_select])
 
     # now do this for the individual abundances on grid:
     grid_masses = {}
@@ -113,6 +114,7 @@ def check_all_masses(ds, data, d0 = None):
     print grid_masses
 
     print grid_masses.keys()
+    print "Element Total_on_Grid Total_model_mass Percent_error"
     for k in grid_masses.keys():
         error =100 *  (grid_masses[k] - total_model_ejecta[k] ) / total_model_ejecta[k]
         print "%2s     %8.8E %8.8E %3.3f"%(k,grid_masses[k], total_model_ejecta[k], error)
@@ -188,8 +190,9 @@ def check_wind_ejecta(ds, data):
     model_wind_ejecta = model_wind_ejecta[select]
     actual_wind_ejecta = actual_wind_ejecta[select]
     total_wind_ejecta = total_wind_ejecta[select]
+    print "BM   PM   Percent_error    Model_wind    actual_wind    lifetime_wind"
     for i in np.arange(np.size(error_mass)):
-        print "%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i],model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i])
+        print "%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i]*100,model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i])
     print np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass)
 
    
@@ -323,8 +326,18 @@ if __name__=="__main__":
     ds = yt.load(name)
     data = ds.all_data()
 
-#    check_wind_ejecta(ds,data)
-#    error, fig, ax = compute_SNII_error(ds,data, uselog=True)
-    ds0 = yt.load('./../lowres/DD0035/DD0035')
-    d0  = ds0.all_data()
-    check_all_masses(ds,data, d0 = d0)
+    if ('enzo','wind_mass_ejected') in ds.field_list or\
+       ('io','wind_mass_ejected') in ds.field_list:
+        try:
+            check_wind_ejecta(ds,data)
+        except:
+            print "failing in wind ejecta"
+        try:
+            error, fig, ax = compute_SNII_error(ds,data, uselog=True)
+        except:
+            print "failing in SNII check"
+#    ds0 = yt.load('./../lowres/DD0035/DD0035')
+#    d0  = ds0.all_data()
+
+
+    check_all_masses(ds,data) #, d0 = d0)
