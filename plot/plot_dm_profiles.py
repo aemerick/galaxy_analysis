@@ -41,21 +41,21 @@ for i in np.arange(len(labels)):
 
 print labels
 
-def overplot_scale_radius(ax, gal, color = 'black', ls = '--',
-                              virial = False):
+def overplot_radius(ax, gal, color = 'black', ls = '--',
+                              virial = False, rtype = 'b'):
     if virial:
         norm = gal.ic['R200']
     else:
         norm = icl.cgs.kpc
 
     ylim = ax.get_ylim()
-    x = [ gal.ic['b'] / norm,  gal.ic['b'] / norm ]
+    x = [ gal.ic[rtype] / norm,  gal.ic[rtype] / norm ]
     ax.plot(x, ylim, lw = line_width*0.75, color = color, ls = ls)
     ax.set_ylim(ylim)
 
     return
 
-def plot_dm_profiles(virial = False):
+def plot_dm_profiles(virial = False, dm_unit = 1.0):
     #
     # Plot dark matter density as a function of radius
     #
@@ -74,12 +74,12 @@ def plot_dm_profiles(virial = False):
         else:
             x = r * icl.cgs.kpc
 
-        ax.plot( r, g.DM_density(x),
+        ax.plot( r, g.DM_density(x) * dm_unit,
                     lw = line_width, color = colors[i], ls = ls[i],
                     label = labels[i])
 
-    for i,g in enumerate(galaxies):
-        overplot_scale_radius(ax, g, color = colors[i], ls = '--', virial = virial)
+#    for i,g in enumerate(galaxies):
+#        overplot_scale_radius(ax, g, color = colors[i], ls = '--', virial = virial)
 
     #ax.set_xlim(-4, 0)
     #ax.set_ylim()
@@ -88,13 +88,26 @@ def plot_dm_profiles(virial = False):
         ax.set_xlabel(r'log[R / R$_{\rm vir}$]')
     else:
         ax.set_xlabel(r'R (kpc)')
-    ax.set_ylabel(r'Dark Matter Density (g cm$^{-3}$)')
 
     ax.legend(loc = 'best')
+    
+    if dm_unit == 1.0:
+        outname = 'dark_matter_density'
+        ax.set_ylabel(r'Dark Matter Density (g cm$^{-3}$)')
+    else:
+        ax.set_xlim(0.01,40)
+        ax.set_ylim(1.0E3, 6.0E8)
+        ax.set_ylabel(r'Dark Matter Density (M$_{\odot}$ kpc$^{-3}$)')
+        outname = 'dark_matter_density_Msun_kpc'
+
+    for i,g in enumerate(galaxies):
+        overplot_radius(ax, g, color = colors[i], ls = '--', virial = virial)
+        overplot_radius(ax, g, color = colors[i], ls = '--', virial = virial, rtype = 'R200')
+
+
     fig.set_size_inches(8,8)
     plt.tight_layout()
-    
-    outname = 'dark_matter_density'
+
     if virial:
         outname += '_virial'
 
@@ -125,7 +138,7 @@ def plot_mass_profiles(virial):
                     label = labels[i])
 
     for i, g in enumerate(galaxies):
-        overplot_scale_radius(ax, g, color = colors[i], ls = '--', virial = virial)
+        overplot_radius(ax, g, color = colors[i], ls = '--', virial = virial)
 
     #ax.set_xlim(-4, 0)
     #ax.set_ylim()
@@ -169,7 +182,7 @@ def plot_circular_velocity_profiles(virial):
                     label = labels[i])
 
     for i,g in enumerate(galaxies):
-        overplot_scale_radius(ax, g, color = colors[i], ls = '--',
+        overplot_radius(ax, g, color = colors[i], ls = '--',
                               virial = virial)
 
     #ax.set_xlim(-4, 0)
@@ -179,6 +192,7 @@ def plot_circular_velocity_profiles(virial):
         ax.set_xlabel(r'log[R / R$_{\rm vir}$]')
     else:
         ax.set_xlabel(r'R (kpc)')
+        ax.set_xlim(0.01,40.0)
     ax.set_ylabel(r'V$_{\rm c}$ (km s$^{-1}$)')
 
     ax.legend(loc = 'best')
@@ -199,5 +213,6 @@ if __name__ == '__main__':
     for virial in [True, False]:
 
         plot_dm_profiles(virial)
+        plot_dm_profiles(virial, dm_unit = icl.cgs.kpc**3 / icl.cgs.Msun)
         plot_mass_profiles(virial)
         plot_circular_velocity_profiles(virial)
