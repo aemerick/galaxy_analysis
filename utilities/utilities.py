@@ -129,7 +129,7 @@ def chemistry_species_from_fields(fields):
 
     return sort_by_anum(species)
 
-def species_from_fields(fields):
+def species_from_fields(fields, include_primordial = False):
     """
     Returns a list of the individual species tracer fields
     given a list of enzo fields
@@ -143,6 +143,8 @@ def species_from_fields(fields):
 
     metals   = [x for x in elements if x not in ignore]
 
+    if include_primordial:
+        metals = ['H','He'] + metals
 
     return sort_by_anum(metals)
 
