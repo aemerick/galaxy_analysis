@@ -424,15 +424,15 @@ def _additional_helper_fields(fields):
         return flux.convert_to_units('erg/cm**2/s')
 
     def _Q1_flux(ds,data):
-	E_HeI = 24.6 * yt.units.eV
-	kph = data[('enzo','HeI_kph')].convert_to_cgs()
-	n   = data[('gas','H_p0_number_density')].convert_to_cgs()
-	dt  = data.ds.parameters['dtPhoton']
-	V   = data['cell_volume'].convert_to_cgs()
-	dx  = data['dx'].convert_to_cgs()
+        E_HeI = 24.6 * yt.units.eV
+        kph = data[('enzo','HeI_kph')].convert_to_cgs()
+        n   = data[('gas','H_p0_number_density')].convert_to_cgs()
+        dt  = data.ds.parameters['dtPhoton']
+        V   = data['cell_volume'].convert_to_cgs()
+        dx  = data['dx'].convert_to_cgs()
         s   = 7.4300459E-18 * yt.units.cm**(2) # cross section of HeI at 24.6 eV
 
-	tau   = s * n * dx
+        tau   = s * n * dx
         denom = 1.0 - np.exp(-tau)
 
         Q = kph * n * V / denom  # this gives number of photons / s
