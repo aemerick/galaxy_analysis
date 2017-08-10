@@ -2,6 +2,8 @@ import numpy as np
 import sys
 import contextlib
 
+from galaxy_analysis.static_data import asym_to_anum
+
 def extract_nested_dict(dict, key_list):
     """
     Given a list of kwargs, extracts the information requested
@@ -76,6 +78,37 @@ def nostdout():
 # but would be a little trickier
 #
 
+def sort_by_anum(names):
+    """
+    For a list of either element symbols or 
+    arbitrary strings beginning with element symbols (with a
+    consistent pattern), sort by atomic number. Returns
+    the sorted list.
+    """
+
+    # find common part of string if it exists...
+    if any( np.array([len(x) for x in names]) > 2):
+        # assume all have the same common string
+        index = np.argmax([len(x) for x in names])
+        print index
+        sample = names[index]
+        print sample
+        s_to_remove = sample[2:] # assume longest string is 2 letter sym
+        print s_to_remove
+        i = -1 * len(s_to_remove)
+        filtered = [x[:i] for x in names]
+        print filtered
+    else:
+        filtered = [x for x in names]
+
+    # get list of atomic numbers
+    anum = [ asym_to_anum[x] for x in filtered ]
+
+    # get sorting array
+    sort = np.argsort(anum)
+
+    return list(np.array(names)[sort])
+
 def compute_stats(x):
 
     return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
@@ -94,7 +127,7 @@ def chemistry_species_from_fields(fields):
 
     species = np.sort([x.rsplit('_')[0] for x in species])
 
-    return species
+    return sort_by_anum(species)
 
 def species_from_fields(fields):
     """
@@ -111,7 +144,7 @@ def species_from_fields(fields):
     metals   = [x for x in elements if x not in ignore]
 
 
-    return metals
+    return sort_by_anum(metals)
 
 def ratios_list(species):
     """
@@ -129,10 +162,11 @@ def ratios_list(species):
     """
 
     # remove H and He if they are there
+    species = sort_by_anum(species)
     species = [x for x in species if x != 'H' and x != 'He']
 
 
-    denominators = ['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C']
+    denominators = sort_by_anum(['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C'])
 
     ratios = []
 
