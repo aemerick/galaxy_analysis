@@ -148,7 +148,14 @@ def compute_abundance_stats(ds, data_source, mask = None,
     total_volume = np.sum(cv) * 1.0
     total_mass   = np.sum(cm) * 1.0
 
-    for field in fraction_fields:
+    all_fields = None
+    if not (fraction_fields is None):
+        all_fields = fraction_fields
+
+    if not (abundance_fields is None):
+        all_fields = all_fields + abundance_fields
+
+    for field in all_fields:
 
         if mask_empty or len(data_source['Density']) < 1:
             data_dict['volume_fraction'][field] = [np.zeros(np.size(fbins)-1),
@@ -215,8 +222,11 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         fraction_fields += [m + '_Fraction']
 
     # make the abundance ratio fields
+    #   - should do everything over H
+    #   - should do everything over Fe
+    #   - should do everything over Mg
 
-    abundance_fields = None
+    abundance_fields = utilities.abundance_ratios_from_fields(ds.derived_field_list)
 
     for i, dsname in enumerate(ds_list):
         print i, dsname
@@ -248,7 +258,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
     return
 
-def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overwrite = False,
+def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overwrite = True,
                        fraction_type = 'volume'):
     """
     Panel plot showing distributions of gas mass fractions for regions
@@ -301,6 +311,71 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
 
     return
 
+
+def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_abundances.h5', overwrite = True,
+                    fraction_type = 'volume'):
+    """
+    Panel plot showing distributions of gas mass fractions for regions
+    in galaxy
+    """
+
+    # for each dataset, plot the distributions of gas fractions in each phase
+
+    all_data = dd.io.load(dir + fname)
+
+    if plot_type == 'standard':
+        plot_fields = ['C_over_Fe','N_over_Fe','O_over_Fe','Mg_over_Fe',
+                       'Si_over_Fe','S_over_Fe','Ca_over_Fe','Mn_over_Fe','Fe_over_H',
+                       'O_over_Fe']
+        index       = [(0,0),(0,1),(0,2),(0,3),(0,4),(1,0),(1,1),(1,2),(1,3),(1,4)]
+
+        rows = 2
+        columns = 5
+
+    for dsname in all_data.keys():
+        if (len(glob.glob(dsname + '*_abundances*.png')) > 0) and not overwrite:
+            continue # do not remake plots
+
+        data  = all_data[dsname]
+
+        #metal_fractions = data[data.keys()[0]]['fraction'].keys()
+        #metal_fractions = [x for x in metal_fractions if ( (not 'H' in x) and (not x == 'bins'))]
+        #n_metal         = len(metal_fractions)
+
+        # hard code for now
+        fig, ax = plt.subplots(rows, columns)
+        all_phases  = ['CNM','WNM','HIM','star_forming','halo']
+
+#        plot_fields = ['C','N','O','Mg','Si','S','Ca','Mn','Fe','Ni']
+#        index       = [(0,0),(0,1),(0,2),(0,3),(0,4),(1,0),(1,1),(1,2),(1,3),(1,4)]
+
+        for j,phase in enumerate(all_phases):
+            print j, phase
+            phase_data = data[phase][fraction_type + '_fraction']
+            logbins = np.log10(phase_data['bins'])
+            for i, field in enumerate(plot_fields):
+                axi = index[i]
+                ax[axi].plot(logbins[:-1], np.log10(phase_data[field][0]), drawstyle='steps-post', lw = 3,
+                          color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
+
+                ax[axi].set_ylim(-5, 0)
+#                ax[axi].set_xlim(-15, -2)
+                ax[axi].set_ylabel('log [' + fraction_type + ' Fraction]')
+                ax[axi].set_xlabel('[' + field + '] Abundance')
+
+        ax[(0,0)].legend(loc='best')
+
+
+        fig.set_size_inches(40,16)
+        plt.tight_layout()
+        plt.minorticks_on()
+        fig.savefig(dsname + fraction_type +'_abundances.png')
+
+        plt.close()
+
+    return
+
+
 if __name__ == '__main__':
 
     generate_all_stats(overwrite=True)
@@ -308,4 +383,4 @@ if __name__ == '__main__':
     plot_gas_fractions(overwrite=True, fraction_type = 'volume')
     plot_gas_fractions(overwrite=True, fraction_type = 'mass')
 
-    plot_abundances(plot_type = 'standard')
+    plot_abundances(plot_type = 'standard', fraction_type = 'mass')

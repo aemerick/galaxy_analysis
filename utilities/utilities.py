@@ -148,6 +148,27 @@ def species_from_fields(fields, include_primordial = False):
 
     return sort_by_anum(metals)
 
+def abundance_ratios_from_fields(fields):
+    """
+    Returns all abundance ratio fields that are defined (does not define
+    any)
+
+    Assume abundance ratio fields are all:
+      ('gas','X_over_Y')
+    where X and Y are atomic symbols. Returns None if there are no
+    fields
+    """
+
+    fields = [x[1] for x in fields\
+            if (      ('_over_' in x[1])\
+                 and (not 'particle' in x[1])\
+                 and (len(x[1]) < 11))]
+
+    if len(fields) == 0:
+        fields = None
+
+    return fields
+
 def ratios_list(species):
     """
     Returns a list of abundance ratio names given a list
