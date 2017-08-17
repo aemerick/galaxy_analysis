@@ -4,7 +4,7 @@ fsize = 17
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
 
-line_width = 3
+line_width = 4
 point_size = 30
 
 import matplotlib as mpl
@@ -135,10 +135,10 @@ def plot_time_average(x, y, std = None, min = None, max = None,
         ax.fill_between(x, fillmin, fillmax, facecolor = facecolor, interpolate=True,
                            hatch = hatch, edgecolor = hatchcolor, lw = 0.0)
 
-        ax.plot(x, fillmin, color = color, lw = 1.5, ls = '-')
-        ax.plot(x, fillmax, color = color, lw = 1.5, ls = '-')
+        ax.plot(x, fillmin, color = color, lw = line_width*0.5, ls = '-')
+        ax.plot(x, fillmax, color = color, lw = line_width*0.5, ls = '-')
 
-    ax.plot(x, y, color = color, lw = 3, ls = '--', label = label)
+    ax.plot(x, y, color = color, lw = line_width, ls = '--', label = label)
 
     return fig, ax
 
