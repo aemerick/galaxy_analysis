@@ -108,7 +108,6 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
     data = {}
     for m in all_masks.keys():
         data_source, mask = all_masks[m](galaxy)
-        print m, mask
         data[m] = compute_abundance_stats(galaxy.ds,
                                           data_source, mask, fraction_fields,
                                           abundance_fields)
@@ -226,12 +225,13 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     #   - should do everything over Fe
     #   - should do everything over Mg
 
-    abundance_fields = utilities.abundance_ratios_from_fields(ds.derived_field_list)
-
     for i, dsname in enumerate(ds_list):
         print i, dsname
         groupname = dsname.rsplit('/')[1]
         gal = Galaxy(groupname)
+
+        if i == 0:
+            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list)
 
         if groupname in hf.keys() and (not overwrite):
             continue
