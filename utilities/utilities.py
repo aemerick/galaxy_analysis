@@ -4,6 +4,13 @@ import contextlib
 
 from galaxy_analysis.static_data import asym_to_anum
 
+rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
+              5 : (2,3), 6: (2,3), 7:(2,4),
+              8 : (2,4), 9: (2,5), 10:(2,5),
+              11: (3,4), 12: (3,4), 13: (4,4),
+              14: (4,4), 15: (4,4), 16: (4,4),
+              17: (5,4), 18: (5,4), 19: (5,4), 20 : (5,4)}
+
 def extract_nested_dict(dict, key_list):
     """
     Given a list of kwargs, extracts the information requested
