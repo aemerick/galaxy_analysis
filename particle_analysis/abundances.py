@@ -12,6 +12,7 @@ import h5py
 
 # -- internal --
 from galaxy_analysis.utilities import convert_abundances
+from galaxy_analysis.utilities import utilities
 
 def compute_aratio(ds, data, ratios, particle_type = 11):
     """
@@ -46,8 +47,8 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
         mass1 = data[enzo_name1][ptype==particle_type] * birth_mass
         mass2 = data[enzo_name2][ptype==particle_type] * birth_mass
 
-        aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1), 
-                                                             (ele2, mass2), 
+        aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1),
+                                                             (ele2, mass2),
                                                              'mass' )
     return aratios
 
@@ -71,7 +72,8 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
     rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
                   5 : (2,3), 6: (2,3), 7:(2,4),
                   8 : (2,4), 9: (2,5), 10:(2,5),
-                  11: (3,4), 12: (3,4), 13: (4,4)}
+                  11: (3,4), 12: (3,4), 13: (4,4),
+                  14: (4,4), 15: (4,4), 16: (4,4)}
 
     if plot_type == 'standard':
         denom1 = 'Fe'
@@ -166,10 +168,7 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
     # get elements present:
     ds              = yt.load(ds_list[-1])
     fields          = ds.field_list
-    element_fields  = [x[1] for x in fields if ('particle_' in x[1] and\
-                                                '_fraction' in x[1]) and\
-                                               ('all' in x[0])]
-    elements = np.sort([x.rsplit('_')[1] for x in element_fields])
+    elements = utilities.species_from_fields(fields, include_primordial=True)
     metals   = [x for x in elements if (x != 'H' and x != 'He')]
     ratios   = [ x +'/H' for x in metals]
 
