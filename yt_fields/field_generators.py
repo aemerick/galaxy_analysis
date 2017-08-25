@@ -650,11 +650,11 @@ def load_and_define(name):
 
         return a
 
-    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2')
-    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2')
-    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2')
-    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2')
-    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '')
+    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2', sampling_type='cell')
+    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2', sampling_type='cell')
+    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2', sampling_type='cell')
+    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
+    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
 
     generate_particle_filters(ds)
     
