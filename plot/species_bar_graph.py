@@ -1,7 +1,7 @@
 import deepdish as dd
 import numpy as np
 
-from matplotlib import rc
+from matplotlib import rc, cm
 
 fsize = 17
 rc('text', usetex=False)
@@ -15,6 +15,9 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import glob
 
+viridis = cm.get_cmap('viridis')
+magma   = cm.get_cmap('magma')
+plasma  = cm.get_cmap('plasma')
 
 ###
 ###
@@ -23,10 +26,13 @@ from galaxy_analysis.utilities import utilities
 ###
 
 def species_bar_graph(name, data, fraction = True, disk_only = False, outname = None,
-                      display_total = None, show_individual_amounts = False):
+                      display_total = None, show_individual_amounts = False, **kwargs):
    """
    Uses an analysis output to give a bar graph
    """
+
+   if not 'alpha' in kwargs:
+       kwargs['alpha'] = 0.8
 
    # set default output name
    if outname is None:
@@ -74,36 +80,60 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    fig.set_size_inches(16,8) # may need to make this longer
 
    index  = np.arange(N)
-   width  = 0.4
+   width  = 0.75
 
    if not disk_only:
+       fields = ['Disk','stars','Halo']
+
        colors = {'Disk' : 'purple', 'stars' : 'gold',
                  'Halo' : 'black'}
+       colors = {'Disk': plasma(0.0), 'stars': plasma(1.0),
+                 'Halo': plasma(0.5)}
        barplot = {}
        bottom  = np.zeros(N)
        sum     = np.zeros(N)
        # plot!
-       for f in ['Disk','stars','Halo']:
+       for f in fields:
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
-                               color = colors[f], bottom = bottom)
+                               color = colors[f], bottom = bottom, label = f, **kwargs)
            bottom += bar_values * 1.0
            sum    = sum + bottom
 
    else:
+       fields = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM', 'stars']
        colors = {'stars': 'gold', 'CNM' : 'blue', 'WNM' : 'green',
                  'WIM' : 'orange', 'HIM'  : 'red', 'Molecular' : 'black'}
+
+       colors = {'Molecular' : plasma(0.0), 'CNM' : plasma(1.0/5.0),
+                 'WNM' : plasma (2.0/5.0), 'WIM' : plasma(3.0/5.0),
+                 'HIM' : plasma(4.0/5.0), 'stars' : plasma(1.0)}
 
        barplot = {}
        bottom  = np.zeros(N)
        # plot!
-       for f in ['Molecular','CNM','WNM','WIM','HIM','stars']:
+       for f in fields:
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
-                               color = colors[f], bottom = bottom)
+                               color = colors[f], bottom = bottom,
+                               label = f, **kwargs)
            bottom += bar_values
+
+   nfields = len(fields)
+
+   if display_total:
+       rects = barplot[np.array(fields)[-1]]
+       totals = np.array([ total[k] for k in ordered_species])
+       for i, rect in enumerate(rects):
+           ax.text(rect.get_x() + rect.get_width()/2.0, 0.85*bottom[i],
+                   '%.1E' % float(totals[i]), ha='center', va='bottom', color = 'white',
+                   rotation='vertical')
+
+   if show_individual_amounts:
+       # put code here to add amounts to each field
+       print "cannot include individual amounts yet"
    #
    #
    #
@@ -112,11 +142,20 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    plt.tight_layout()
    ax.set_xticks(index)
    ax.set_xticklabels(ordered_species)
+
+   # make legend, reverse label ordering
+   handles, labels = ax.get_legend_handles_labels()
+   ax.legend(handles[::-1], labels[::-1], loc='best')
+
    if fraction:
        ax.set_ylim(0.0,1.0)
    else:
-       ax.set_ylim(0.0, 50.0)
-#   plt.minorticks_on()
+       ax.semilogy()
+
+   # turn on minorticks, but keep x axis ticks off
+   plt.minorticks_on()
+   ax.tick_params(axis='x',which='minor',bottom='off')
+
    fig.savefig(outname)
    plt.close()
 
@@ -126,20 +165,21 @@ if __name__ == "__main__":
     # example useage
 
     def _plot_both(name, data):
-        species_bar_graph(name, data,
-                              fraction      = True,
+        for fraction in [True, False]:
+            species_bar_graph(name, data,
+                              fraction      = fraction,
                               disk_only     = False,
                               display_total = True,
                               show_individual_amounts = False)
 
-        species_bar_graph(name, data,
-                          fraction      = True,
-                          disk_only     = True,
-                          display_total = True,
-                          show_individual_amounts = False)
+            species_bar_graph(name, data,
+                              fraction      = fraction,
+                              disk_only     = True,
+                              display_total = True,
+                              show_individual_amounts = False)
         return
 
-    if False:
+    if True:
         name = 'DD0114'
         data = dd.io.load(name + '_galaxy_data.h5')
         _plot_both(name, data)
@@ -152,3 +192,4 @@ if __name__ == "__main__":
             data = dd.io.load(f + '_galaxy_data.h5')
             _plot_both(f,data)
             del(data)
+
