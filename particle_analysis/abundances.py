@@ -78,7 +78,7 @@ def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
         ms = hf[dsname]['Mstars'].value
 
         abund    = hf[dsname]['abundances']
-        elements = [x for x in abund.keys() if ( (x != 'H') and (x != 'He'))]
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He'))])
         nabundances = len(elements)
 
         outname = dir + dsname + '_abundances_time_evolution.png'
@@ -167,7 +167,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = [x for x in abund.keys() if (x!= denom1) and (x!=denom2)]
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2)])
         nabundances = len(elements)
 
         outname = dir + dsname + '_abundances.png'
