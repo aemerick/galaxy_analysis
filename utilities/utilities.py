@@ -6,6 +6,7 @@ from galaxy_analysis.static_data import asym_to_anum
 
 # to compute weighted statistics on a distribution
 import statsmodels.stats.weightstats as stats
+import statsmodels.tsa.stattools as stattools
 
 rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               5 : (2,3), 6: (2,3), 7:(2,4),
@@ -119,7 +120,7 @@ def sort_by_anum(names):
 
     return list(np.array(names)[sort])
 
-def compute_stats(x, return_dict = False):
+def compute_stats(x, return_dict = False, acf = False):
 
     if not return_dict:
         return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
@@ -135,6 +136,10 @@ def compute_stats(x, return_dict = False):
     d['inner_quartile_range'] = d['Q3'] - d['Q1']
     d['variance'] = np.var(x)
 
+    if (len(x) > 0) and acf:
+        d['acf'] = np.array(stattools.acf(x))
+    else:
+        d['acf'] = 0.0
     return d
 
 def compute_weighted_stats(x, w, return_dict = True):
