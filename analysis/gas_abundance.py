@@ -99,6 +99,7 @@ _mask_ls    = {'star_forming' : '-',
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
                                     abundance_fields = None):
 
+    # define the standard masks, then compute things for all of them
     all_masks   = {'star_forming': _star_forming_region,
                    'CNM': _CNM,
                    'WNM': _WNM,
@@ -167,8 +168,8 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     cv = data_source['cell_volume'][mask]
     cm = data_source['cell_mass'][mask]
-    total_volume = np.sum(cv) * 1.0
-    total_mass   = np.sum(cm) * 1.0
+    total_volume = np.sum(cv) * 1.0     # total volume of masked cells
+    total_mass   = np.sum(cm) * 1.0     # total mass   of masked cells
 
     all_fields = None
     if not (fraction_fields is None):
@@ -184,6 +185,9 @@ def compute_abundance_stats(ds, data_source, mask = None,
         else:
             bins = fbins
 
+        #  for the abundance ratio fields, we want to get rid
+        #  of the things that have 'primordial' abundances
+        #  to make interpretation cleaner
         if mask_abundances and 'over' in field:
             ele            = field.split('_over_')[0]
             over_H         = ele + '_over_H'
@@ -193,6 +197,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
             mask = np.array(mask).astype(bool)
             mask_empty = not any(mask)
 
+        # if there is no data, fill the arrays with zeros
         if mask_empty or len(data_source['Density']) < 1:
             data_dict['volume_fraction'][field] = [np.zeros(np.size(bins)-1),
                                             np.zeros(5)]
@@ -210,17 +215,12 @@ def compute_abundance_stats(ds, data_source, mask = None,
             for i in np.arange(np.size(bins) - 1):
                 hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
-#                hist3[i] = np.sum( cm[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / phase_mass
-
-#            hist, bins = np.histogram(fdata, bins = fbins)
 
             stats = utilities.compute_stats(hist)
 
             data_dict['volume_fraction'][field] = [hist, stats]
 
             data_dict['mass_fraction'][field]   = [hist2, stats]
-
-#            data_dict['phase_mass_fraction'][field] = [hist3, stats]
 
     #
     # general properties
@@ -233,6 +233,11 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
 def generate_all_stats(outfile = 'gas_abundances.h5',
                         dir = './abundances/', overwrite=False):
+    """
+    For all data files, generate gas abundance statistics for all
+    element fractions and abundance ratios (as defined below). This is
+    an expensive operation.
+    """
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -252,6 +257,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     ds = yt.load(ds_list[0])
     metals = utilities.species_from_fields(ds.field_list)
 
+    # additional fraction fields for the non-equillibrium chemistry species
     fraction_fields = ['H_p0_fraction','H_p1_fraction','He_p0_fraction',
                        'He_p1_fraction','He_p2_fraction','H2_fraction']
     for m in metals:
@@ -262,26 +268,29 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     #   - should do everything over Fe
     #   - should do everything over Mg
 
+    # loop through all data files
     for i, dsname in enumerate(ds_list):
         print i, dsname
         groupname = dsname.rsplit('/')[1]
         gal = Galaxy(groupname)
 
+        # if first loop, define the fields
         if i == 0:
             abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list)
             species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
             metal_species = utilities.species_from_fields(gal.ds.field_list)
 
+        # don't recompute things unless overwrite is set
         if groupname in hf.keys() and (not overwrite):
             continue
 
         hf[groupname] = {} # make an empty key for this group
         g = hf[groupname]
 
-#        g = hf.create_group(groupname)
         g['general'] = {}
         g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
 
+        # generalized function to loop through all mask types and compute stats
         gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
                                           abundance_fields = abundance_fields)
 
@@ -291,12 +300,12 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
         del(gal)
 
+    # save field names
     hf['species']          = species
     hf['metal_species']    = metal_species
     hf['abundance_fields'] = abundance_fields
 
     dd.io.save(hdf5_filename, hf)
-#    hf.close()
 
     return
 
