@@ -1,7 +1,7 @@
 from __future__ import division
 
 import yt
-yt.funcs.mylog.setLevel(50)
+yt.funcs.mylog.setLevel(40)
 
 
 import numpy as np
@@ -629,8 +629,20 @@ class Galaxy(object):
             fname = e + '_Mass'
             self.meta_data['M_' + e] = np.sum(self.disk[fname]).convert_to_units(UNITS["Mass"].units)
 
-        return
 
+        #
+        # compute the volume occupied by each phase in the disk
+        #
+        cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']
+        self.gas_meta_data['volume_fractions'] = {}
+
+        total_volume = np.sum(self.disk['cell_volume'].convert_to_units('cm**(-3)'))
+        for crtype in cut_region_names:
+            v = self.disk.cut_region(ISM[crtype])['cell_volume'].convert_to_units('cm**(-3)')
+            self.gas_meta_data['volume_fractions'][crtype] = np.sum(v) / total_volume
+        self.gas_meta_data['volume_fractions']['Total'] = total_volume
+
+        return
 
 
     def compute_gas_profiles(self):
@@ -735,7 +747,6 @@ class Galaxy(object):
         else:
             for s in ['H','He','Metals'] + self.species_list:
                 mdict['OutsideBox'][s] = 0.0
-                                       
 
         if self._has_particles:
             mdict['stars']['metals'] = np.sum( (self.df['birth_mass'].value * self.df['metallicity_fraction'])[self.df['particle_type'] == 11])
@@ -749,14 +760,14 @@ class Galaxy(object):
     def fractional_gas_sequestering(self):
         if not hasattr(self, 'gas_sequestering'):
             discard = self.compute_gas_sequestering()
-        
+
         fields = self.gas_sequestering['Disk'].keys()
         x      = copy.deepcopy(self.gas_sequestering)
         for region in self.gas_sequestering.keys():
             for s in fields:
                 x[region][s] /= self.gas_sequestering['FullBox'][s]
 
-        return x        
+        return x
 
     def compute_meta_data(self):
         """
