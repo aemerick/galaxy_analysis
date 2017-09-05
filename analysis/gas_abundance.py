@@ -216,7 +216,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
                 hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
 
-            stats = utilities.compute_stats(hist)
+            stats = utilities.compute_stats(hist, return_dict = True)
 
             data_dict['volume_fraction'][field] = [hist, stats]
 
