@@ -1,10 +1,17 @@
-#import yt.mods as yt
 import yt
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib import rc, cm
 from collections import Iterable, OrderedDict
+
+fsize = 17
+rc('text', usetex=False)
+rc('font', size=fsize)#, ftype=42)
+line_width = 3
+point_size = 30
+plasma     = cm.get_cmap('plasma')
 
 import glob
 import os
@@ -25,7 +32,13 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
 
     birth_mass = data['birth_mass'].value * yt.units.Msun
     ptype      = data['particle_type']
-    birth_mass = birth_mass[ptype==particle_type]
+
+    if particle_type == 'all':
+        select = (ptype == ptype)
+    else:
+        select = (ptype == particle_type)
+
+    birth_mass = birth_mass[select]
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -44,16 +57,161 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
         enzo_name1 = ('io','particle_' + ele1 + '_fraction')
         enzo_name2 = ('io','particle_' + ele2 + '_fraction')
 
-        mass1 = data[enzo_name1][ptype==particle_type] * birth_mass
-        mass2 = data[enzo_name2][ptype==particle_type] * birth_mass
+        mass1 = data[enzo_name1][select] * birth_mass
+        mass2 = data[enzo_name2][select] * birth_mass
 
         aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1),
                                                              (ele2, mass2),
                                                              'mass' )
     return aratios
 
+def plot_acf(h5file = 'abundances.h5', dir = './abundances/', ds_list = None):
+    """
+    Plots the time evolution of all abundance ratios [X/Fe]. Optionally
+    can include bands giving the standard deviation and 1st and 3rd 
+    quartile of the distributions.
+    """
+
+    hf = h5py.File(dir + h5file, 'r')
+
+    if ds_list is None:
+        ds_list = hf.keys()
+
+
+    for dsname in ds_list:
+
+        # make one plot for each file
+        t  = hf[dsname]['Time'].value
+        ns = hf[dsname]['Nstars'].value
+        ms = hf[dsname]['Mstars'].value
+
+        abund    = hf[dsname]['abundances']
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He'))])
+        nabundances = len(elements)
+        outname = dir + dsname + '_abundances_acf.png'
+        nrow, ncol = utilities.rowcoldict[nabundances]
+
+        fig, ax = plt.subplots(nrow,ncol)
+        fig.set_size_inches(4*ncol, 4*nrow)
+
+        i,j = 0,0
+        denom = 'Fe'
+        for ele in elements:
+            index = (i,j)
+            if ele == 'Fe':
+                ele2 = 'H'
+            else:
+                ele2 = denom
+
+            g   = hf[dsname]['statistics']['all_particles']
+            acf = g[ele][ele2]['acf']
+            x   = np.arange(1, np.size(acf)+1) # not sure
+
+            ax[index].plot(x, acf, lw = 3, color = 'black', label = ele)
+
+            ax[index].set_ylabel(r'ACF log([' + ele + '/' + ele2 + '])')
+            ax[index].set_xlabel(r'Lag')
+            ax[index].minorticks_on()
+
+            ax[index].set_ylim(0.0, 1.0)
+
+            j = j + 1
+            if j >= ncol:
+                j = 0
+                i = i + 1
+
+        plt.tight_layout()
+
+        plt.savefig(outname)
+        plt.close()
+
+    return
+
+
+def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
+                        plot_type = 'standard', ds_list = None,
+                        show_std = True, show_quartile = True):
+    """
+    Plots the time evolution of all abundance ratios [X/Fe]. Optionally
+    can include bands giving the standard deviation and 1st and 3rd 
+    quartile of the distributions.
+    """
+
+    hf = h5py.File(dir + h5file, 'r')
+
+    if ds_list is None:
+        ds_list = hf.keys()
+
+    if plot_type == 'standard':
+        denom = 'Fe'
+
+    for dsname in ds_list:
+
+        # make one plot for each file
+        t  = hf[dsname]['Time'].value
+        ns = hf[dsname]['Nstars'].value
+        ms = hf[dsname]['Mstars'].value
+
+        abund    = hf[dsname]['abundances']
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He'))])
+        nabundances = len(elements)
+
+        for dt in [10, 20, 50]:
+            outname = dir + dsname + '_abundances_time_%i_evolution.png'%(dt)
+
+            nrow, ncol = utilities.rowcoldict[nabundances]
+
+            fig, ax = plt.subplots(nrow,ncol)
+            fig.set_size_inches(4*ncol, 4*nrow)
+
+            i,j = 0,0
+            for ele in elements:
+                index = (i,j)
+                if ele == denom:
+                    ele2 = 'H'
+                else:
+                    ele2 = denom
+
+                g = hf[dsname]['statistics']['%iMyr'%(dt)][ele][ele2]
+                bins = hf[dsname]['statistics']['%iMyr'%(dt)]['bins']
+                x = (bins[1:] + bins[:-1])*0.5
+
+                # plot average
+                mean = np.array(g['mean'])
+                ax[index].plot(x, mean, lw = 3, color = 'black', label = ele)
+
+                if show_std:
+                    std  = np.array(g['std'])
+                    y1, y2 = mean - std, mean + std
+                    ax[index].fill_between(x, y1, y2, color = 'grey', alpha = 0.5, lw = 1.5)
+                if show_quartile:
+                    ax[index].fill_between(x, g['Q1'], g['Q3'], color = 'black', alpha = 0.5, lw = 1.5)
+
+                ax[index].set_ylabel(r'log( [' + ele + '/' + ele2 + '])')
+                ax[index].set_xlabel(r'Time (Myr)')
+                ax[index].minorticks_on()
+
+                ax[index].set_ylim(-3, 3)
+                if ele == denom:
+                    ax[index].set_ylim(-10, 0)
+
+                xmin = np.min( np.array(x[np.array(g['mean']) < 9999]))
+                ax[index].set_xlim( xmin , bins[-1])
+
+                j = j + 1
+                if j >= ncol:
+                    j = 0
+                    i = i + 1
+
+            plt.tight_layout()
+
+            plt.savefig(outname)
+            plt.close()
+
+    return
+
 def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard', color_by_age=False,
-                    ds_list = None):
+                    ds_list = None, show_average = False):
     """
     Given an hdf5 file of stored abundances generated from Enzo particle data,
     plot all abundance ratios of certain plot type. Currently only supports the standard
@@ -67,13 +225,6 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
     # add new labels for plot types here, (e.g. X / Mg vs. Mg / H)
     xlabels = {'standard': r'log [Fe / H]'}
-    ylabels = {'standard': r'log [X / Fe]'}
-
-    rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
-                  5 : (2,3), 6: (2,3), 7:(2,4),
-                  8 : (2,4), 9: (2,5), 10:(2,5),
-                  11: (3,4), 12: (3,4), 13: (4,4),
-                  14: (4,4), 15: (4,4), 16: (4,4)}
 
     if plot_type == 'standard':
         denom1 = 'Fe'
@@ -93,12 +244,12 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = [x for x in abund.keys() if (x!= denom1) and (x!=denom2)]
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2)])
         nabundances = len(elements)
 
         outname = dir + dsname + '_abundances.png'
 
-        nrow, ncol = rowcoldict[nabundances]
+        nrow, ncol = utilities.rowcoldict[nabundances]
 
         fig, ax = plt.subplots(nrow,ncol)
         fig.set_size_inches(4*ncol,4*nrow)
@@ -107,27 +258,44 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         i,j = 0,0
 
         for ele in elements:
+            index = (i,j)
 
+            xpoints = np.array( abund[denom1][denom2].value)
+            ypoints = np.array( abund[ele][denom1].value)
             if color_by_age:
                 age = np.array(t - hf[dsname]['creation_time'].value)
-                c = ax[(i,j)].scatter( np.array(abund[denom1][denom2].value), np.array(abund[ele][denom1].value), s = 7.5, alpha = 0.25,
-                                   c = age, label=ele, cmap='algae')
+                c = ax[index].scatter( xpoints, ypoints, s = 7.5, alpha = 0.25,
+                                   c = age, label=ele, cmap='plasma')
             else:
-                ax[(i,j)].scatter( abund[denom1][denom2].value, abund[ele][denom1].value, s =15, alpha =0.75,
+                ax[index].scatter( xpoints, ypoints, s =15, alpha =0.75,
                                                        color = 'black', label = ele)
 
-            ax[(i,j)].set_xlabel(xlabels[plot_type])
-            ax[(i,j)].set_ylabel(ylabels[plot_type])
+            if show_average:
+                # need to bin the data
+                xbins = np.arange(-15, 4.05, 0.25) # larger than needed bins
+                yavg  = np.ones(np.size(xbins)-1) * 9999
+                for ii in np.arange(0, len(xbins) - 1):
+                    yavg[ii] = np.average( ypoints[ (xpoints > xbins[ii]) * (xpoints <= xbins[ii+1])])
+                xcent = 0.5 * (xbins[1:] + xbins[:-1])
+                yavg[yavg==9999] = None
+#                if color_by_age:
+#                    ax[index].plot( xcent, yhist, lw = 3, alpha = 0.75, c = age, cmap = 'plasma')
+#                else:
+                ax[index].step(xcent, yavg, lw = 3, alpha =0.5, color = 'black', where = 'post')
+              
+
+            ax[index].set_xlabel(xlabels[plot_type])
+            ax[index].set_ylabel(r'log([' + ele + '/' + denom1 +'])')
 
             if ele in ['Eu','Ba','Y']:
-                ax[(i,j)].set_ylim(-8,0)
+                ax[index].set_ylim(-8,0)
             else:
-                ax[(i,j)].set_ylim(-4,4)
+                ax[index].set_ylim(-4,4)
 
-            ax[(i,j)].set_xlim(-15, 0)
-            ax[(i,j)].minorticks_on()
+            ax[index].set_xlim(-15, 0)
+            ax[index].minorticks_on()
 
-            ax[(i,j)].legend(loc='upper right')
+#            ax[index].legend(loc='upper right')
 
 
             j = j + 1
@@ -192,16 +360,92 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 
         if ('io', 'particle_type') in ds.field_list:
 
-            aratios = compute_aratio(ds, data, ratios)
+            #
+            # Compute and store abundance ratios and relevant properties for all MS stars
+            #
+            aratios = compute_aratio(ds, data, ratios) # by default, only does MS stars
 
-            g.create_dataset('Nstars', data = np.size(data['particle_mass'][ data['particle_type'] == 11]))
-            g.create_dataset('Mstars', data = np.sum( data['particle_mass'][ data['particle_type'] == 11].convert_to_units('Msun').value))
-            g.create_dataset('creation_time', data = data['creation_time'][data['particle_type'] == 11].convert_to_units('Myr').value)
-            g.create_dataset('birth_mass', data = data['birth_mass'][data['particle_type'] == 11].value)
+            MS = data['particle_type'] == 11
+
+            g.create_dataset('Nstars', data = np.size(data['particle_mass'][ MS]))
+            g.create_dataset('Mstars', data = np.sum( data['particle_mass'][ MS].convert_to_units('Msun').value))
+            g.create_dataset('creation_time', data = data['creation_time'][MS].convert_to_units('Myr').value)
+            g.create_dataset('birth_mass', data = data['birth_mass'][MS].value)
 
             sg = hf.create_group(groupname + '/abundances')
             for abundance in aratios.keys():
                 sg.create_dataset( abundance, data = aratios[abundance])
+
+            # now compute statistics on the MS stars, and store them
+            statgroup = hf.create_group(groupname + '/statistics')
+            all = statgroup.create_group('all_MS')
+            for abundance in aratios.keys():
+                stats = utilities.compute_stats(aratios[abundance], return_dict = True, acf = True)
+                g = all.create_group(abundance)
+                for k in stats.keys():
+                    g.create_dataset(k, data = stats[k])
+
+            #
+            # Now, do this for all particles, regardless of type.
+            # Aka... ignore observational / physical reality and treat them all as tracers
+            #
+            aratios = compute_aratio(ds, data, ratios, particle_type = 'all')
+
+            tracers = statgroup.create_group('all_particles')
+
+            for abundance in aratios.keys():
+                stats = utilities.compute_stats(aratios[abundance], return_dict = True, acf = True)
+                g     = tracers.create_group(abundance)
+                for k in stats.keys():
+                    g.create_dataset(k, data = stats[k])
+
+            #
+            # now do it in time bins to get time evolution
+            #
+            for dt in [10, 20, 50]:
+                g = statgroup.create_group('%iMyr'%(dt))
+                t  = ds.current_time.convert_to_units('Myr').value
+                tmax = np.around(t, decimals = -len(str(dt)) + 1)
+                if tmax < t:
+                    tmax = tmax + dt
+                tbins = np.arange(0.0, tmax + 0.5*dt, dt)
+
+                index = np.digitize(data['creation_time'].convert_to_units('Myr').value, tbins)
+                hist, bins  = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+                g.create_dataset('bins', data = tbins)
+                g.create_dataset('hist', data = np.array(hist))
+
+                stats_array_dict = {}
+                for abundance in aratios.keys():
+                    stats_array_dict[abundance] = {}
+                    for k in stats.keys():
+                        stats_array_dict[abundance][k] = np.zeros(np.size(tbins) - 1)
+
+                for i in np.arange(np.size(tbins)-1):
+                    for abundance in aratios.keys():
+                        if i == 0:
+                            sub_g = g.create_group(abundance)
+                        if hist[i] > 0:
+                            stats = utilities.compute_stats(aratios[abundance][index == i+1], return_dict = True)
+                            for k in stats.keys():
+                                stats_array_dict[abundance][k][i] = stats[k]
+                        else:
+                            for k in stats.keys():
+                                stats_array_dict[abundance][k][i] = None
+
+                for abundance in aratios.keys():
+                    g = hf[groupname + '/statistics/%iMyr/'%(dt) + abundance]
+                    for k in stats.keys():
+                        g.create_dataset(k, data = stats_array_dict[abundance][k])
+
+            # ------------ can do a correlation across time bins here too --------- 
+            # Pick some time t_o, for the ith bin past t_o, do correlation between
+            # those two populations of stars
+            # x  = np.array([stars in t_o bin] + [stars in t_i bin])
+            # corr[i] = np.correlate(x,x, mode = 'full')
+            # allow to plot correlation as a function of time.
+
+
         else:
             g.create_dataset('Nstars', data = 0.0)
             g.create_dataset('Mstars', data = 0.0)
@@ -218,4 +462,7 @@ if __name__=='__main__':
 
     generate_abundances()
 
-    plot_abundances(plot_type = 'standard', color_by_age = True)
+    plot_abundances(plot_type = 'standard', color_by_age = True, show_average = True)
+    plot_time_evolution(show_quartile=False)
+    plot_acf()
+

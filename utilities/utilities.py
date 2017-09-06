@@ -4,6 +4,10 @@ import contextlib
 
 from galaxy_analysis.static_data import asym_to_anum
 
+# to compute weighted statistics on a distribution
+import statsmodels.stats.weightstats as stats
+import statsmodels.tsa.stattools as stattools
+
 rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               5 : (2,3), 6: (2,3), 7:(2,4),
               8 : (2,4), 9: (2,5), 10:(2,5),
@@ -168,9 +172,52 @@ def sort_by_anum(names):
 
     return list(np.array(names)[sort])
 
-def compute_stats(x):
+def compute_stats(x, return_dict = False, acf = False):
 
-    return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
+    if not return_dict:
+        return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
+
+    d = {}
+    d['min'] = np.min(x)
+    d['max'] = np.max(x)
+    d['mean'] = np.average(x)
+    d['median'] = np.median(x)
+    d['std'] = np.std(x)
+    d['Q1']  = np.percentile(x, 25.0)
+    d['Q3']  = np.percentile(x, 75.0)
+    d['inner_quartile_range'] = d['Q3'] - d['Q1']
+    d['variance'] = np.var(x)
+
+    if (len(x) > 0) and acf:
+        d['acf'] = np.array(stattools.acf(x))
+    else:
+        d['acf'] = 0.0
+    return d
+
+def compute_weighted_stats(x, w, return_dict = True):
+    """
+    Returns a dictionary containing stats information to be easiy chunked
+    into a data set. Does this by constructing a weighted stats object
+    using the statsmodels 
+    """
+
+    s = stats.DescrStatsW(x, weights = w)
+
+    if not return_dict:
+        return s
+
+    d = {}
+    d['mean']     = s.mean()
+    d['std' ]     = s.std()
+    q             = s.quantile( np.array([0.25, 0.75]))
+    d['Q1']       = q[0]
+    d['Q3']       = q[1]
+    d['inner_quartile_range'] = q[1] - q[0]
+    d['variance'] = s.var()
+    d['min']      = np.min(x)
+    d['max']      = np.max(x)
+
+    return d
 
 def chemistry_species_from_fields(fields):
     """
