@@ -635,11 +635,16 @@ class Galaxy(object):
         #
         cut_region_names = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM']
         self.gas_meta_data['volume_fractions'] = {}
+        self.gas_meta_data['mass_fractions']   = {}
 
-        total_volume = np.sum(self.disk['cell_volume'].convert_to_units('cm**(-3)'))
+        total_volume = np.sum(self.disk['cell_volume'].convert_to_units('cm**(3)'))
         for crtype in cut_region_names:
-            v = self.disk.cut_region(ISM[crtype])['cell_volume'].convert_to_units('cm**(-3)')
+            v = self.disk.cut_region(ISM[crtype])['cell_volume'].convert_to_units('cm**(3)')
             self.gas_meta_data['volume_fractions'][crtype] = np.sum(v) / total_volume
+
+            self.gas_meta_data['mass_fractions'][crtype] = self.gas_meta_data['masses'][crtype]['Total']/\
+                                                               self.gas_meta_data['masses']['Disk']['Total']
+
         self.gas_meta_data['volume_fractions']['Total'] = total_volume
 
         return
