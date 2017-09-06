@@ -25,9 +25,19 @@ def compute_time_average(field_path,
                          self_contained = False, index = None,
                          x_field = 'xbins'):
     """
+    Computes the time average of some quantity pre-computed for a given
+    set of simulations dumps using the galaxy analysis framework. The quantity
+    can be a single value or an array (e.g. a profile); the assumption is that
+    binning in consistent if it is the latter. If an 'x_field' is also provided,
+    searches for this value in the 'field_path' and returns this as well. Otherwise
+    does nothing if x_field is None (as should be the case for a single value).
+
+    Additionally computes the min, max, and standard deviation over the averaging
+    time.
+
     If self_contained is true, then the data is all contained in a single
     file, rather than one file per output. This is currently a hacky way
-    to handle this, btu that works. If self_contained is true, then
+    to handle this, but it works. If self_contained is true, then
     data_list must be the filename of the global hdf5 file containing all
     data.
     """
@@ -107,9 +117,12 @@ def compute_time_average(field_path,
 
     avg = sum / (1.0 * s0)
 
-    field_path[-1] = x_field
+    if np.size(avg) > 0 and (not (x_field is None)):
+        field_path[-1] = x_field
+        x = util.extract_nested_dict(data, field_path)
 
-    x = util.extract_nested_dict(data, field_path)
+    else:
+        x = None
 
     return x, avg, min, max, std
 
@@ -144,6 +157,10 @@ def plot_time_average(x, y, std = None, min = None, max = None,
 
 
 if __name__=="__main__":
+
+    # Example useage, where will we compute the time averaged HI
+    # surface density profile, plotting the average along with the
+    # standard deviation
 
     x, avg, min, max, std = compute_time_average(['gas_profiles','surface_density','disk',
                                            ('enzo','HI_Density')],
