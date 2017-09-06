@@ -5,25 +5,9 @@ from matplotlib import rc
 #
 from dwarfs.analysis.initial_conditions import ic_list as icl
 
-purple  = '#7d03a8'
-magenta = '#cb4679'
-blue    = '#0c0887'
-orange  = '#fdc328'
-black   = 'black'
-green   = 'green'
-
+from galaxy_analysis.plot.plot_styles import *
 colors = [orange, magenta, purple, black]
 ls     = ['-','-','-','-']
-
-#
-# style defines
-#
-fsize = 17
-rc('text', usetex=False)
-rc('font', size=fsize)#, ftype=42)
-line_width = 4
-point_size = 30
-
 
 #
 # Get the 4 Leo P galaxy IC's

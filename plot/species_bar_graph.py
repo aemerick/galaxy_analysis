@@ -1,23 +1,9 @@
 import deepdish as dd
 import numpy as np
 
-from matplotlib import rc, cm
-
-fsize = 17
-rc('text', usetex=False)
-rc('font', size=fsize)#, ftype=42)
-line_width = 3
-point_size = 30
-
-import matplotlib as mpl
-mpl.use('Agg')
-
+from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 import glob
-
-viridis = cm.get_cmap('viridis')
-magma   = cm.get_cmap('magma')
-plasma  = cm.get_cmap('plasma')
 
 ###
 ###
@@ -180,7 +166,7 @@ if __name__ == "__main__":
         return
 
     if True:
-        name = 'DD0114'
+        name = 'DD0126'
         data = dd.io.load(name + '_galaxy_data.h5')
         _plot_both(name, data)
 
