@@ -43,7 +43,7 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False)
             for k in _phases:
                 combined_fractions[k] = [all_fractions[i][k] for i in np.arange(len(data_list))]
 
-            return times, combined_fractions
+            return times[(times>tmin)*(times<tmax)], combined_fractions
     else:
         fractions = data['gas_meta_data'][ftype +'_fractions']
         return fractions
@@ -58,18 +58,37 @@ def plot_mass_fraction(t, y, std = None):
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Mass Fraction')
+    ax.legend(loc='best')
 
     fig.set_size_inches(8,8)
     plt.tight_layout()
     fig.savefig('phase_mass_fraction_evolution.png')
+    plt.close()
 
     return
 
-#def plot_volume_fraction(t, y, std = None):
-#    return
+def plot_volume_fraction(t, y, std = None):
+
+    fig, ax = plt.subplots()
+
+    for k in _phases:
+        ax.plot(t, y[k], lw = 3, label = k)
+
+    ax.set_xlabel(r'Time (Myr)')
+    ax.set_ylabel(r'ISM Volume Fraction')
+    ax.legend(loc='best')
+
+    fig.set_size_inches(8,8)
+    plt.tight_layout()
+    fig.savefig('phase_volume_fraction_evolution.png')
+    plt.close()
+
+    return
 
 
 if __name__ == '__main__':
 
-    times, mass = get_fractions(tmin = 100, tmax = 126, ftype = 'mass')
+    times, mass = get_fractions(tmin = 100, tmax = 1260, ftype = 'mass')
     plot_mass_fraction(times, mass)
+    times, volume = get_fractions(tmin = 100, tmax = 1260, ftype = 'volume')
+    plot_volume_fraction(times, volume)
