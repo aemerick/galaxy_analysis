@@ -1,12 +1,30 @@
 import numpy as np
 import sys
 import contextlib
+import glob
+import deepdish as dd
 
 from galaxy_analysis.static_data import asym_to_anum
 
 # to compute weighted statistics on a distribution
 import statsmodels.stats.weightstats as stats
+
+from astroML.time_series import ACF_EK
 import statsmodels.tsa.stattools as stattools
+
+
+def acf(x, y, dy = None, bins = None):
+
+    # just pick small percentage error
+    if dy is None:
+        dy = 0.001 * y
+
+    if bins is None:
+        bins = np.linspace(np.min(x), np.max(x), 51)
+
+    acf, acf_err, bins = ACF_EK(x, y, dy, bins)
+
+    return acf, acf_err, bins
 
 rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               5 : (2,3), 6: (2,3), 7:(2,4),
@@ -14,6 +32,48 @@ rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               11: (3,4), 12: (3,4), 13: (4,4),
               14: (4,4), 15: (4,4), 16: (4,4),
               17: (5,4), 18: (5,4), 19: (5,4), 20 : (5,4)}
+
+def select_data_by_time(dir = '.', tmin = None, tmax = None,
+                        data_list = None, times = None, self_contained = False):
+    """
+    Get list of data files that lie within the desired time range. Can pass a limited
+    set of files or precomputed time array (if available). If self_contained is true,
+    then rather than globbing for all files in a directory, assumes the data
+    file is self contained.
+    """
+
+    if (tmax is None) and (tmin is None):
+        print "Must set a tmin OR tmax, or both"
+        raise ValueError
+
+    if tmin is None: tmin = np.inf
+    if tmax is None: tmax = np.inf
+
+    if data_list is None:
+        data_list = np.sort(glob.glob(dir + '/DD????_galaxy_data.h5'))
+
+    times = np.zeros(len(data_list))
+
+    if self_contained:
+        for i, d in enumerate(data_list):
+            times[i] = sc_data[d]['general']['Time']
+    else:
+        for i, d in enumerate(data_list):
+            times[i] = dd.io.load(d, '/meta_data/Time')
+
+    # now select which data sets to average
+    if tmin is None and tmax is None:
+        data_list = data_list
+    elif tmin is None:
+        data_list = data_list[ times < tmax ]
+    elif tmax is None:
+        data_list = data_list[  times >= tmin ]
+    else:
+	data_list = data_list[(times<tmax)*(times>=tmin)]
+
+    return data_list, times
+
+
 
 def extract_nested_dict(dict, key_list):
     """
@@ -139,7 +199,8 @@ def compute_stats(x, return_dict = False, acf = False):
     if (len(x) > 0) and acf:
         d['acf'] = np.array(stattools.acf(x))
     else:
-        d['acf'] = 0.0
+        d['acf'] = None
+
     return d
 
 def compute_weighted_stats(x, w, return_dict = True):
