@@ -83,9 +83,7 @@ def extract_nested_dict(dict, key_list):
     x = dict
     for k in key_list:
         x = x[k]
-
     return x
-
 
 def nested_haskey(x, keys):
     """
@@ -108,6 +106,60 @@ def filter_dict(field, dictionary, level = 2):
     kwargs as desired by 'field'
     """
     return [(x,dictionary[x][field]) for x in dictionary.keys]
+
+def extract_nested_dict_aslist(dict, key_list, loop_keys = None):
+    """
+    If one wants to extract a value deep in a nested dictionary 
+    across many "rows". Example, your dictionary looks like this maybe:
+
+                                "time" - single_value
+                               /
+                        "DD0000"
+                       /       \
+                      /         "HI_Mass" - single_value
+                     /
+                    /           "time" - single_value
+                   /           / 
+    dictionary ------- "DD0001"
+                   \          \
+                    \           "HI_Mass"      - single_value
+                     \
+                      \         "time" - single_value
+                       \       /
+                        "DD0002"
+                               \
+                                "HI_mass" - single value
+
+    And you want to be able to plot the HI_mass for each data set as
+    a function of, say, time. You would want each of these as a 1D array.
+    You can do this as:
+
+        times   = extract_nested_dict_aslist(dictionary, ["time"])
+        HI_mass = extract_nested_dict_aslist(dictionary, ["HI_mass"])
+
+    and if you only wanted it for a certain selection of the top level keys:
+
+        times = extract_nested_dict_aslist(dictionary, ["time"], loop_keys = ['DD0000','DD0001'])
+
+    and finally, if the desired key was one or more levels down (arbitrary),
+    say something like "abundances/CNM/Fe_over_H", which would be the Fe_over_H
+    abundance in the CNM, then one can do:
+
+        CNM_Fe_over_H = extract_nested_dict_aslist(dictionary, ['abundances','CNM','Fe_over_H'])
+
+    """
+    if loop_keys is None:
+        loop_keys = dict.keys()
+
+    return [extract_nested_dict( dict[k], key_list) for k in loop_keys]
+
+
+def extract_nested_dict_asarray(dict, key_list, loop_keys = None):
+    """
+    Wrapper on extract_nested_dict_aslist to return a numpy array instead.
+    """
+ 
+    return np.array(extract_nested_dict_aslist(dict, key_list, loop_keys = loop_keys))
 
 class _DummyFile(object):
     """
