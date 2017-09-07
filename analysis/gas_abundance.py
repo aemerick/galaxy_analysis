@@ -1,15 +1,7 @@
 import yt
 import numpy as np
-from matplotlib import rc
-
+from galaxy_analysis.plot.plot_styles import *
 fsize = 14
-rc('text', usetex=False)
-rc('font', size=fsize)#, ftype=42)
-line_width = 3
-point_size = 30
-
-import matplotlib as mpl
-mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 from collections import Iterable, OrderedDict
@@ -19,10 +11,19 @@ import os
 import h5py
 import deepdish as dd
 
+# parallel
+from multiprocessing import Pool
+from contextlib import closing
+import itertools
+
+
 # --- internal ---
 from galaxy_analysis import Galaxy
 from galaxy_analysis.utilities import utilities as utilities
 from galaxy_analysis.static_data import ISM
+
+
+
 
 #
 # Brainstorming:
@@ -237,8 +238,45 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     return data_dict
 
+def _parallel_loop(dsname, fraction_fields):
+
+    groupname = dsname.rsplit('/')[1]
+    gal = Galaxy(groupname)
+
+    # limit ourselves to Fe and H demoninators for now to speed up computation
+    abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                              select_denom = ['Fe','H'])
+    species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
+    metal_species = utilities.species_from_fields(gal.ds.field_list)
+
+#    don't recompute things unless overwrite is set
+#    if groupname in hf.keys() and (not overwrite):
+#        return g['skip_this_one_' + dsname]
+
+    dictionary = {groupname : {}}
+    #hf[groupname] = {} # make an empty key for this group
+    g = dictionary[groupname]
+
+    g['general'] = {}
+    g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
+    # generalized function to loop through all mask types and compute stats
+    gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
+                                      abundance_fields = abundance_fields)
+
+    # make the stats group and the histogram group
+    for k in gas_data.keys():
+        g[k] = gas_data[k]
+
+    del(gal)
+
+
+    return dictionary
+
+def _parallel_loop_star(combined):
+    return _parallel_loop(*combined)
+
 def generate_all_stats(outfile = 'gas_abundances.h5',
-                        dir = './abundances/', overwrite=False):
+                        dir = './abundances/', overwrite=False, nproc = 1):
     """
     For all data files, generate gas abundance statistics for all
     element fractions and abundance ratios (as defined below). This is
@@ -275,38 +313,58 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     #   - should do everything over Mg
 
     # loop through all data files
-    for i, dsname in enumerate(ds_list):
-        print i, dsname
-        groupname = dsname.rsplit('/')[1]
-        gal = Galaxy(groupname)
+    if nproc == 1:
+        for i, dsname in enumerate(ds_list):
+            print i, dsname
+            groupname = dsname.rsplit('/')[1]
+            gal = Galaxy(groupname)
 
-        # if first loop, define the fields
-        if i == 0:
-            # limit ourselves to Fe and H demoninators for now to speed up computation
-            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                      select_denom = ['Fe','H'])
-            species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
-            metal_species = utilities.species_from_fields(gal.ds.field_list)
+            # if first loop, define the fields
+            if i == 0:
+                # limit ourselves to Fe and H demoninators for now to speed up computation
+                abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                          select_denom = ['Fe','H'])
+                species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
+                metal_species = utilities.species_from_fields(gal.ds.field_list)
 
-        # don't recompute things unless overwrite is set
-        if groupname in hf.keys() and (not overwrite):
-            continue
+            # don't recompute things unless overwrite is set
+            if groupname in hf.keys() and (not overwrite):
+                continue
 
-        hf[groupname] = {} # make an empty key for this group
-        g = hf[groupname]
+            hf[groupname] = {} # make an empty key for this group
+            g = hf[groupname]
 
-        g['general'] = {}
-        g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
+            g['general'] = {}
+            g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
 
-        # generalized function to loop through all mask types and compute stats
-        gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
-                                          abundance_fields = abundance_fields)
+            # generalized function to loop through all mask types and compute stats
+            gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
+                                              abundance_fields = abundance_fields)
 
-        # make the stats group and the histogram group
-        for k in gas_data.keys():
-            g[k] = gas_data[k]
+            # make the stats group and the histogram group
+            for k in gas_data.keys():
+                g[k] = gas_data[k]
 
-        del(gal)
+            del(gal)
+    else: # parallel
+
+        # select out data sets that already exist in output
+        if not overwrite:
+            ds_list = [x for x in ds_list if ( not any( [x.rsplit['/'][1] in y for y in hf.keys()]))]
+
+        with closing(Pool(processes=nproc)) as pool:
+            result = pool.map(_parallel_loop_star, itertools.izip(ds_list, itertools.repeat(fraction_fields)))
+
+            # bring the result together into hf
+            for r in result:
+                print r.keys()
+                if (not ('skip_this_one' in r.keys()[0])):
+                    hf[r.keys()[0]] = r[r.keys()[0]]
+
+            pool.terminate()
+
+        # end pool
+    #--------------------------------------------------------------------
 
     # save field names
     hf['species']          = species
@@ -514,18 +572,15 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
         # set axis limits and labels based on whether or not we are plotting
         # abundance ratios or number fractions
         if abundance:
-#            ax[axind].set_ylim(-4, 0)
-
-      #      if '_over_H' in field:
-      #          ax[axind].set_xlim(-8,1)
-      #      else:
-      #          ax[axind].set_xlim(-3, 3)
+            if '_over_H' in field:
+                ax[axind].set_ylim(-6, 0)
+            else:
+                ax[axind].set_ylim(-3, 3)
 
             ax[axind].set_ylabel(field)
             ax[axind].set_xlabel(r'Time')
         else:
-#            ax[axind].set_ylim(-5, 0)
-      #      ax[axind].set_xlim(-15, -2)
+            ax[axind].set_ylim(-8, 0)
             ax[axind].semilogy()
             ax[axind].set_xlabel(r'Time')
             ax[axind].set_ylabel(r'log [' + field + ']')
@@ -561,7 +616,7 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False)
+    generate_all_stats(overwrite=False, nproc = 2)
     plot_time_evolution(abundance=False)
     plot_time_evolution(abundance=True)
 
