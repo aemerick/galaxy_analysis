@@ -268,13 +268,13 @@ def compute_weighted_stats(x, w, return_dict = True):
         return s
 
     d = {}
-    d['mean']     = s.mean()
-    d['std' ]     = s.std()
-    q             = s.quantile( np.array([0.25, 0.75]))
+    d['mean']     = s.mean
+    d['std' ]     = s.std
+    q             = s.quantile( np.array([0.25, 0.75]), return_pandas = False)
     d['Q1']       = q[0]
     d['Q3']       = q[1]
     d['inner_quartile_range'] = q[1] - q[0]
-    d['variance'] = s.var()
+    d['variance'] = s.var
     d['min']      = np.min(x)
     d['max']      = np.max(x)
 
@@ -315,7 +315,7 @@ def species_from_fields(fields, include_primordial = False):
 
     return sort_by_anum(metals)
 
-def abundance_ratios_from_fields(fields):
+def abundance_ratios_from_fields(fields, select_denom = None, select_num = None):
     """
     Returns all abundance ratio fields that are defined (does not define
     any)
@@ -333,6 +333,16 @@ def abundance_ratios_from_fields(fields):
 
     if len(fields) == 0:
         fields = None
+
+    # only select a few of these fields with the chosen denominators
+    if not (select_denom is None):
+        select_denom = ['_over_' + x for x in select_denom]
+        fields = [x for x in fields if any([y in x for y in select_denom])]
+
+    # only select a few of these fields with the chosen numerators
+    if not (select_num is None):
+        select_num = [x + '_over_' for x in select_num]
+        fields = [x for x in fields if any([y in x for y in select_num])]
 
     return fields
 
