@@ -207,7 +207,7 @@ def compute_weighted_stats(x, w, return_dict = True):
         return s
 
     d = {}
-    d['mean']     = s.mean()
+    d['mean']     = s.mean
     d['std' ]     = s.std()
     q             = s.quantile( np.array([0.25, 0.75]))
     d['Q1']       = q[0]
