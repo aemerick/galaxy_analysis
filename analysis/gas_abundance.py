@@ -2,7 +2,7 @@ import yt
 import numpy as np
 from matplotlib import rc
 
-fsize = 17
+fsize = 14
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
 line_width = 3
@@ -99,6 +99,7 @@ _mask_ls    = {'star_forming' : '-',
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
                                     abundance_fields = None):
 
+    # define the standard masks, then compute things for all of them
     all_masks   = {'star_forming': _star_forming_region,
                    'CNM': _CNM,
                    'WNM': _WNM,
@@ -167,8 +168,8 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     cv = data_source['cell_volume'][mask]
     cm = data_source['cell_mass'][mask]
-    total_volume = np.sum(cv) * 1.0
-    total_mass   = np.sum(cm) * 1.0
+    total_volume = np.sum(cv) * 1.0     # total volume of masked cells
+    total_mass   = np.sum(cm) * 1.0     # total mass   of masked cells
 
     all_fields = None
     if not (fraction_fields is None):
@@ -184,6 +185,9 @@ def compute_abundance_stats(ds, data_source, mask = None,
         else:
             bins = fbins
 
+        #  for the abundance ratio fields, we want to get rid
+        #  of the things that have 'primordial' abundances
+        #  to make interpretation cleaner
         if mask_abundances and 'over' in field:
             ele            = field.split('_over_')[0]
             over_H         = ele + '_over_H'
@@ -193,11 +197,14 @@ def compute_abundance_stats(ds, data_source, mask = None,
             mask = np.array(mask).astype(bool)
             mask_empty = not any(mask)
 
+        # if there is no data, fill the arrays with zeros
         if mask_empty or len(data_source['Density']) < 1:
-            data_dict['volume_fraction'][field] = [np.zeros(np.size(bins)-1),
-                                            np.zeros(5)]
-            data_dict['mass_fraction'][field] = [np.zeros(np.size(bins)-1),
-                                            np.zeros(5)]
+            data_dict['volume_fraction'][field] = {'hist':np.zeros(np.size(bins)-1)}
+            data_dict['mass_fraction'][field]   = {'hist':np.zeros(np.size(bins)-1)}
+            stats = utilities.compute_weighted_stats(np.zeros(10), np.ones(10), return_dict=True) # arbitrary - just trying to get keys
+            for k in stats:
+                data_dict['volume_fraction'][field][k] = None
+                data_dict['mass_fraction'][field][k]   = None
         else:
 
             fdata = data_source[field][mask]
@@ -210,17 +217,16 @@ def compute_abundance_stats(ds, data_source, mask = None,
             for i in np.arange(np.size(bins) - 1):
                 hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
-#                hist3[i] = np.sum( cm[ (fdata < fbins[i+1]) * (fdata >= fbins[i]) ] ) / phase_mass
 
-#            hist, bins = np.histogram(fdata, bins = fbins)
+            stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
+            data_dict['volume_fraction'][field] = {'hist': hist}
 
-            stats = utilities.compute_stats(hist)
+            stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
+            data_dict['mass_fraction'][field]   = {'hist': hist2}
 
-            data_dict['volume_fraction'][field] = [hist, stats]
-
-            data_dict['mass_fraction'][field]   = [hist2, stats]
-
-#            data_dict['phase_mass_fraction'][field] = [hist3, stats]
+            for k in stats:
+                data_dict['volume_fraction'][field][k] = stats[k]
+                data_dict['mass_fraction'][field][k]   = stats2[k]
 
     #
     # general properties
@@ -233,6 +239,11 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
 def generate_all_stats(outfile = 'gas_abundances.h5',
                         dir = './abundances/', overwrite=False):
+    """
+    For all data files, generate gas abundance statistics for all
+    element fractions and abundance ratios (as defined below). This is
+    an expensive operation.
+    """
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -252,6 +263,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     ds = yt.load(ds_list[0])
     metals = utilities.species_from_fields(ds.field_list)
 
+    # additional fraction fields for the non-equillibrium chemistry species
     fraction_fields = ['H_p0_fraction','H_p1_fraction','He_p0_fraction',
                        'He_p1_fraction','He_p2_fraction','H2_fraction']
     for m in metals:
@@ -262,26 +274,31 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     #   - should do everything over Fe
     #   - should do everything over Mg
 
+    # loop through all data files
     for i, dsname in enumerate(ds_list):
         print i, dsname
         groupname = dsname.rsplit('/')[1]
         gal = Galaxy(groupname)
 
+        # if first loop, define the fields
         if i == 0:
-            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list)
+            # limit ourselves to Fe and H demoninators for now to speed up computation
+            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                      select_denom = ['Fe','H'])
             species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
             metal_species = utilities.species_from_fields(gal.ds.field_list)
 
+        # don't recompute things unless overwrite is set
         if groupname in hf.keys() and (not overwrite):
             continue
 
         hf[groupname] = {} # make an empty key for this group
         g = hf[groupname]
 
-#        g = hf.create_group(groupname)
         g['general'] = {}
         g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
 
+        # generalized function to loop through all mask types and compute stats
         gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
                                           abundance_fields = abundance_fields)
 
@@ -291,12 +308,12 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
         del(gal)
 
+    # save field names
     hf['species']          = species
     hf['metal_species']    = metal_species
     hf['abundance_fields'] = abundance_fields
 
     dd.io.save(hdf5_filename, hf)
-#    hf.close()
 
     return
 
@@ -333,7 +350,7 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
             axi, axj = 0,0
             for field in plot_fields:
                 axind = (axi,axj)
-                ax[axind].plot(logbins[:-1], np.log10(phase_data[field + '_Fraction'][0]), drawstyle='steps-post', lw = 3,
+                ax[axind].plot(logbins[:-1], np.log10(phase_data[field + '_Fraction']['hist']), drawstyle='steps-post', lw = 3,
                           color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
 
                 ax[axind].set_ylim(-5, 0)
@@ -405,7 +422,7 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
             for field in plot_fields:
                 axind = (axi,axj)
 
-                ax[axind].plot(logbins[:-1], np.log10(phase_data[field][0]), drawstyle='steps-post', lw = 3,
+                ax[axind].plot(logbins[:-1], np.log10(phase_data[field]['hist']), drawstyle='steps-post', lw = 3,
                           color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
 
                 ax[axind].set_ylim(-4, 0)
@@ -434,10 +451,120 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
 
     return
 
+def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
+                        abundance = False, show_std = False, show_quartile = False,
+                        fraction_type = 'mass'):
+
+    # for each dataset, plot the distributions of gas fractions in each phase
+
+    all_data   = dd.io.load(dir + fname)
+    all_fields = all_data['abundance_fields']
+
+    if abundance:
+        plot_type = 'standard'
+
+        if plot_type == 'standard' or plot_type == 'Fe':
+            all_fields  = all_data['abundance_fields']
+
+            # plot all over Fe and Fe over H
+            plot_fields = [x for x in all_fields if '_over_Fe' in x]
+            plot_fields = plot_fields + ['Fe_over_H']
+
+        elif len(plot_type) <= 2:
+            # assume it is a species name
+            plot_fields = [x for x in all_fields if ('_over_' + plot_type) in x]
+            if (plot_type + '_over_H') in all_fields:
+                plot_fields = plot_fields + [plot_type + '_over_H']
+    else:
+        plot_fields = all_data['metal_species']
+        plot_fields = [x + '_Fraction' for x in plot_fields]
+
+
+    nplots     = len(plot_fields)
+    nrow, ncol = utilities.rowcoldict[nplots]
+
+    all_ds = [x for x in all_data.keys() if 'DD' in x]
+    times = utilities.extract_nested_dict_asarray(all_data, ['general','Time'], loop_keys = all_ds)
+
+    fig, ax = plt.subplots(nrow, ncol)
+    fig.set_size_inches(4*nrow, 4*ncol)
+    all_phases  = ['CNM','WNM','HIM','star_forming','halo']
+
+    axi, axj = 0, 0
+    for field in plot_fields:
+        axind = (axi,axj)
+
+        # plot all phases for a fixed plot - add std or quartile if desired
+        for j,phase in enumerate(all_phases):
+            key_list = [phase, fraction_type + '_fraction', field]
+            avg = utilities.extract_nested_dict_asarray(all_data, key_list + ['mean'], loop_keys = all_ds)
+            print field, phase, avg
+            ax[axind].plot(times, avg, color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
+
+            if show_std:
+                std = utilities.extract_nested_dict_asarray(all_data, key_list + ['std'], loop_keys = all_ds)
+                ax[axind].fill_between(times, avg - std, avg + std, color = _mask_color[phase], alpha = 0.5, lw = 2.0)
+
+            if show_quartile:
+                Q1  = utilities.extract_nested_dict_asarray(all_data, key_list + ['Q1'], loop_keys = all_ds)
+                Q3  = utilities.extract_nested_dict_asarray(all_data, key_list + ['Q3'], loop_keys = all_ds)
+
+                ax[axind].fill_between(times, Q1, Q3, color = _mask_color[phase], alpha = 0.5, lw = 2.0)
+
+        # set axis limits and labels based on whether or not we are plotting
+        # abundance ratios or number fractions
+        if abundance:
+#            ax[axind].set_ylim(-4, 0)
+
+      #      if '_over_H' in field:
+      #          ax[axind].set_xlim(-8,1)
+      #      else:
+      #          ax[axind].set_xlim(-3, 3)
+
+            ax[axind].set_ylabel(field)
+            ax[axind].set_xlabel(r'Time')
+        else:
+#            ax[axind].set_ylim(-5, 0)
+      #      ax[axind].set_xlim(-15, -2)
+            ax[axind].semilogy()
+            ax[axind].set_xlabel(r'Time')
+            ax[axind].set_ylabel(r'log [' + field + ']')
+
+        axj = axj + 1
+        if axj >= ncol:
+            axj = 0
+            axi = axi + 1
+
+    ax[(0,0)].legend(loc='best')
+
+    plt.tight_layout()
+    plt.minorticks_on()
+    if abundance:
+        outname = 'time_evolution_' + fraction_type + '_abundances.png'
+    else:
+        outname = 'time_evolution_' + fraction_type + '_fractions.png'
+
+    fig.savefig(outname)
+
+    plt.close()
+
+    return
+
+def collate_to_time_array(filepath = None):
+    if filepath is None:
+        filepath = './gas_abundances.h5'
+    data = dd.io.load(filepath)
+    # make a new array to hold times
+    if (not ('time_evolution') in data.keys()):
+        data['time_evolution'] = {}
+    return
 
 if __name__ == '__main__':
 
     generate_all_stats(overwrite=False)
+    plot_time_evolution(abundance=False)
+    plot_time_evolution(abundance=True)
+
 
     plot_gas_fractions(overwrite=True, fraction_type = 'volume')
     plot_gas_fractions(overwrite=True, fraction_type = 'mass')
