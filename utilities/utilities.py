@@ -74,7 +74,7 @@ def select_data_by_time(dir = '.', tmin = None, tmax = None,
         times     = times[times>=tmin]
     else:
 	data_list = data_list[(times<tmax)*(times>=tmin)]
-        times     = times[(timex<tmax)*(times>=tmin)]
+        times     = times[(times<tmax)*(times>=tmin)]
 
     return data_list, times
 
@@ -86,8 +86,13 @@ def extract_nested_dict(dict, key_list):
     from a nested dictionary
     """
     x = dict
-    for k in key_list:
-        x = x[k]
+
+    if isinstance(key_list, basestring) or isinstance(key_list, tuple):
+        x = x[key_list]
+    elif key_list is list:
+        for k in key_list:
+            x = x[k]
+
     return x
 
 def nested_haskey(x, keys):
