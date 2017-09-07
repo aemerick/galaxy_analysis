@@ -2,7 +2,7 @@ import yt
 import numpy as np
 from matplotlib import rc
 
-fsize = 17
+fsize = 14
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
 line_width = 3
@@ -200,9 +200,11 @@ def compute_abundance_stats(ds, data_source, mask = None,
         # if there is no data, fill the arrays with zeros
         if mask_empty or len(data_source['Density']) < 1:
             data_dict['volume_fraction'][field] = {'hist':np.zeros(np.size(bins)-1)}
-            data_dict['volume_fraction'][field].update(utilities.compute_stats(np.zeros(np.size(bins)-1)), return_dict=True)
-            data_dict['mass_fraction'][field] = {'hist':np.zeros(np.size(bins)-1)}
-            data_dict['mass_fraction'][field].update(utilities.compute_stats(np.zeros(np.size(bins)-1)), return_dict=True)
+            data_dict['mass_fraction'][field]   = {'hist':np.zeros(np.size(bins)-1)}
+            stats = utilities.compute_weighted_stats(np.zeros(10), np.ones(10), return_dict=True) # arbitrary - just trying to get keys
+            for k in stats:
+                data_dict['volume_fraction'][field][k] = None
+                data_dict['mass_fraction'][field][k]   = None
         else:
 
             fdata = data_source[field][mask]
@@ -216,13 +218,15 @@ def compute_abundance_stats(ds, data_source, mask = None,
                 hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
 
-            stats = utilities.compute_stats(hist, return_dict = True)
-            data_dict['volume_fraction'][field] = {'hist':hist}
-            data_dict['volume_fraction'][field].update(stats)
+            stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
+            data_dict['volume_fraction'][field] = {'hist': hist}
 
-            stats2 = utilities.compute_stats(hist2, return_dict = True)
-            data_dict['mass_fraction'][field]   = {'hist':hist}
-            data_dict['mass_fraction'][field].update(stats)
+            stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
+            data_dict['mass_fraction'][field]   = {'hist': hist2}
+
+            for k in stats:
+                data_dict['volume_fraction'][field][k] = stats[k]
+                data_dict['mass_fraction'][field][k]   = stats2[k]
 
     #
     # general properties
@@ -278,7 +282,9 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
         # if first loop, define the fields
         if i == 0:
-            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list)
+            # limit ourselves to Fe and H demoninators for now to speed up computation
+            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                      select_denom = ['Fe','H'])
             species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
             metal_species = utilities.species_from_fields(gal.ds.field_list)
 
@@ -445,7 +451,9 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
 
     return
 
-def plot_time_evolution(filepath = None, abundance = False, show_std = False, show_quartile = False):
+def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
+                        abundance = False, show_std = False, show_quartile = False,
+                        fraction_type = 'mass'):
 
     # for each dataset, plot the distributions of gas fractions in each phase
 
@@ -469,13 +477,14 @@ def plot_time_evolution(filepath = None, abundance = False, show_std = False, sh
                 plot_fields = plot_fields + [plot_type + '_over_H']
     else:
         plot_fields = all_data['metal_species']
+        plot_fields = [x + '_Fraction' for x in plot_fields]
 
 
     nplots     = len(plot_fields)
     nrow, ncol = utilities.rowcoldict[nplots]
 
     all_ds = [x for x in all_data.keys() if 'DD' in x]
-    times = utilities.extract_nested_dict_asarray(all_data, ['Time'], loop_keys = all_ds)
+    times = utilities.extract_nested_dict_asarray(all_data, ['general','Time'], loop_keys = all_ds)
 
     fig, ax = plt.subplots(nrow, ncol)
     fig.set_size_inches(4*nrow, 4*ncol)
@@ -485,11 +494,12 @@ def plot_time_evolution(filepath = None, abundance = False, show_std = False, sh
     for field in plot_fields:
         axind = (axi,axj)
 
+        # plot all phases for a fixed plot - add std or quartile if desired
         for j,phase in enumerate(all_phases):
             key_list = [phase, fraction_type + '_fraction', field]
-            avg = utilities.extract_nested_dict_asarray(all_data, key_list + ['avg'], loop_keys = all_ds)
+            avg = utilities.extract_nested_dict_asarray(all_data, key_list + ['mean'], loop_keys = all_ds)
+            print field, phase, avg
             ax[axind].plot(times, avg, color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
-
 
             if show_std:
                 std = utilities.extract_nested_dict_asarray(all_data, key_list + ['std'], loop_keys = all_ds)
@@ -501,24 +511,26 @@ def plot_time_evolution(filepath = None, abundance = False, show_std = False, sh
 
                 ax[axind].fill_between(times, Q1, Q3, color = _mask_color[phase], alpha = 0.5, lw = 2.0)
 
- 
+        # set axis limits and labels based on whether or not we are plotting
+        # abundance ratios or number fractions
         if abundance:
-            ax[axind].set_ylim(-4, 0)
+#            ax[axind].set_ylim(-4, 0)
 
-            if '_over_H' in field:
-                ax[axind].set_xlim(-8,1)
-            else:
-                ax[axind].set_xlim(-3, 3)
+      #      if '_over_H' in field:
+      #          ax[axind].set_xlim(-8,1)
+      #      else:
+      #          ax[axind].set_xlim(-3, 3)
 
-            ax[axind].set_ylabel('log [' + fraction_type + ' Fraction]')
-            ax[axind].set_xlabel('[' + field + '] Abundance')
+            ax[axind].set_ylabel(field)
+            ax[axind].set_xlabel(r'Time')
         else:
-            ax[axind].set_ylim(-5, 0)
-            ax[axind].set_xlim(-15, -2)
-            ax[axind].set_ylabel('log [' + fraction_type + ' Fraction]')
-            ax[axind].set_xlabel('log [' + field + ' Fraction By Number)')
+#            ax[axind].set_ylim(-5, 0)
+      #      ax[axind].set_xlim(-15, -2)
+            ax[axind].semilogy()
+            ax[axind].set_xlabel(r'Time')
+            ax[axind].set_ylabel(r'log [' + field + ']')
 
-        axi = axi + 1
+        axj = axj + 1
         if axj >= ncol:
             axj = 0
             axi = axi + 1
@@ -527,7 +539,7 @@ def plot_time_evolution(filepath = None, abundance = False, show_std = False, sh
 
     plt.tight_layout()
     plt.minorticks_on()
-    if abundances:
+    if abundance:
         outname = 'time_evolution_' + fraction_type + '_abundances.png'
     else:
         outname = 'time_evolution_' + fraction_type + '_fractions.png'
@@ -551,6 +563,7 @@ if __name__ == '__main__':
 
     generate_all_stats(overwrite=False)
     plot_time_evolution(abundance=False)
+    plot_time_evolution(abundance=True)
 
 
     plot_gas_fractions(overwrite=True, fraction_type = 'volume')
