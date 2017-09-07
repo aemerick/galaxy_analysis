@@ -1,5 +1,6 @@
 import deepdish as dd
-from matplotlib import rc
+from matplotlib import rc,cm
+plasma = cm.get_cmap('plasma')
 
 fsize = 17
 rc('text', usetex=False)
@@ -19,7 +20,7 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 1250.0
+global_tmax = 200.0
 #global_tmax = 270.0
 #
 #
@@ -27,6 +28,7 @@ global_tmax = 1250.0
 
 workdir  = '/mnt/ceph/users/emerick/enzo_runs'
 stampede  = workdir + '/stampede/leo_p/fullphysics/fullres'
+stampede2  = workdir + '/stampede/leo_p/starIC'
 pleiades  = workdir + '/pleiades/'
 local     = workdir + '/leo_p/fullres'
 
@@ -115,11 +117,11 @@ run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
              'r11_pert'   : local + '/run11/200cc/perturb',
              'r11_lowsf'  : pleiades + '/starIC/run11/lowsf',
              'r11_lbox'   : pleiades + '/starIC/run11_largebox/no_wind',
-             '17' : pleiades + '/starIC/run11_largebox/sndriving',
-             '25'    : pleiades + '/starIC/run11_2rs/sndriving',
-             'r11 ibug'     : pleiades + '/starIC/run11_2rs/ion_bugfix',
-             '30'     : pleiades + '/starIC/run11_30km/sndriving' ,
-             '40'     : pleiades + '/starIC/run11_40km/sndriving'}
+             '17' : pleiades + '/starIC/run11/corrected_sndriving',
+             '25'    : pleiades + '/starIC/run11_2rs/corrected_sndriving',
+#             'r11 ibug'     : pleiades + '/starIC/run11_2rs/ion_bugfix',
+             '30'     : pleiades + '/starIC/run11_30km/final_sndriving' ,
+             '40'     : pleiades + '/starIC/run11_40km/corrected_sndriving'}
 
 color_dict['17'] = ps.orange
 color_dict['25'] = ps.magenta
@@ -229,11 +231,32 @@ comparison_sim = {'Hu et. al. 2017' : pleiades + '/hu',
                   'Forbes et. al. 1 kpc' : pleiades + '/forbes/starIC',
                   'run11 2 x r_s'  : pleiades + '/starIC/run11_2rs/no_wind',
                   'run11 sndriving' : pleiades + '/starIC/run11_largebox/sndriving',
-                  'Hu sndriving' : pleiades +'/hu/sndriving',
-                  'Hu shortrad'  : pleiades +'/hu/sndriving_shortrad',
+                  'Hu sndriving' : pleiades +'/hu_metal/correct_feedback',
+                  'Hu shortrad'  : pleiades +'/hu_metal/correct_shortrad',
+#                  'Hu sndriv metal' : pleiades + '/hu_metal/correct_feedback',
+#                  'Hu shortrad metal' : pleiades + '/hu_metal/correct_shortrad/',
 #                  'run11 no radpressure' : pleiades + '/starIC/run11_largebox/no_radpressure',
                   'run11 original' : pleiades + '/starIC/run11_largebox/no_wind',
                   'run15 lbox' : pleiades + '/starIC/run15_largebox/better_IC'}
+
+IC_comparisons = {'collapse' : stampede2 + '/run11_30km/collapse_IC',
+                  'cool ramp' : stampede2 + '/run11_30km/cool_ramp',
+                  'cool ramp2' : stampede2 + '/run11_30km/cool_ramp2',
+                  'cool ramp3' : stampede2 + '/run11_30km/cool_ramp3',
+                  'CR2 SN'     : stampede2 + '/run11_30km/cool_ramp2_sn',
+                  'SNx5'       : stampede2 + '/run11_30km/normalx5',
+                  'Fiducial'   : pleiades + '/starIC/run11_30km/final_sndriving'}
+for k in IC_comparisons:
+    ls_dict[k] = '-'
+ls_dict['CR2 SN'] = '--'
+ls_dict['SNx5']   = '--'
+color_dict['collapse']   = ps.purple
+color_dict['cool ramp']  = ps.blue
+color_dict['cool ramp2'] = ps.orange
+color_dict['cool ramp3'] = ps.green
+color_dict['CR2 SN'] = ps.blue
+color_dict['Fiducial'] = ps.black
+color_dict['SNx5'] = ps.black
 
 ls_dict['Hu et. al. 2017'] = '-'
 color_dict['Hu et. al. 2017'] = ps.black
@@ -241,6 +264,8 @@ ls_dict['Hu sndriving'] = '-'
 color_dict['Hu sndriving'] = ps.black
 ls_dict['Hu shortrad'] = '-'
 color_dict['Hu shortrad'] = ps.blue
+color_dict['Hu sndriv metal'] = ps.purple
+ls_dict['Hu sndriv metal'] = '-'
 
 ls_dict['Forbes et. al. 1 kpc'] = '-'
 color_dict['Forbes et. al. 1 kpc'] = ps.blue
@@ -258,9 +283,28 @@ color_dict['run11 no radpressure'] = ps.orange
 color_dict['run11 original'] = ps.orange
 
 
+feedback_comparisons = {'ion_no-otrad-sn' : stampede2 + '/run11_30km/ion_no-otrad-sn',
+                        'otrad_ion-no-sn' : stampede2 + '/run11_30km/otrad_ion-no-sn',
+                        'otrad_no-ion-sn' : stampede2 + '/run11_30km/otrad_no-ion-sn',
+                        'sn_ion_LW-no-PE' : stampede2 + '/run11_30km/sn_ion_LW-no-PE',
+                        'sn_ion-no-otrad' : stampede2 + '/run11_30km/sn_ion-no-otrad',
+                        'sn_ion_PW-no-LW' : stampede2 + '/run11_30km/sn_ion_PE-no-LW',
+                        'sn_otrad_ion_noRP' : stampede2 + '/run11_30km/sn_otrad_ion_noRP',
+                        'sn_otrad_ion_RPx2' : stampede2 + '/run11_30km/sn_otrad_ion_RPx2',
+                        'sn_otrad_no-ion' : stampede2 + '/run11_30km/sn_otrad_no-ion'}
+for i,k in enumerate(feedback_comparisons.keys()):
+    color_dict[k] = plasma(i / (1.0 * len(feedback_comparisons.keys())))
+    ls_dict[k]    = '-'
+
+
 ALL_DATA = {}
 for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
+for s in feedback_comparisons.keys():
+    ALL_DATA[s] = np.sort(glob.glob(feedback_comparisons[s] + '/DD*.h5'))
+
+for s in IC_comparisons.keys():
+    ALL_DATA[s] = np.sort(glob.glob(IC_comparisons[s] + '/DD*.h5'))
 
 for s in PERT_DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(PERT_DATA_PATHS[s] + '/DD*.h5'))
@@ -393,10 +437,13 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
     fig, ax = plt.subplots()
 
     # loop over simulations
+    ymin =  1.0E99
+    ymax = -1.0E99
     for s in sim_names:
         # always load most recent file to check
         data = dd.io.load(ALL_DATA[s][-1])
         t_first = time_first_star(data)
+        SFR     = data['time_data']['SFR_100'][-1] # Msun / yr
 
         # make arrays for plotting
         t  = np.zeros(np.size(ALL_DATA[s]))
@@ -413,7 +460,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
             t[i]  = dd.io.load(ALL_DATA[s][i], '/meta_data/Time')
 
             # find the bin whose center is closest to the desired z
-            zbin  = np.argmin( np.abs( (xdata['centers_rvir'][1:] + xdata['centers_rvir'][:-1])*0.5 - z ) )
+            zbin  = np.argmin( np.abs( xdata['centers_rvir'] - z ) )
 
             if species == 'total':
                 try:
@@ -431,10 +478,15 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
         mass_plot = ml[t >= 0.0]
 
         norm = 1.0
-        if mass_loading: # maybe compute as the ~ 20 Myr average on either side of the data point?
-            norm = 1.0 / SFR
+        if mass_loading:
+            if SFR <= 0.0:
+                norm = 0.0
+            else:
+                norm = 1.0 / SFR
 
         ax.plot(t_plot, mass_plot*norm, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        ymax = np.max([np.max(mass_plot*norm),ymax])
+        ymin = np.min([np.min(mass_plot*norm),ymin])
 
     sname = species
     if len(species) > 1:
@@ -456,6 +508,10 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
         plottype = 'loading'
     else:
         ax.set_ylim(1.0E-11, 1.0E-1)
+
+    ymin = np.min( [ymin, 1.0E-2*ymax]) # show at least 2 orders of mag
+    ymin = np.max( [ymin, 1.0E-6*ymax]) # but no more than 6
+    ax.set_ylim(ymin,ymax)
 
     outname = sname + '_mass_' + plottype + '_z%2f.png'%(z)
 
@@ -530,7 +586,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 
     ymin = np.min( [ymin, 1.0E-2*ymax])
 
-    ymin = np.max( [ymin, 1.0E-10*ymin])
+    ymin = np.max( [ymin, 1.0E-5*ymax])
 
     ax.set_ylim(ymin, ymax)
 
@@ -649,30 +705,50 @@ if __name__ == '__main__':
 #    all_s = run15_IC.keys()
 #    all_s = run11_stampede_feedback.keys()
 #    all_s = comparison_sim.keys()
-#    all_s = ['Hu sndriving','Hu shortrad']
+#    all_s = ['Hu sndriving','Hu shortrad'] #, 'Hu sndriv metal' 'Hu shortrad metal']
 #    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
 
-    all_s = ['17','25','30','40']
+    all_s = ['Fiducial','collapse','cool_ramp','cool_ramp2','cool_ramp3','CR2 SN']
+#    all_s = feedback_comparisons.keys()
+
+#    all_s = ['17','25','30','40']
 #    all_s = ['30']
 #    all_s = PERT_DATA_PATHS.keys()
 
-    plot_mass(sim_names = all_s, species = 'HI')
-    plot_mass(sim_names = all_s, species = 'stars')
-    plot_mass(sim_names = all_s, species = 'total')
-    plot_mass(sim_names = all_s, species = 'metals')
-    plot_mass(sim_names = all_s, species = 'Fe')
-    plot_mass(sim_names = all_s, species = 'O')
-    plot_mass(sim_names = all_s, species = 'C')
-    plot_mass(sim_names = all_s, species = 'Mg')
+    if True:
+        plot_mass(sim_names = all_s, species = 'HI')
+        plot_mass(sim_names = all_s, species = 'HII')
+        plot_mass(sim_names = all_s, species = 'H2')
+        plot_mass(sim_names = all_s, species = 'H2_total')
+        plot_mass(sim_names = all_s, species = 'He_total')
+        plot_mass(sim_names = all_s, species = 'H_total')
+        plot_mass(sim_names = all_s, species = 'stars')
+        plot_mass(sim_names = all_s, species = 'total')
+        plot_mass(sim_names = all_s, species = 'metals')
+        plot_mass(sim_names = all_s, species = 'Fe')
+        plot_mass(sim_names = all_s, species = 'O')
+        plot_mass(sim_names = all_s, species = 'C')
+        plot_mass(sim_names = all_s, species = 'Mg')
+        plot_mass(sim_names = all_s, species = 'N')
+        plot_mass(sim_names = all_s, species = 'Si')
 
 
-    plot_sfr(sim_names = all_s)
-    plot_sfr(sim_names = all_s, sampling = 1)
-    plot_sfr(sim_names = all_s, sampling = 100)
-    plot_snr(sim_names = all_s)
+        plot_sfr(sim_names = all_s)
+        plot_sfr(sim_names = all_s, sampling = 1)
+        plot_sfr(sim_names = all_s, sampling = 100)
+        plot_snr(sim_names = all_s)
 
-    for species in ['total', 'metals', 'O', 'C', 'Mg', 'Fe']:
-        plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
-        plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
+    if False:
+        for species in ['total', 'metals', 'O', 'C', 'Mg', 'Fe', 'N', 'Si']:
+            print 'mass outflow for ' + species
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.1)
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.5)
+            plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
+            print 'mass loading for ' + species
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.1, mass_loading = True)
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.25, mass_loading = True)
+            plot_mass_loading(sim_names = all_s, species = species, z = 0.5, mass_loading = True)
+            plot_mass_loading(sim_names = all_s, species = species, z = 1.0, mass_loading = True)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
