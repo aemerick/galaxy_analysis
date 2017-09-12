@@ -242,8 +242,17 @@ UNITS = {'Time': u.Myr, 'Mass' : u.Msun, 'Velocity' : u.km/u.s, 'Length' : u.pc}
 #
 # yt cut region definitions for ISM phases
 #
-ISM = { "HIM": "obj['temperature'].in_units('K') >= 10**(5.5)",
+ISM = { "HIM": "(obj['temperature'].in_units('K') >= 10**(5.5))",
         "WIM": "(obj['temperature'].in_units('K') >= 10**(4)) & (obj['temperature'].in_units('K') < 10**(5.5))",
         "WNM": "(obj['temperature'].in_units('K') >= 10**(2)) & (obj['temperature'].in_units('K') < 10**(4))",
         "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') <= 100)",
         "Molecular": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') > 100)"}
+
+# new name to generalize, but leaving ISM for now
+# to keep backwards compatability with existing scripts - Sep 2017
+CUT_REGION = {'hot' : "(obj['temperature'].in_units('K') >= 10**(5.5))",
+              'warm' : "(obj['temperature'].in_units('K') >= 10**(4.0)) & (obj['temperature'].in_units('K') < 10**(5.5))",
+              'cold' : "(obj['temperature'].in_units('K') <  10**(4.0))"}
+for k in ISM:
+    CUT_REGION[k] = ISM[k]
+
