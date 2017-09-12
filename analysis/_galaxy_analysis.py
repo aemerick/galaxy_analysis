@@ -27,7 +27,7 @@ from ..static_data import LABELS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
                         UNITS,\
-                        ISM
+                        ISM, CUT_REGION
 
 from galaxy_analysis import particle_analysis as pa
 
@@ -262,6 +262,40 @@ class Galaxy(object):
             self.total_quantities[field] = np.sum(self.df[field].convert_to_units(FIELD_UNITS[field].units))
 
         self._total_quantities_calculated = True
+
+        return
+
+    def calculate_velocity_distributions(self):
+        """
+        Compute dM / dv vs. v_r distributions (mass moving at certain velocity)
+        outside the disk of the galaxy.
+        """
+
+        # use the halo sphere. First compute this for ALL gas within the halo,
+        # then do it again in the same bins as the outflow profiles
+        self.gas_profiles['velocity'] = {}
+        self.gas_profiles['velocity']['halo']   = {} # for the entire halo
+        self.gas_profiles['velocity']['binned'] = {} # binned by radius - empty for now
+
+        vbins = np.arange(-200.0, 200.5, 1.0) * yt.units.km / yt.units.s
+        self.gas_profiles['velocity']['vbins'] = vbins
+
+        local_cr = self.cut_region
+
+        # do this for the entire halo, everything except the disk
+        self.gas_profiles['velocity']['halo'] = {}
+        for k in CUT_REGION.keys():  # loop through all cut regions
+            data  = self.halo_sphere.cut_region(CUT_REGION[k] + "&" + local_cr['not_disk'] ) # phase + geometric cut
+            test  = self.halo_sphere.cut_region(CUT_REGION[k])
+            test2 = self.halo_sphere.cut_region(local_cr['not_disk'])
+
+            # loop over velocity bins
+            hist = np.zeros(np.size(vbins) - 1)
+            for i in np.arange(np.size(vbins) -1):
+                v       = data['velocity_spherical_radius'].convert_to_units('km/s')
+                hist[i] = np.sum( data['cell_mass'][(v < vbins[i+1]) * (v >= vbins[i])].convert_to_units('Msun') )
+
+            self.gas_profiles['velocity']['halo'][k] = hist
 
         return
 
@@ -1184,7 +1218,36 @@ class Galaxy(object):
 
         return
 
+    @property
+    def cut_region(self):
+        """
+        Dictionary of cut region strings to be used in yt's cut region functionality.
+        At the moment these are geometric (or kinematic) exclusion regions
+       (e.x. 'not_disk') to be used in conjuction with the already defined regions
+       (disk, sphere, etc.) in order to easily select part of the volume in between
+        two regions (there is no support for this directly in some sort of object).
+        Otherwise, the disk, sphere and such objects can be used for continious and
+        un-interrupted region selection.
 
+        Other cut regions are defined in static_data that are immutable, like
+        the ISM phases; these depend on properties of the galaxy itself that need to be
+        defined on the fly.
+
+        Though not in place yet, this could be extended to add in a LOT more convenience
+        selection functions.
+        """
+
+        # cut region string for outside the disk region
+        disk_r =       self.disk.radius.convert_to_units('pc').value
+        disk_z = 0.5 * self.disk.height.convert_to_units('pc').value
+
+        # add this cut region as an attribute of the galaxy
+        not_disk = ["(obj['cylindrical_r'].in_units('pc') > %.4E)"%(disk_r), "&", # outside certain radius
+                    "(obj['magnitude_cylindrical_z'].in_units('pc') > %.4E)"%(disk_z)]
+
+        cr = {'not_disk' : ' '.join(not_disk)}
+
+        return cr
 
     @property
     def rbins_stellar_disk(self):
