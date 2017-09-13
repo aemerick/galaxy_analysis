@@ -3,6 +3,7 @@
    general styles.
 """
 import matplotlib as mpl
+import numpy as np
 mpl.use('Agg')
 
 from matplotlib import rc, cm
@@ -23,3 +24,27 @@ orange  = '#fdc328'
 black   = 'black'
 green   = 'green'
 lw      = 4.5
+
+
+def plot_histogram(ax, x, y, *args, **kwargs):
+    """
+    Wrapper on ax.plot from matplotlib to handle making
+    a histogram plot with step locations that make sense.
+    This works by taking in the actual bins as the x value,
+    meaning that len(x) = len(y) + 1 must be true.
+    """
+
+    ynew = np.zeros(len(x))
+    ynew[:len(y)] = y
+    ynew[-1] = y[-1]
+
+    if 'drawstyle' in kwargs.keys():
+        print "'drawstyle' included as kwarg as " +\
+              kwargs['drawstyle'] +\
+              "; are you sure? Changing this to 'steps-post'"
+
+    kwargs['drawstyle'] = 'steps-post'
+
+    p = ax.plot(x, ynew, *args, **kwargs)
+
+    return p
