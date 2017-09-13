@@ -277,7 +277,7 @@ class Galaxy(object):
         self.gas_profiles['velocity']['halo']   = {} # for the entire halo
         self.gas_profiles['velocity']['binned'] = {} # binned by radius - empty for now
 
-        vbins = np.arange(-200.0, 200.5, 1.0) * yt.units.km / yt.units.s
+        vbins = np.arange(-100.0, 500.5, 1.0) * yt.units.km / yt.units.s
         self.gas_profiles['velocity']['vbins'] = vbins
 
         local_cr = self.cut_region
