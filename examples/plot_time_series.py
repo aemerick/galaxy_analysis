@@ -66,15 +66,20 @@ def plot_sequestering(directory = './', fields = None, elements = None,
     if sfields is None:
         sfields = ['Disk', 'CNM', 'WNM', 'HIM', 'FullBox',
                    'stars', 'Molecular', 'OutsideBox', 'GravBound']
-
-    all_elements = elements
-    if all_elements is None:
-        all_elements = ['H','He','Fe','Metals','O','C','N','Eu','Mg','S','Y','Ca','Si','Mn']
-
     #
     # get all data
     #
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
+
+    all_elements = elements
+    if all_elements is None:
+        # this is a hacky way of getting the metal fields - should just save this to file
+        metal_fields = dd.io.load(all_output[0], '/gas_meta_data/masses/FullBox')
+        exclude      = ['H','HI','HII','H2','Metals','Total','He','HeI','HeII','HeIII']
+        metal_fields = utilities.sort_by_anum([x for x in metal_fields if (not any([y in x for y in exclude]))])
+
+        individual_metals
+        all_elements = ['H','He','Metals'] + individual_metals
 
     for element in all_elements:
         fig, ax = plt.subplots()
