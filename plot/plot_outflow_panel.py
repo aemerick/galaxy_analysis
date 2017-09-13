@@ -8,6 +8,12 @@ import numpy as np
 
 
 def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False):
+    """
+    Given a directory and desired time range (in Myr), plots the outflow rates or
+    mass loading factors for all species over that time at all radii sampled.
+    This plot will be VERY large and hard to understand, but will be useful to
+    quickly look at many things simultaneously for analysis purposes.
+    """
 
     # plot in this order:
     fields        = ["cell_mass", "H_total_mass", "H2_mass", "metal_mass"]
