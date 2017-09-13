@@ -199,7 +199,10 @@ def compute_abundance_stats(ds, data_source, mask = None,
             mask_empty = not any(mask)
 
         # if there is no data, fill the arrays with zeros
-        if mask_empty or len(data_source['Density']) < 1:
+        #print field, mask_empty
+        #print len(data_source[field][mask])
+
+        if mask_empty or (len(data_source[field][mask]) < 3):
             data_dict['volume_fraction'][field] = {'hist':np.zeros(np.size(bins)-1)}
             data_dict['mass_fraction'][field]   = {'hist':np.zeros(np.size(bins)-1)}
             stats = utilities.compute_weighted_stats(np.zeros(10), np.ones(10), return_dict=True) # arbitrary - just trying to get keys
@@ -219,6 +222,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
                 hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
 
+            #print mask_empty, any(mask) print np.size(fdata), np.size(cv) print fdata, cv
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
             data_dict['volume_fraction'][field] = {'hist': hist}
 
@@ -350,7 +354,10 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
         # select out data sets that already exist in output
         if not overwrite:
-            ds_list = [x for x in ds_list if ( not any( [x.rsplit['/'][1] in y for y in hf.keys()]))]
+            ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in hf.keys() ]))]
+
+        #print ds_list
+        #print fraction_fields
 
         with closing(Pool(processes=nproc)) as pool:
             result = pool.map(_parallel_loop_star, itertools.izip(ds_list, itertools.repeat(fraction_fields)))
@@ -364,12 +371,24 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             pool.terminate()
 
         # end pool
-    #--------------------------------------------------------------------
+        # define these fields (which are defined in the Pool funtion but don't want to
+        # deal with passing this back.
+        if len(ds_list) > 0:
+            gal = Galaxy(ds_list[0].split('/')[1])
+            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                      select_denom = ['Fe','H'])
+            species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
+            metal_species = utilities.species_from_fields(gal.ds.field_list)
+            del(gal)
+    #
 
     # save field names
-    hf['species']          = species
-    hf['metal_species']    = metal_species
-    hf['abundance_fields'] = abundance_fields
+    if not ('species' in hf.keys()):
+        hf['species']          = species
+    if not ('metal_species' in hf.keys()):
+        hf['metal_species']    = metal_species
+    if not ('abundance_fields' in hf.keys()):
+        hf['abundance_fields'] = abundance_fields
 
     dd.io.save(hdf5_filename, hf)
 
@@ -541,12 +560,16 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
     nplots     = len(plot_fields)
     nrow, ncol = utilities.rowcoldict[nplots]
 
-    all_ds = [x for x in all_data.keys() if 'DD' in x]
+    # all_ds represents list of dataset names and kwargs to pull from
+    all_ds = np.sort([x for x in all_data.keys() if 'DD' in x])
+
+    # gather times for all data sets
     times = utilities.extract_nested_dict_asarray(all_data, ['general','Time'], loop_keys = all_ds)
 
+    # set up plot - define the phase names we want to loop over
     fig, ax = plt.subplots(nrow, ncol)
     fig.set_size_inches(4*nrow, 4*ncol)
-    all_phases  = ['CNM','WNM','HIM','star_forming','halo']
+    all_phases  = ['CNM','WNM','HIM','star_forming','halo'] # these are all that are available
 
     axi, axj = 0, 0
     for field in plot_fields:
@@ -555,8 +578,10 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
         # plot all phases for a fixed plot - add std or quartile if desired
         for j,phase in enumerate(all_phases):
             key_list = [phase, fraction_type + '_fraction', field]
+
             avg = utilities.extract_nested_dict_asarray(all_data, key_list + ['mean'], loop_keys = all_ds)
-            print field, phase, avg
+            #print key_list
+            print times, avg
             ax[axind].plot(times, avg, color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
 
             if show_std:
@@ -580,7 +605,7 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
             ax[axind].set_ylabel(field)
             ax[axind].set_xlabel(r'Time')
         else:
-            ax[axind].set_ylim(-8, 0)
+#            ax[axind].set_ylim(-8, 0)
             ax[axind].semilogy()
             ax[axind].set_xlabel(r'Time')
             ax[axind].set_ylabel(r'log [' + field + ']')
@@ -592,8 +617,8 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
 
     ax[(0,0)].legend(loc='best')
 
-    plt.tight_layout()
-    plt.minorticks_on()
+#    plt.tight_layout()
+#    plt.minorticks_on()
     if abundance:
         outname = 'time_evolution_' + fraction_type + '_abundances.png'
     else:
@@ -616,7 +641,7 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 2)
+    generate_all_stats(overwrite=False, nproc = 14)
     plot_time_evolution(abundance=False)
     plot_time_evolution(abundance=True)
 
