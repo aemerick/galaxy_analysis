@@ -13,6 +13,56 @@ from astroML.time_series import ACF_EK
 import statsmodels.tsa.stattools as stattools
 
 
+def simple_rebin(bins, y, new_bins, method = "sum"):
+    """
+    Re-bin data (y) placed in evenly spaced bins (bins)
+    where len(bins) = len(y) + 1. It is assumed the newly
+    binned data should sum over the old bins, (method = 'sum'),
+    but this can be changed to average over the values in the
+    bins with method = 'average'.
+
+    At the moment, new_bins must be such that there is even overlap
+    with the previous bins, AND that it spans the full domain
+    of the previous bins. new_bins can either be a float, representing
+    a desired bin spacing, or an array representing the
+    new bins.
+    """
+
+    if not (len(bins) == len(y) + 1):
+        print "Length of bins must be greater than y by 1"
+        raise ValueError
+
+    dx = np.unique(np.diff(bins))
+    if np.size(dx) > 1:
+        print "Original bins must be evenly spaced"
+        raise ValueError
+    dx = dx[0] # unique returns an array even if only 1 value
+
+    if np.size(new_bins) <= 1:
+        new_dx   = new_bins
+        new_bins = np.arange(np.min(bins), np.max(bins)+0.5*new_dx, new_dx)
+    else:
+        new_dx = np.unique(np.diff(new_bins))[0]
+
+    new_y = np.zeros(np.size(new_bins)-1)
+
+    if method == 'sum':
+        func = np.sum
+    elif method == 'average' or method == 'avg':
+        func = np.average
+    else:
+        print "method must be either 'sum' or 'average'"
+        raise ValueError
+
+    tempy = np.zeros(np.size(y)+1) # bit of a hack unfortunately
+    tempy[:-1] = y
+    tempy[-1]  = y[-1]
+    for i in np.arange(np.size(new_y)):
+        new_y[i] = func( tempy[ (bins >= new_bins[i]) * (bins < new_bins[i+1]) ])
+
+
+    return new_bins, new_y
+
 def acf(x, y, dy = None, bins = None):
 
     # just pick small percentage error
@@ -89,7 +139,7 @@ def extract_nested_dict(dict, key_list):
 
     if isinstance(key_list, basestring) or isinstance(key_list, tuple):
         x = x[key_list]
-    elif key_list is list:
+    elif isinstance(key_list, list):
         for k in key_list:
             x = x[k]
 
@@ -261,7 +311,7 @@ def compute_stats(x, return_dict = False, acf = False):
     if (len(x) > 0) and acf:
         d['acf'] = np.array(stattools.acf(x))
     else:
-        d['acf'] = None
+        d['acf'] = 0.0
 
     return d
 
