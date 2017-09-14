@@ -26,6 +26,21 @@ green   = 'green'
 lw      = 4.5
 
 
+#
+# Define consistent colors for simulation names or
+# other things that can be easily loaded
+# here to make life easy....
+#
+color_dict = {
+              # the four dwarf galaxy runs - to use when comp to each other
+              '17' : orange, '25' : magenta,
+              '30' : purple, '40' : black
+              # ----
+             }
+
+
+
+
 def plot_histogram(ax, x, y, *args, **kwargs):
     """
     Wrapper on ax.plot from matplotlib to handle making
