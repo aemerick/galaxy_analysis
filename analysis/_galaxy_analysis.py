@@ -707,6 +707,9 @@ class Galaxy(object):
         fields = {'H':'H_total_mass','He':'He_total_mass','Total':'cell_mass','Metals':'metal_mass', 'H2' : 'H2_mass',
                   'HI':'H_p0_mass', 'HII': 'H_p1_mass'}
 
+        def _sum_tracked_metals(d): # sum tracked metals species only
+            return np.sum(d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He']])))
+
         # do this for the disk ISM regions
         for crtype in cut_region_names:
             mdict[crtype] = {}
@@ -715,6 +718,7 @@ class Galaxy(object):
 
             for s in self.species_list:
                 mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+            mdict[crtype]['Total Tracked Metals'] = _sum_tracked_metals(mdict[crtype])
 
         # now do this for the whole disk
         mdict['Disk'] = {}
@@ -722,6 +726,7 @@ class Galaxy(object):
             mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
+        mdict['Disk']['Total Tracked Metals'] = _sum_tracked_metals(mdict['Disk'])
 
         # now do this for the halo
         mdict['Halo'] = {}
@@ -732,6 +737,7 @@ class Galaxy(object):
             mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
+        mdict['Halo']['Total Tracked Metals'] = _sum_tracked_metals(mdict['Halo'])
 
         # now do this for full box
         mdict['FullBox'] = {}
@@ -739,10 +745,11 @@ class Galaxy(object):
             mdict['FullBox'][s] = np.sum(self.df[fields[s]]).convert_to_units('Msun')
         for s in self.species_list:
             mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).convert_to_units('Msun')
+        mdict['FullBox']['Total Tracked Metals'] = _sum_tracked_metals(mdict['FullBox'])
 
         # now we need to do some subtraction of the fields
         mdict['OutsideHalo'] = {}
-        for s in fields.keys() + self.species_list:
+        for s in fields.keys() + self.species_list + ['Total Tracked Metals']:
             mdict['OutsideHalo'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
             mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
 
@@ -753,6 +760,7 @@ class Galaxy(object):
                 mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
             for s in self.species_list:
                 mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
+            mdict['GravBound']['Total Tracked Metals'] = _sum_tracked_metals(mdict['GravBound'])
 
         # and finally add up the mass in stars
         mdict['stars'] = {}
@@ -762,6 +770,7 @@ class Galaxy(object):
                                              self.df['particle_' + s + '_fraction'])[self.df['particle_type'] == 11])
             else:
                 mdict['stars'][s] = 0.0
+        mdict['stars']['Total Tracked Metals'] = _sum_tracked_metals(mdict['stars'])
 
         mdict['OutsideBox'] = {}
         if self._has_boundary_mass_file:
@@ -786,6 +795,7 @@ class Galaxy(object):
         else:
             for s in ['H','He','Metals'] + self.species_list:
                 mdict['OutsideBox'][s] = 0.0
+        mdict['OutsideBox']['Total Tracked Metals'] = _sum_tracked_metals(mdict['OutsideBox'])
 
         if self._has_particles:
             mdict['stars']['metals'] = np.sum( (self.df['birth_mass'].value * self.df['metallicity_fraction'])[self.df['particle_type'] == 11])
@@ -899,6 +909,7 @@ class Galaxy(object):
         self.compute_all_meta_data()
         self.compute_gas_profiles()
         self.compute_gas_sequestering()
+        self.calculate_velocity_distributions()
 
 
         return
