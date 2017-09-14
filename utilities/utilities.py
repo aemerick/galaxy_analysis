@@ -117,7 +117,7 @@ def filter_dict(field, dictionary, level = 2):
     """
     return [(x,dictionary[x][field]) for x in dictionary.keys]
 
-def extract_nested_dict_aslist(dict, key_list, loop_keys = None):
+def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained = True):
     """
     If one wants to extract a value deep in a nested dictionary 
     across many "rows". Example, your dictionary looks like this maybe:
@@ -158,18 +158,42 @@ def extract_nested_dict_aslist(dict, key_list, loop_keys = None):
         CNM_Fe_over_H = extract_nested_dict_aslist(dictionary, ['abundances','CNM','Fe_over_H'])
 
     """
-    if loop_keys is None:
-        loop_keys = dict.keys()
+    if self_contained: # data sets are all contained in overarching dictionary
+        if loop_keys is None:
+            loop_keys = dict.keys()
 
-    return [extract_nested_dict( dict[k], key_list) for k in loop_keys]
+        return [extract_nested_dict( dict[k], key_list) for k in loop_keys]
+    else:
+        # data sets are not contained, and are separate HDF5 files
+        # --- this is a bit ugly of a process, but hopefully we can limit doing
+        # --- this too much in the future
+        if loop_keys is None:
+            print "Currently must set loop_keys to file paths of HDF5 files to loop over"
+            raise ValueError
+
+        if not all(isinstance(x, basestring) for x in key_list):
+            print "Currently cannot handle keys that are not all strings"
+            print "doing this would require some more heavy lifting. It is on my to-do list"
+            print "to get rid of non-string dictionary keys in the analysis"
+            raise ValueError
+
+        # must prepend first key with / to load using deepdish in below
+        if not '/' in key_list[0]:
+            key_list[0] = '/' + key_list[0]
+
+        key_list_string = '/'.join(key_list)
+        all_data = [dd.io.load(fpath, key_list_string) for fpath in loop_keys]
+
+        return all_data
 
 
-def extract_nested_dict_asarray(dict, key_list, loop_keys = None):
+def extract_nested_dict_asarray(dict, key_list, loop_keys = None, self_contained = True):
     """
     Wrapper on extract_nested_dict_aslist to return a numpy array instead.
     """
  
-    return np.array(extract_nested_dict_aslist(dict, key_list, loop_keys = loop_keys))
+    return np.array(extract_nested_dict_aslist(dict, key_list, 
+                    loop_keys = loop_keys, self_contained = self_contained))
 
 class _DummyFile(object):
     """
