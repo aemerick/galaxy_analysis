@@ -49,8 +49,6 @@ def compute_onezone_stats(all_data, element):
     of all the chemical evolution data for a given field
     """
 
-    stats_dict = {}
-
     if element == 'metals' or element == 'Metals' or element == 'Z':
         field_name = 'm_metal_mass'
     else:
@@ -59,14 +57,8 @@ def compute_onezone_stats(all_data, element):
     mass = np.zeros(len(all_data))
     for i in np.arange(len(all_data)):
         mass[i] = all_data[i][field_name][-1]
-    print len(all_data)
 
-    stats_dict['average'] = np.average(mass)
-    stats_dict['min']     = np.min(mass)
-    stats_dict['max']     = np.max(mass)
-    stats_dict['std']     = np.std(mass)
-
-    return stats_dict
+    return utilities.compute_stats(mass, return_dict = True)
 
 def save_onezone_stats(stats_dict):
 
