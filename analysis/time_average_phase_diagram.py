@@ -1,14 +1,40 @@
+""" Functions to create time averaged phase diagram across data sets.
+
+    This routine can be used to construct a time averaged 2D phase diagram
+    of arbitrary fields across an arbitrary number of yt-loadable data
+    sets using a consistent geometric region across data sets. User can
+    provide desired region properties as set of kwargs for a corresponding
+    yt region object, or just run with the default full box. This uses
+    yt's enable parallelism feature to speed up computation if many processors
+    are available. This helps tremendously, but no gauruntees this won't
+    run into performance or memory issues for large data sets / many data sets.
+    This script additionally contains a couple of simple example usages for 
+    both a typical phase diagram (n,T) and a spatial phase diagram (e.g.
+    a gas profile in a galaxy disk).
+"""
+
+__author__ = "Andrew Emerick"
+
 from galaxy_analysis import Galaxy
 import numpy as np
 import yt
 import glob
 import os
 
+# attempt to enable parallelism
+# result is True if this works
 parallel_on = yt.enable_parallelism()
 
 
 def _create_region(ds, region_type, prop):
+    """
+    Helper function to construct a region in yt given some arguments. This
+    is used to ensure consistent regions across data set. Mainly parses user
+    input into appropriate region type and args/kwargs with some
+    assumptions on defaults if certain fields are not provided.
 
+    Note that certain fields are REQUIRED for certain region types.
+    """
     if (region_type is None) or (region_type == 'FullBox') or (region_type == 'Fullbox'):
         if len(prop.keys()) > 0:
             print "Following keys do not do anything as full box was selected"
@@ -53,7 +79,7 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
                                x_bins=None, y_bins=None, outname = None,
                                zunit = None, zlim = None,
                                region_type = 'FullBox', region_kwargs = {},
-                               xlog = True, ylog = True, zlog=False, cmap = 'cube_helix'):
+                               xlog = True, ylog = True, zlog=False, cmap = 'cubehelix'):
 
     if (zfield == 'cell_mass') and (zunit is None):
         zunit = 'Msun'
@@ -106,6 +132,8 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     x_bins = np.size(x_bins)
     y_bins = np.size(y_bins)
 
+    # convenience function to set axis properties each time
+    # a phase diagram is constructed using the vars defined above
     def _set_axis_lim(plot):
         plot.set_log(xfield, xlog)
         plot.set_log(yfield, ylog)
@@ -124,12 +152,12 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
         # iterate through all datasets except the first one, which will be used
         # later as the base plot. For whatever reason including the first dataset here
         # and then re-computing it later on (see below) causes a hang on the root processor
-        # this is a bit hacky, but whatever... it works...
+        # this is a bit hacky, but whatever... it works... quicker than diagnosing the issue...
         DS = yt.DatasetSeries(dataset_series[1:], parallel = True)
 
         for sto, dataset in DS.piter(storage=phase_data):
             region = _create_region(dataset, region_type, region_kwargs)
-
+            print str(dataset)
             pd = yt.PhasePlot(region, xfield, yfield, zfield,
                                  weight_field=weight_field, x_bins = x_bins, y_bins = y_bins)
             _set_axis_lim(pd)
@@ -164,10 +192,13 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     else:
         zf = zfield
 
+    # loop through and sum other phase plots
     for index in np.arange(1, num_dat):
         main_pd.profile.field_data[zf] +=\
             phase_data[str(dataset_series[index])][zf]
-    main_pd.profile.field_data[zf] /= (1.0 * num_dat)
+    main_pd.profile.field_data[zf] /= (1.0 * num_dat) # average
+
+    # set color bar limits and properties
     if not (zunit is None):
         main_pd.set_unit(zfield, zunit)
     main_pd.set_log(zfield, zlog)
@@ -182,8 +213,13 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
 
 
 def spatial_example():
+    """
+    Example usage for plotting a spatial 2D histogram showing
+    an average property in color (like gas mass). In this case we
+    are showing average [Fe/H] 
+    """
 
-    imin, imax = 124, 126
+    imin, imax = 124, 126 # i.e. load DD0124 and DD0125
     ds_list = [None]*len(np.arange(imin,imax,1))
     j = 0
     for x in np.arange(imin,imax,1):
@@ -236,7 +272,7 @@ def n_T_example():
     pd = time_average_phase_diagram(290.0, 300.0, ds_list = ds_list,
                                     x_bins = np.logspace(-4,3,128)*yt.units.cm**(-3),
                                     y_bins = np.logspace(0,7,128)*yt.units.K,
-                                    region_type = 'disk',
+                                    region_type = 'disk', zlog = True,
                                     region_kwargs = {'center' : [0.5,0.5,0.5],
                                                      'normal' : [0,0,1],
                                                      'radius' : (4,'kpc'),
