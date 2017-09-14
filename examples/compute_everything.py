@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 import yt
-yt.funcs.mylog.setLevel(10)
+yt.funcs.mylog.setLevel(40)
 
 
 def _parallel_loop(i):
