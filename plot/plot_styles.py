@@ -49,9 +49,20 @@ def plot_histogram(ax, x, y, *args, **kwargs):
     meaning that len(x) = len(y) + 1 must be true.
     """
 
-    ynew = np.zeros(len(x))
-    ynew[:len(y)] = y
-    ynew[-1] = y[-1]
+    if len(x) == len(y):
+        xnew = np.zeros(len(x) + 1)
+        dx   = np.zeros(len(x) + 1)
+        dx[1:-1]   = x[1:] - x[:-1]
+        dx[0] = dx[1]
+        dx[-1] = dx[-2]
+        xnew[:-1] = x - 0.5*dx[:-1]
+        xnew[-1] = x[-1] + 0.5*dx[-1]
+        x = xnew
+
+    if len(x) == len(y) + 1:
+        ynew = np.zeros(len(x))
+        ynew[:len(y)] = y
+        ynew[-1] = y[-1]
 
     if 'drawstyle' in kwargs.keys():
         print "'drawstyle' included as kwarg as " +\
