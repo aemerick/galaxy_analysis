@@ -205,6 +205,8 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     if not (zlim is None):
         main_pd.set_zlim(zfield, zlim[0], zlim[1])
 
+    outname = xfield + "_" + yfield + "_" + zfield + "_" + outname
+
     # only write one image
     if yt.is_root():
         main_pd.save(outname)
@@ -245,12 +247,28 @@ def spatial_example():
 
     del(gal) # don't need anymore
 
-    pd = time_average_phase_diagram(120.0, 130.0, ds_list = ds_list,
-                                    xfield = 'radius', yfield = 'cylindrical_z',
+    pd = time_average_phase_diagram(160.0, 170.0, ds_list = ds_list,
+                                    xfield = 'cylindrical_radius', yfield = 'cylindrical_z',
+                                    x_bins = xbins, y_bins = ybins,
+                                    zfield = "G_o", zunit = None, zlim = [0.01, 500.0], cmap = 'cubehelix',
+#                                    zfield = 'Fe_over_H', zunit = None, zlim = [-7,1.5], cmap = 'algae',
+                                    region_type   = region_type, weight_field = None,
+                                    region_kwargs = region_kwargs, xlog=False, ylog=False, zlog=True)
+
+    pd = time_average_phase_diagram(160.0, 170.0, ds_list = ds_list,
+                                    xfield = 'cylindrical_radius', yfield = 'cylindrical_z',
                                     x_bins = xbins, y_bins = ybins,
                                     zfield = 'Fe_over_H', zunit = None, zlim = [-7,1.5], cmap = 'algae',
                                     region_type   = region_type, weight_field = 'cell_mass',
-                                    region_kwargs = region_kwargs, xlog=False, ylog=False, zlog=False)
+                                    region_kwargs = region_kwargs, xlog=False, ylog=False, zlog=True)
+
+#    pd = time_average_phase_diagram(160.0, 170.0, ds_list = ds_list,
+#                                    xfield = 'cylindrical_radius', yfield = 'cylindrical_z',
+#                                    x_bins = xbins, y_bins = ybins,
+#                                    zfield = 'Fe_over_H', zunit = None, zlim = [-7,1.5], cmap = 'algae',
+#                                    region_type   = region_type, weight_field = 'cell_mass',
+#                                    region_kwargs = region_kwargs, xlog=False, ylog=False, zlog=True)
+
 
 
     return
