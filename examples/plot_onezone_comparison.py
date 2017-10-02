@@ -7,7 +7,14 @@ import glob as glob
 import os
 import deepdish as dd
 import sys
+from galaxy_analysis.utilities import utilities
 
+def sort_labels(l):
+
+    elements = [x for x in l if len(x) <=2]
+    other    = [x for x in l if len(x) > 2]
+
+    return other + utilities.sort_by_anum(elements)
 
 def load_galaxy_data(data_path = './../'):
     """
@@ -67,7 +74,7 @@ def save_onezone_stats(stats_dict):
     f.write('#element avg min max std frac_min frac_max frac_std\n')
     for k in stats_dict.keys():
         x = stats_dict[k]
-        f.write("%-8s  %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E\n"%(k,x['average'],x['min'],x['max'],x['std'], x['min']/x['average'], x['max']/x['average'],x['std']/x['average']))
+        f.write("%-8s  %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E\n"%(k,x['mean'],x['min'],x['max'],x['std'], x['min']/x['mean'], x['max']/x['mean'],x['std']/x['mean']))
 
     f.close()
 
@@ -86,7 +93,8 @@ def compute_all_data():
     onez_data_files = load_onezone_data()
 
     # construct dictionary from onez model statistics
-    for k in simulation_data.keys():
+    elements = [x for x in simulation_data.keys() if (not any([x in ['HI','HII','HeI','HeII','HeIII','Total Tracked Metals','H2','H2I']]))]
+    for k in elements:
         if k == 'Total':
             continue
         onezone_data[k] = compute_onezone_stats( onez_data_files, k)
@@ -99,12 +107,12 @@ def compute_all_data():
 def plot_masses(sim_data, onez_data):
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(8, 6)
+    fig.set_size_inches(12, 6)
 
-    labels = np.sort( onez_data.keys() )
+    labels = sort_labels( onez_data.keys() )
     x      = np.arange(1, len(labels) + 1)
 
-    yz = np.array([ onez_data[l]['average'] for l in labels])
+    yz = np.array([ onez_data[l]['mean'] for l in labels])
     ax.scatter(x, yz,  c = 'orange', s = 20,  label = 'Onezone Average')
 
     ylow = np.array([onez_data[l]['min'] for l in labels])
@@ -129,7 +137,7 @@ def plot_masses(sim_data, onez_data):
 
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(8,6)
+    fig.set_size_inches(12,6)
 
     error = np.abs(ysim-yz)/yz
     ax.scatter(x, error, s = 20, color = 'black')
