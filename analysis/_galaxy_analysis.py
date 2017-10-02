@@ -308,9 +308,9 @@ class Galaxy(object):
         if np.size(v_in) <= 3:
             v_in = np.zeros(10); m_in = np.ones(10)
         self.gas_profiles['velocity']['halo']['outflow_stats'] =\
-                    utilities.compute_weighted_stats(v_out, mass_out, return_dict = True)
+                    util.compute_weighted_stats(v_out, m_out, return_dict = True)
         self.gas_profiles['velocity']['halo']['inflow_stats'] =\
-                utilities.compute_weighted_stats(v_in, mass_in, return_dict = True)
+                    util.compute_weighted_stats(v_in, m_in, return_dict = True)
 
         return
 
@@ -723,7 +723,7 @@ class Galaxy(object):
                   'HI':'H_p0_mass', 'HII': 'H_p1_mass'}
 
         def _sum_tracked_metals(d): # sum tracked metals species only
-            return np.sum(d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He']])))
+            return np.sum(d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He','HI','HeI','HeII','HeIII','H2I']])))
 
         # do this for the disk ISM regions
         for crtype in cut_region_names:
@@ -1283,7 +1283,7 @@ class Galaxy(object):
             rvir_ranges[i] = ["(obj['magnitude_cylindrical_z'].in_units('kpc') > %.4E)"%(lower_lim), "&",
                               "(obj['magnitude_cylindrical_z'].in_units('kpc') > %.4E)"%(upper_lim)]
 
-            cr['z_rvir_%i'] = rvir_ranges[i]
+            all_cr['z_rvir_%i'] = rvir_ranges[i]
 
         all_cr['z_rvir_info'] = {'centers' : center, 'dL' : dL}
 
