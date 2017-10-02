@@ -617,8 +617,8 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
 
     ax[(0,0)].legend(loc='best')
 
-#    plt.tight_layout()
-#    plt.minorticks_on()
+    plt.tight_layout()
+    plt.minorticks_on()
     if abundance:
         outname = 'time_evolution_' + fraction_type + '_abundances.png'
     else:
