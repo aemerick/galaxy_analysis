@@ -22,6 +22,7 @@ __author__ = "Andrew Emerick"
 """
 
 import galaxy_analysis as ga
+from galaxy_analysis.utilities import utilities
 import glob
 import os
 
@@ -94,7 +95,7 @@ def get_parameters_from_analysis(galname, onez = None, gal_files = None):
 
     return onez, t_first_star
 
-def enzo_to_onezone(parameters, onez = None):
+def enzo_to_onezone(parameters, onez = None, fields = None):
 
     if onez is None:
         onez = {}
@@ -118,6 +119,10 @@ def enzo_to_onezone(parameters, onez = None):
     onez['config.stars.AGB_wind_velocity']          = parameters['IndividualStarAGBWindVelocity'] 
 
     onez['config.stars.direct_collapse_mass_threshold'] = parameters['IndividualStarDirectCollapseThreshold']
+
+    if not (fields is None):
+        onez['config.zone.species_to_track'] = ['m_tot','m_metal'] +\
+                                                  list(utilities.species_from_fields(fields, include_primordial = True))
 
 #    onez['config.zone.initial_gas_mass'] = parameters['
 #
@@ -149,12 +154,12 @@ def set_default_parameters(onez = None):
     onez['config.zone.inflow_factor'] = 0.0
     onez['config.zone.mass_loading_factor'] = 0.0
     onez['config.zone.mass_loading_index']  = 0.0
-    onez['config.zone.mass_outflow_method'] = 2   # read from table
+    onez['config.zone.mass_outflow_method'] = 0 # 2   # read from table
     onez['config.zone.SFR_efficiency']      = 0.0 # zero since using SFH
     onez['config.zone.SFR_dyn_efficiency']  = 0.0 # zero since using SFH
 
     onez['config.zone.t_o'] = 0.0
-    onez['config.zone.dt']              = 1.0
+    onez['config.zone.dt']              = 0.25
     onez['config.zone.adaptive_timestep'] = True
     onez['config.zone.timestep_safety_factor'] = 16
 
@@ -163,10 +168,10 @@ def set_default_parameters(onez = None):
     onez['config.stars.use_stellar_winds'] = True
     onez['config.stars.use_AGB_wind_phase'] = True
 
-    onez['config.io.dt_summary']    = 10.0
+    onez['config.io.dt_summary']    = 5.0
     onez['config.io.cycle_summary'] = 0
 #    onez['config.io.summary_output_filename'] = 'summary_output.txt'
-    onez['config.io.dt_dump']       = 100.0
+    onez['config.io.dt_dump']       = 200.0
     onez['config.io.radiation_binned_output'] = 1
 
     onez['config.zone.species_to_track'] = ['m_tot', 'm_metal', 'H', 'He', 'C', 'N', 'O', 'Mg',
@@ -325,6 +330,8 @@ def save_script(onez, outname = 'onez_param_file.py'):
 
     f.write("import glob\n")
     f.write("import numpy as np\n")
+    f.write("from joblib import Parallel, delayed\n")
+    f.write("import multiprocessing\n")
     f.write("from onezone import zone\n")
     f.write("from onezone import imf\n")
     f.write("from onezone import config\n\n\n\n")
@@ -341,7 +348,7 @@ def save_script(onez, outname = 'onez_param_file.py'):
 
     f.write("# -------------------- Set up and run the simulation -------------------\n")
     f.write("istart = len(glob.glob('run????_summary_output.txt'))\n")
-    f.write("for i in np.arange(100):\n")
+    f.write("def run(i):\n")
     f.write("    np.random.seed(i)\n")
     f.write("    config.io.summary_output_filename = 'run%0004i_summary_output.txt'%(istart + i)\n")
     f.write("    config.io.dump_output_basename    = 'run%0004i_dump'%(istart + i)\n")
@@ -352,6 +359,10 @@ def save_script(onez, outname = 'onez_param_file.py'):
     f.write("    except:\n")
     f.write("        print 'failing in run ' + str(i) + ' skipping and going to the next one'\n")
     f.write("    del(sim)\n")
+    f.write("    return\n\n")
+    f.write("n_jobs = multiprocessing.cpu_count()\n")
+    f.write("n_simulations = n_jobs * 1\n")
+    f.write("Parallel(n_jobs = n_jobs)(delayed(run)(i) for i in np.arange(n_simulations))\n")
 
     f.close()
 
@@ -397,7 +408,7 @@ if __name__=="__main__":
     ds = yt.load(dsname + '/' + dsname)
 
     onez = set_default_parameters()
-    onez = enzo_to_onezone(ds.parameters, onez = onez)
+    onez = enzo_to_onezone(ds.parameters, onez = onez, fields = ds.field_list)
     onez, t_o = get_parameters_from_analysis(analysis_to_use, onez = onez, gal_files = gal_files)
 
     generate_sfr(ds, t_o = t_o)
