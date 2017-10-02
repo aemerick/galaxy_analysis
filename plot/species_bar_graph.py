@@ -5,6 +5,12 @@ from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 import glob
 
+import sys
+
+from joblib import Parallel, delayed
+import multiprocessing
+
+
 ###
 ###
 from galaxy_analysis.utilities import utilities
@@ -38,7 +44,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        display_total = fraction
 
    # construct the plot
-   exclude = ['Total','HI','HeI','HeII','HII','H2','Metals']
+   exclude = ['Total','HI','HeI','HeII','HII','H2','Metals','Total Tracked Metals']
 
    masses = data['gas_meta_data']['masses']
    all_fields  = masses['FullBox'].keys()
@@ -165,7 +171,7 @@ if __name__ == "__main__":
                               show_individual_amounts = False)
         return
 
-    if True:
+    if False:
         name = 'DD0126'
         data = dd.io.load(name + '_galaxy_data.h5')
         _plot_both(name, data)
@@ -174,8 +180,17 @@ if __name__ == "__main__":
         files = np.sort(glob.glob('DD????_galaxy_data.h5'))
         names = [x[:6] for x in files]
 
-        for f in names:
-            data = dd.io.load(f + '_galaxy_data.h5')
-            _plot_both(f,data)
-            del(data)
+        if len(sys.argv) == 1:
+            # assume not parallel
+            _plot_both(names[-1], dd.io.load(names[-1] + '_galaxy_data.h5'))
+        elif len(sys.argv) == 3:
 
+            i,j = int(sys.argv[1]), int(sys.argv[2])
+            n_jobs = multiprocessing.cpu_count()
+
+            Parallel(n_jobs = n_jobs)(\
+                    delayed(_plot_both)(x, dd.io.load(x+'_galaxy_data.h5')) for x in names[i:j])
+#            for f in names:
+#                data = dd.io.load(f + '_galaxy_data.h5')
+#            _plot_both(f,data)
+#            del(data)
