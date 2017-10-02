@@ -12,6 +12,15 @@ import statsmodels.stats.weightstats as stats
 from astroML.time_series import ACF_EK
 import statsmodels.tsa.stattools as stattools
 
+def bin_edges(x):
+    xnew = np.zeros(len(x) + 1)
+    dx   = np.zeros(len(x) + 1)
+    dx[1:-1]   = x[1:] - x[:-1]
+    dx[0] = dx[1]
+    dx[-1] = dx[-2]
+    xnew[:-1] = x - 0.5*dx[:-1]
+    xnew[-1] = x[-1] + 0.5*dx[-1]
+    return xnew
 
 def simple_rebin(bins, y, new_bins, method = "sum"):
     """
@@ -297,14 +306,14 @@ def sort_by_anum(names):
     if any( np.array([len(x) for x in names]) > 2):
         # assume all have the same common string
         index = np.argmax([len(x) for x in names])
-        print index
+        #print index
         sample = names[index]
-        print sample
+        #print sample
         s_to_remove = sample[2:] # assume longest string is 2 letter sym
-        print s_to_remove
+        #print s_to_remove
         i = -1 * len(s_to_remove)
         filtered = [x[:i] for x in names]
-        print filtered
+        #print filtered
     else:
         filtered = [x for x in names]
 
