@@ -53,7 +53,7 @@ def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False
         for k in data_list:
             all_data_dict[k] = dd.io.load(k, '/gas_profiles/outflow/sphere')
         norm = np.ones(len(all_data_dict.keys()))
-    times[norm == 0.0] = None
+#    times[norm == 0.0] = None
 
     axi, axj = 0,0
     for field in fields:
@@ -68,8 +68,13 @@ def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False
 
 #            #
             y = binned_y[:,loc_bin]/norm # already checking for divide by zero in times above
+            bin_edges = utilities.bin_edges(np.round(times))
+            newx, rebiny = utilities.simple_rebin(1.0*bin_edges,1.0*y,np.arange(np.min(bin_edges),np.max(bin_edges)+2,10), 'average')
+#            if loc == 0.1:
+#                print newx, y , rebiny
 #            y = [norm == 0.0] = None
-            ax[axind].plot(times, y, lw = line_width, color = plasma(loc),
+#            ax[axind].plot(times, y,
+            plot_histogram(ax[axind],newx,rebiny,lw = line_width, color = plasma(loc),
                                 label = r"%0.1f R$_{\rm vir}$"%(loc))
 
         ax[axind].set_xlabel(r'Time (Myr)')
@@ -82,14 +87,14 @@ def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False
 
         if axi * nrow + axj < n_non_metal:
             if mass_loading:
-                ax[axind].set_ylim(1.0E-6, 1000.0)
+                ax[axind].set_ylim(1.0E-4, 3000.0)
             else:
-                ax[axind].set_ylim(1.0E-10, 1.0)
+                ax[axind].set_ylim(1.0E-7, 1.0)
         else:
             if mass_loading:
-                ax[axind].set_ylim(1.0E-8, 100.0)
+                ax[axind].set_ylim(1.0E-8, 10.0)
             else:
-                ax[axind].set_ylim(1.0E-12, 1.0E-2)
+                ax[axind].set_ylim(1.0E-10, 1.0E-3)
 
         axj = axj + 1
         if axj >= ncol:
@@ -98,7 +103,7 @@ def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False
 
 
 
-    ax[(0,0)].legend(loc='best')
+    ax[(0,0)].legend(loc='best',ncol=2)
 
     fig.set_size_inches(6*nrow,6*ncol)
     plt.tight_layout()
