@@ -1,6 +1,10 @@
 from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 "-----------------------------------------"
+import sys
+
+from joblib import Parallel, delayed
+import multiprocessing
 
 import deepdish as dd
 from galaxy_analysis.utilities import utilities
@@ -23,7 +27,7 @@ _mask_ls    = {'star_forming' : '-',
 def plot_velocity_distribution(data_name, data = None, rebin = True):
 
     if data is None:
-        data = dd.io.load(data_name, 'gas_profiles/velocity')
+        data = dd.io.load(data_name, '/gas_profiles/velocity')
 
     fig, ax = plt.subplots(1,2)
     fig.set_size_inches(16,8)
@@ -55,11 +59,12 @@ def plot_velocity_distribution(data_name, data = None, rebin = True):
         a.set_xlabel('Velocity (km/s)')
         a.set_ylabel('Mass (Msun)')
         a.legend(loc='best')
-        a.set_ylim(0.1, 5.0E4)
+        a.set_ylim(1.0, 3.0E5)
         plot_histogram(a, x, sum, lw = line_width, color = 'black', label = 'Total')
 
+    name = data_name.split('_')
 
-    plt.savefig('velocity_distribution.png')
+    plt.savefig(name[0] + '_velocity_distribution.png')
 
     return
 
@@ -68,4 +73,14 @@ if __name__ == "__main__":
 
     all_data = np.sort(glob.glob('DD*galaxy*.h5'))
 
-    plot_velocity_distribution(all_data[-1])
+    if len(sys.argv) == 1:
+        # assume not parallel
+        plot_velocity_distribution(all_data[-1])
+    elif len(sys.argv) == 3:
+
+        i,j = int(sys.argv[1]), int(sys.argv[2])
+        n_jobs = multiprocessing.cpu_count()
+
+        Parallel(n_jobs = n_jobs)(\
+                delayed(plot_velocity_distribution)(x) for x in all_data[i:j])
+
