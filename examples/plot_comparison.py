@@ -77,7 +77,6 @@ STAR_IC = {
 #           'hm_nopert'  : stampede + '/run15'}
 
 
-
 ls_dict = { 'lm' : '-', 'lm_noRT' : '--', 'lm_nowind' : ':', 'lm_xx' : '--',
              'mm' : '-', 'mm_3pc' : '-.', 'hm' : '-',
              'lm_p' : '-', 'lm_p_noOT' : '-.', 'lm_p_sn' : ':',
@@ -147,6 +146,13 @@ color_dict['r11_lbox']  = ps.purple
 ls_dict['r11_lowsf']    = '-'
 ls_dict['r11_lowsf']    = ':'
 
+run13_feedback = {'Full Physics' : pleiades + '/starIC/run11_30km/final_sndriving',
+                  'Ion Only' : stampede2 + '/run11_30km/ion_no-otrad-sn',
+                  'PE+LW Only' : stampede2 + '/run11_30km/otrad_no-ion-sn',
+                  'SN Only' : stampede2 + '/run11_30km/sn_only',
+                  'Ion+Pe+LW - No SN' : stampede2 + '/run11_30km/otrad_ion-no-sn',
+                  'SN+Ion' : stampede2 + '/run11_30km/sn_ion-no-otrad',
+                  'Full - No RP' : stampede2 + '/run11_30km/sn_otrad_ion_noRP'}
 
 #
 # run11_feedback models
@@ -286,15 +292,38 @@ color_dict['run11 original'] = ps.orange
 feedback_comparisons = {'ion_no-otrad-sn' : stampede2 + '/run11_30km/ion_no-otrad-sn',
                         'otrad_ion-no-sn' : stampede2 + '/run11_30km/otrad_ion-no-sn',
                         'otrad_no-ion-sn' : stampede2 + '/run11_30km/otrad_no-ion-sn',
+
                         'sn_ion_LW-no-PE' : stampede2 + '/run11_30km/sn_ion_LW-no-PE',
                         'sn_ion-no-otrad' : stampede2 + '/run11_30km/sn_ion-no-otrad',
-                        'sn_ion_PW-no-LW' : stampede2 + '/run11_30km/sn_ion_PE-no-LW',
+                        'sn_ion_PE-no-LW' : stampede2 + '/run11_30km/sn_ion_PE-no-LW',
+
                         'sn_otrad_ion_noRP' : stampede2 + '/run11_30km/sn_otrad_ion_noRP',
                         'sn_otrad_ion_RPx2' : stampede2 + '/run11_30km/sn_otrad_ion_RPx2',
-                        'sn_otrad_no-ion' : stampede2 + '/run11_30km/sn_otrad_no-ion'}
+                        'sn_otrad_no-ion' : stampede2 + '/run11_30km/sn_otrad_no-ion',
+
+                        'Full' : pleiades + '/starIC/run11_30km/final_sndriving',
+                        'Shortrad' : pleiades + '/starIC/run11_30km/final_shortrad',
+
+                        'SN only' : stampede2 + '/run11_30km/sn_only'}
+
 for i,k in enumerate(feedback_comparisons.keys()):
     color_dict[k] = plasma(i / (1.0 * len(feedback_comparisons.keys())))
     ls_dict[k]    = '-'
+ls_dict['Full'] = '-' ; color_dict['Full'] = 'black'
+ls_dict['Shortrad'] = '--' ; color_dict['Shortrad'] = 'black'
+ls_dict['SN only'] = '-'; color_dict['SN only'] = plasma(1.0)
+
+color_dict['sn_ion-no-otrad'] = plasma(0.0); ls_dict['sn_ion-no-otrad'] = '-'
+color_dict['sn_ion_LW-no-PE'] = plasma(0.0); ls_dict['sn_ion_LW-no-PE'] = '--'
+color_dict['sn_ion_PE-no-LW'] = plasma(0.0); ls_dict['sn_ion_PE-no-LW'] = '-.'
+
+color_dict['sn_otrad_no-ion'  ] = plasma(0.25); ls_dict['sn_otrad_no-ion'] = '-'
+color_dict['sn_otrad_ion_RPx2'] = plasma(0.25); ls_dict['sn_otrad_ion_RPx2'] = '--'
+color_dict['sn_otrad_ion_RPx10'] = plasma(0.25); ls_dict['sn_otrad_ion_RPx10'] = '-.'
+
+color_dict['otrad_no-ion-sn'] = plasma(0.5); ls_dict['otrad_ion-no-sn'] = '-'
+color_dict['otrad_no-ion-sn'] = plasma(0.5); ls_dict['otrad_no-ion-sn'] = '--'
+color_dict['ion_no-otrad-sn'] = plasma(0.5); ls_dict['ion_no-otrad-sn'] = '-.'
 
 
 ALL_DATA = {}
@@ -401,7 +430,7 @@ def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
 
 
 
-def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loading = False):
+def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loading = False, include_inflow = True):
     """
     Given a dictionary that contains list of simulation names and filepaths,
     go through all simulation data analysis outputs in that path for each
@@ -448,11 +477,13 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
         # make arrays for plotting
         t  = np.zeros(np.size(ALL_DATA[s]))
         ml = np.zeros(np.size(ALL_DATA[s]))
+        iml = np.zeros(np.size(ALL_DATA[s]))
 
         # now go through every data analysis dump
         for i,x in enumerate(ALL_DATA[s]):
             try:
                 xdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/outflow/sphere')
+                ixdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/inflow/sphere')
             except:
                 print "outflow rates load failed for " + ALL_DATA[s][i]
                 continue
@@ -465,17 +496,23 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
             if species == 'total':
                 try:
                     ml[i] = xdata[('gas','cell_mass')][zbin]
+                    iml[i] = ixata[('gas','cell_mass')][zbin]
                 except:
                     ml[i] = xdata[('gas','H_total_mass')][zbin] +\
                             xdata[('gas','He_total_mass')][zbin] +\
                             xdata[('gas','metal_mass')][zbin]
+                    iml[i] = ixdata[('gas','H_total_mass')][zbin] +\
+                             ixdata[('gas','He_total_mass')][zbin] +\
+                             ixdata[('gas','metal_mass')][zbin]
             else:
                 ml[i] = xdata[species][zbin]
+                iml[i] = ixdata[species][zbin]
 
         # normalize t and plot only after SF occurs
         t         = t - t_first
         t_plot    = t[t >= 0.0]
         mass_plot = ml[t >= 0.0]
+        imass_plot = iml[t >= 0.0]
 
         norm = 1.0
         if mass_loading:
@@ -485,15 +522,20 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
                 norm = 1.0 / SFR
 
         ax.plot(t_plot, mass_plot*norm, lw = ps.lw, ls = ls_dict[s], color = color_dict[s], label = s, drawstyle = 'steps-post')
+        if include_inflow:
+            ax.plot(t_plot, np.abs(imass_plot*norm), lw = ps.lw, ls = '--', color = color_dict[s], drawstyle = 'steps-post')
         ymax = np.max([np.max(mass_plot*norm),ymax])
         ymin = np.min([np.min(mass_plot*norm),ymin])
 
     sname = species
-    if len(species) > 1:
+    if len(species) == 2:
         sname = species[1]
 
     ax.set_xlabel(r'Time (Myr)')
-    ax.set_ylabel(sname + r' Mass Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
+    if mass_loading:
+        ax.set_ylabel(sname + r'Mass Loading Factor')
+    else:
+        ax.set_ylabel(sname + r' Mass Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
 
     ax.set_xlim(global_tmin, global_tmax)
@@ -586,7 +628,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 
     ymin = np.min( [ymin, 1.0E-2*ymax])
 
-    ymin = np.max( [ymin, 1.0E-5*ymax])
+    ymin = np.max( [ymin, 1.0E-3*ymax])
 
     ax.set_ylim(ymin, ymax)
 
@@ -708,8 +750,8 @@ if __name__ == '__main__':
 #    all_s = ['Hu sndriving','Hu shortrad'] #, 'Hu sndriv metal' 'Hu shortrad metal']
 #    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
 
-    all_s = ['Fiducial','collapse','cool_ramp','cool_ramp2','cool_ramp3','CR2 SN']
-#    all_s = feedback_comparisons.keys()
+#    all_s = ['Fiducial','collapse','cool_ramp','cool_ramp2','cool_ramp3','CR2 SN']
+    all_s = feedback_comparisons.keys()
 
 #    all_s = ['17','25','30','40']
 #    all_s = ['30']
@@ -738,17 +780,19 @@ if __name__ == '__main__':
         plot_sfr(sim_names = all_s, sampling = 100)
         plot_snr(sim_names = all_s)
 
-    if False:
-        for species in ['total', 'metals', 'O', 'C', 'Mg', 'Fe', 'N', 'Si']:
+    if True:
+        for species in ['total', 'metals', 'O', 'N', 'Fe', 'Sr']:
             print 'mass outflow for ' + species
             plot_mass_loading(sim_names = all_s, species = species, z = 0.1)
             plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
             plot_mass_loading(sim_names = all_s, species = species, z = 0.5)
             plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
-            print 'mass loading for ' + species
-            plot_mass_loading(sim_names = all_s, species = species, z = 0.1, mass_loading = True)
-            plot_mass_loading(sim_names = all_s, species = species, z = 0.25, mass_loading = True)
-            plot_mass_loading(sim_names = all_s, species = species, z = 0.5, mass_loading = True)
-            plot_mass_loading(sim_names = all_s, species = species, z = 1.0, mass_loading = True)
+
+        species = 'total'
+        print 'mass loading for ' + species
+        plot_mass_loading(sim_names = all_s, species = species, z = 0.1, mass_loading = True)
+        plot_mass_loading(sim_names = all_s, species = species, z = 0.25, mass_loading = True)
+        plot_mass_loading(sim_names = all_s, species = species, z = 0.5, mass_loading = True)
+        plot_mass_loading(sim_names = all_s, species = species, z = 1.0, mass_loading = True)
 #        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
