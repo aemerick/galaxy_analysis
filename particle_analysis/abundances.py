@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib import rc, cm
 from collections import Iterable, OrderedDict
 
+COMPUTE_ACF = False # global disable for now - not working and time consuming
+
 fsize = 17
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
@@ -17,6 +19,11 @@ import glob
 import os
 import h5py
 from scipy.interpolate import interp1d
+
+# -- parallel --
+from multiprocessing import Pool
+from contextlib import closing
+import itertools
 
 # -- internal --
 from galaxy_analysis.plot.plot_styles import *
@@ -319,8 +326,52 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
     return
 
+def single_MDF(x, bins = None, norm = 'peak', ax = None):
+
+    if bins is None:
+        bins = np.linspace(np.min(x), np.max(x), 50)
+
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    hist, bins = np.histogram(x, bins = bins) #knuth_bin_width(points,True,disp=False)[1]) #bayesian_blocks(points))
+
+    if norm == 'fraction':
+        A = 1.0 / (1.0 * np.sum(hist))
+        ax.set_ylabel(r'N / N$_{\rm total}$')
+    elif norm == 'peak':
+        max = np.max( [np.max(hist), 1.0] )
+        A = 1.0 / (1.0 * max)
+        ax.set_ylabel(r'N / N$_{\rm max}$')
+        ax.set_ylim(0,1)
+    elif norm == 'PDF':
+        A = 1.0 / (bins[1:] - bins[:-1])
+        ax.set_ylabel(r'PDF')
+
+    y = hist * A
+    plot_histogram(ax, bins, y)
+
+    if not (fig is None):
+        fig.set_size_inches(8,8)
+
+        return fig, ax
+
+    else:
+        return
+
+
 def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard',
-             ds_list = None, show_average = False):
+             ds_list = None, show_average = False, norm = 'peak'):
+    """
+    Plot the MDF of each element (for now, hard coded as all over Fe and [Fe/H]). Choose
+    normalization as: 
+        1) 'fraction' : (N / N_total)
+        2) 'peak'     : (N / N_max)  - normalizes peak to 1.0
+        3) 'PDF'      : (dN / dx)    - independent of bin sizing
+    where N is number in a given bin, N_total is total number of stars, and N_max is
+    maximum number in any given bin.
+    """
 
     hf = h5py.File(dir + h5file, 'r')
 
@@ -360,22 +411,27 @@ def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'stand
         for ele in elements:
             index = (i,j)
             points = np.array(abund[ele][denom1].value)
-            hist, bins = np.histogram(points, bins = knuth_bin_width(points,True,disp=False)[1]) #bayesian_blocks(points))
-            plot_histogram(ax[index], bins, hist / (np.sum(hist)*1.0))
+
+            bins = np.arange(-3,3.1,0.1)
+            single_MDF(points, bins = bins, norm = 'peak', ax = ax[index])
 
             j = j + 1
             if j >= ncol:
                 j = 0
                 i = i + 1
 
-            ax[index].set_xlabel(r'log(['+ ele + '/' + denom1 + '])')
-            ax[index].set_ylim(0.0, 1.0)
+            ax[index].set_xlabel(r'['+ ele + '/' + denom1 + ']')
 
             ax[index].minorticks_on()
 
+        # plot Fe over H
+        bins = np.arange(-8,-1,0.1)
+        single_MDF(abund['Fe']['H'].value, bins = bins, norm = 'peak', ax = ax[(i,j)])
+        ax[(i,j)].set_xlabel('[Fe/H]')
+        ax[(i,j)].minorticks_on()
+
+
         plt.tight_layout()
-#        cbar = fig.colorbar(c)
-#        cbar.ax.set_label('Age (Myr)')
         plt.savefig(outname)
         plt.close()
 
@@ -471,19 +527,21 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
                 stats = utilities.compute_stats(aratios[abundance], return_dict = True)
                 g     = tracers.create_group(abundance)
 
-                t    = data['creation_time'].convert_to_units('Myr').value
-                t_n  = t - np.min(t)
-                dt   = 1.0
-                bins = np.arange(0.0, np.ceil(np.max(t_n)) + dt, dt)
-                y    = aratios[abundance]
-                y    = y + np.min(y)*2.0
-                dy   = np.abs(0.001 * y) # error should be irrelevant, but must be non-zero
-                dy[dy == 0.0] = 0.00001
-                acf, acf_error, acf_bins = utilities.acf(t_n, y, dy = dy, bins = bins)
+                if COMPUTE_ACF: # hide this for now - not working
+                    t    = data['creation_time'].convert_to_units('Myr').value
+                    t_n  = t - np.min(t)
+                    dt   = 1.0
 
-                stats['acf'] = acf
-                stats['acf_error'] = acf_error
-                stats['acf_bins']  = acf_bins
+                    bins = np.arange(0.0, np.ceil(np.max(t_n)) + dt, dt)
+                    y    = aratios[abundance]
+                    y    = y + np.min(y)*2.0
+                    dy   = np.abs(0.001 * y) # error should be irrelevant, but must be non-zero
+                    dy[dy == 0.0] = 0.00001
+                    acf, acf_error, acf_bins = utilities.acf(t_n, y, dy = dy, bins = bins)
+
+                    stats['acf'] = acf
+                    stats['acf_error'] = acf_error
+                    stats['acf_bins']  = acf_bins
 
                 for k in stats.keys():
                     g.create_dataset(k, data = stats[k])
@@ -525,7 +583,7 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 
                 for abundance in aratios.keys():
                     # - - - - - Produce a gap-less, interpolated mean to compute the ACF
-                    if False:
+                    if False: # don't do this anymore
                         first        = np.where( np.logical_not(np.isnan( stats_array_dict[abundance]['mean'] )))[0][0]
                         mean         = stats_array_dict[abundance]['mean'][first:]
                         select       = np.logical_not(np.isnan(mean))
@@ -567,7 +625,7 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 
 if __name__=='__main__':
 
-#    generate_abundances()
+    generate_abundances()
     plot_MDF()
     plot_abundances(plot_type = 'standard', color_by_age = True, show_average = True)
     plot_time_evolution(show_quartile=False)
