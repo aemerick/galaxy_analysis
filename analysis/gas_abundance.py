@@ -491,7 +491,7 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
         all_phases  = ['CNM','WNM','HIM','star_forming','halo']
 
         for j,phase in enumerate(all_phases):
-            print j, phase
+#            print j, phase
             phase_data = data[phase][fraction_type + '_fraction'] # mass or volume fraction
             logbins =  phase_data['abins']
 
@@ -544,16 +544,16 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
             all_fields  = all_data['abundance_fields']
 
             # plot all over Fe and Fe over H
-            plot_fields = [x for x in all_fields if '_over_Fe' in x]
+            plot_fields = utilities.sort_by_anum([x for x in all_fields if '_over_Fe' in x])
             plot_fields = plot_fields + ['Fe_over_H']
 
         elif len(plot_type) <= 2:
             # assume it is a species name
-            plot_fields = [x for x in all_fields if ('_over_' + plot_type) in x]
+            plot_fields = utilities.sort_by_anum([x for x in all_fields if ('_over_' + plot_type) in x])
             if (plot_type + '_over_H') in all_fields:
                 plot_fields = plot_fields + [plot_type + '_over_H']
     else:
-        plot_fields = all_data['metal_species']
+        plot_fields = utilities.sort_by_anum(all_data['metal_species'])
         plot_fields = [x + '_Fraction' for x in plot_fields]
 
 
@@ -565,6 +565,8 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
 
     # gather times for all data sets
     times = utilities.extract_nested_dict_asarray(all_data, ['general','Time'], loop_keys = all_ds)
+    # normalize time evolution
+    times = times - times[0]
 
     # set up plot - define the phase names we want to loop over
     fig, ax = plt.subplots(nrow, ncol)
@@ -576,13 +578,13 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
         axind = (axi,axj)
 
         # plot all phases for a fixed plot - add std or quartile if desired
+        ymax = -1.0E99
         for j,phase in enumerate(all_phases):
             key_list = [phase, fraction_type + '_fraction', field]
 
             avg = utilities.extract_nested_dict_asarray(all_data, key_list + ['mean'], loop_keys = all_ds)
-            #print key_list
-            print times, avg
-            ax[axind].plot(times, avg, color = _mask_color[phase], ls = _mask_ls[phase], label=phase)
+            ax[axind].plot(times, avg, color = _mask_color[phase], ls = _mask_ls[phase], label=phase, lw = line_width)
+            ymax = np.max( [ymax, np.max(avg)] )
 
             if show_std:
                 std = utilities.extract_nested_dict_asarray(all_data, key_list + ['std'], loop_keys = all_ds)
@@ -591,8 +593,14 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
             if show_quartile:
                 Q1  = utilities.extract_nested_dict_asarray(all_data, key_list + ['Q1'], loop_keys = all_ds)
                 Q3  = utilities.extract_nested_dict_asarray(all_data, key_list + ['Q3'], loop_keys = all_ds)
-
-                ax[axind].fill_between(times, Q1, Q3, color = _mask_color[phase], alpha = 0.5, lw = 2.0)
+                # filter out "None" that can appear
+                select = (Q1>-np.inf)*(Q3>-np.inf)*(times>-np.inf)
+                print times[select]
+                print Q1[select]
+                print Q3[select]
+                print _mask_color[phase], phase
+                ax[axind].fill_between(times[select], np.array(Q1[select]).astype(float),
+                                           np.array(Q3[select]).astype(float), color = _mask_color[phase], alpha = 0.5, lw = 2.0)
 
         # set axis limits and labels based on whether or not we are plotting
         # abundance ratios or number fractions
@@ -602,20 +610,23 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
             else:
                 ax[axind].set_ylim(-3, 3)
 
-            ax[axind].set_ylabel(field)
+            label = field.split('_over_')
+            ax[axind].set_ylabel('[' + label[0] + '/' + label[1] + ']')
             ax[axind].set_xlabel(r'Time')
         else:
 #            ax[axind].set_ylim(-8, 0)
             ax[axind].semilogy()
             ax[axind].set_xlabel(r'Time')
             ax[axind].set_ylabel(r'log [' + field + ']')
+            ax[axind].set_ylim(ymax*1.0E-6, ymax*1.3)
 
+        ax[axind].minorticks_on()
         axj = axj + 1
         if axj >= ncol:
             axj = 0
             axi = axi + 1
 
-    ax[(0,0)].legend(loc='best')
+    ax[(0,0)].legend(loc='best', ncol=2)
 
     plt.tight_layout()
     plt.minorticks_on()
@@ -623,6 +634,9 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
         outname = 'time_evolution_' + fraction_type + '_abundances.png'
     else:
         outname = 'time_evolution_' + fraction_type + '_fractions.png'
+
+    if show_quartile:
+        outname = 'quartile_' + outname
 
     fig.savefig(outname)
 
