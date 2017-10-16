@@ -7,14 +7,16 @@ import matplotlib.pyplot as plt
 
 filepath = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving'
 
-phase_colors = {'cold' : 'C0', 'warm' : 'C1', 'hot' : 'C3'}
-labels = {'cold' : 'Cold' , 'warm' : 'Warm', 'hot' : 'Hot'}
+phase_colors = {'cold' : 'C0', 'warm' : 'C1', 'hot' : 'C3',
+                'WNM'  : 'C0', 'WIM' : 'C1', 'HIM'  : 'C3'}
+labels = {'cold' : 'Cold' , 'warm' : 'Warm', 'hot' : 'Hot',
+          'WNM' : "WNM", "WIM" : "WIM", "HIM" : "HIM"}
 
 fig, ax  = plt.subplots()
 fig.set_size_inches(8,8)
 
 sum = None
-for phase in ['cold','warm','hot']:
+for phase in ['WNM','WIM','HIM']: #['cold','warm','hot']:
 
     x,avg,min,max,std = compute_time_average(['gas_profiles','velocity','halo',phase], tmin = 100, tmax = 200,
                                              dir = filepath, x_field = 'vbins')
@@ -40,9 +42,19 @@ ax.legend(loc='best')
 fig.savefig('velocity_distribution_time_average.png')
 plt.close()
 
+#
+#
+#
+#
+#
+
+
+
+
 cum_sum = np.cumsum(sum)
 percent = cum_sum / (cum_sum[-1]) * 100
 
 for q in np.arange(0,100,5):
     bin = len(percent[percent <= q])
     print q, " percentile ", bin, x[bin]
+
