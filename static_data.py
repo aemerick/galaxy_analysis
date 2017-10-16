@@ -68,7 +68,18 @@ def _set_abundance_dictionary():
     for anum in x.keys():
         x[anum_to_asym[anum]] = x[anum]
 
-    x['alpha'] = x['O'] + x['Mg'] + x['Si']
+    #
+    # Set the alpha abundance (O + Mg + Si)/3 and convert
+    # to table format of log(N_X / N_H) + 12
+    #
+    alpha = (10.0**(x['O'] - 12.0) + 10**(x['Mg']-12) + 10**(x['Si']-12))/3.0
+    x['alpha'] = np.log10(alpha) + 12
+
+    x['alpha_3'] = x['alpha'] # overloaded kwarg
+
+    # do again for a 5 species alpha, including now S and Ca
+    alpha_5 = (alpha*3 + 10.0**(x['S']-12.0) + 10.0*(x['Ca']-12))/5.0
+    x['alpha_5'] = np.log10(alpha_5) + 12
 
     return x
 
