@@ -37,6 +37,31 @@ def _density_function_generator(asym):
 
     return
 
+def _abundance_function_generator(asym):
+
+    if not isinstance(asym, Iterable):
+        asym = [asym]
+
+    def return_function(a):
+        def _abundance(field,data):
+            mass = data[('gas', a + '_Mass')].convert_to_units('g').value
+            abund = convert_abundances.elemental_abundance( a, mass)
+            return abund
+
+        return _abundance
+
+    for a in asym:
+        yt.add_field(('gas',a + '_Abundance'), function = return_function(a), units = "")
+
+    if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
+        def _alpha_abundance(field, data):
+            alpha = data[('gas','O_Abundance')] + data[('gas','Mg_Abundance')] + data[('gas','Si_Abundance')]
+            return alpha / 3.0
+        yt.add_field(('gas','Alpha_Abundance'), function=_alpha_abundance, units="")
+
+    return
+
+
 def _mass_function_generator(asym):
 
     if not isinstance(asym, Iterable):
@@ -60,13 +85,14 @@ def _mass_function_generator(asym):
         yt.add_field(('gas', a + '_Mass'), function = return_function(a), units='g')
         nfields = nfields + 1
 
-#    if (('O' in asym) and ('Mg' in asym) and ('Si' in 'asym')):
-#        def _alpha_mass(field, data):
-#            alpha = data[('gas','O_Mass')] + data[('gas','Mg_Mass')] + data[('gas','Si_Mass')]
-#            return alpha
-#
-#        yt.add_field(('gas','alpha-mass'), function = _alpha_mass, units = "g")
-#        nfields = nfields + 1
+    if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
+        def _alpha_mass(field, data):
+            alpha = data[('gas','O_Mass')] + data[('gas','Mg_Mass')] + data[('gas','Si_Mass')]
+            return alpha
+
+        yt.add_field(('gas','Alpha_Mass'), function = _alpha_mass, units = "g") # mass of alpha elements
+
+        nfields = nfields + 1
 
     return nfields
 
@@ -99,7 +125,7 @@ def _mass_fraction_function_generator(asym):
 
         nfields = nfields + 1
 
-#    if (('O' in asym) and ('Mg' in asym) and ('Si' in 'asym')):
+#    if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
 #        def _alpha_mass_fraction(field, data):
 #            alpha = data[('gas','O_Fraction')] + data[('gas','Mg_Fraction')] + data[('gas','Si_Fraction')]
 #            return alpha
@@ -164,7 +190,39 @@ def _number_density_function_generator(asym):
 
     return nfields
 
-def _particle_abundance_function_generator(ratios, ds = None):
+def _particle_abundance_function_generator(asym, ds = None):
+
+    if not (ds is None):
+        if not (ds.parameters['NumberOfParticles'] > 0):
+            return
+
+    if not isinstance(asym, Iterable):
+        asym = [asym]
+
+    def return_function(element, fraction_field):
+        def _abundance(field, data):
+            mass = data[fraction_field].value * (data['birth_mass'].value *yt.units.Msun).convert_to_units('g').value
+            abund = convert_abundances.elemental_abundance(element, mass)
+            return abund
+        return _abundance
+
+    for a in asym:
+        fraction_field = ('io','particle_' + a + '_fraction')
+        yt.add_field(('io','particle_' + a + '_abundance'),
+                      return_function(a, fraction_field), units = "", particle_type = True)
+
+    if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
+        def _alpha_abundance(field, data):
+            alpha = data[('io','particle_O_abundance')] +\
+                    data[('io','particle_Mg_abundance')] +\
+                    data[('io','particle_Si_abundance')]
+
+            return alpha / 3.0
+        yt.add_field(('io','particle_alpha_abundance'), function=_alpha_abundance, units="", particle_type=True)
+
+    return
+
+def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     if not (ds is None):
         if not (ds.parameters['NumberOfParticles'] > 0):
@@ -200,6 +258,13 @@ def _particle_abundance_function_generator(ratios, ds = None):
                               units = "", particle_type = True)
         nfields = nfields + 1
 
+    def _alpha_over_Fe(field,data):
+        alpha = data[('io','particle_alpha_abundance')]
+        Fe    = data[('io','particle_Fe_abundance')]
+
+        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
+
+    yt.add_field(('io','particle_alpha_over_Fe'), function = _alpha_over_Fe, units = "", particle_type = True)
 #    def _alpha_mass_fraction(field, data):
 #        O = 
 #        return alpha / 3.0
@@ -280,6 +345,15 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
         yt.add_field(('gas', fieldname), function = return_function(ele1,ele2,field1,field2),
                               units = "")
         nfields = nfields + 1
+
+    def _alpha_over_Fe(field,data):
+        alpha = data[('gas','Alpha_Abundance')]
+        Fe    = data[('gas','Fe_Abundance')]
+
+        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
+
+    yt.add_field(('gas','Alpha_over_Fe'), function = _alpha_over_Fe, units = "")
+
 
     return nfields
 
@@ -631,10 +705,12 @@ def generate_derived_fields(ds):
     print nfields, "number density fields defined"
     nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
     print nfields, "abundance ratio fields defined"
+    nfields = _abundance_function_generator(metals)
 
     if ds.parameters['NumberOfParticles'] > 0:
-        nfields =  _particle_abundance_function_generator(ratios, ds)
+        nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
         print nfields, "particle abundance ratio fields defined"
+        _particle_abundance_function_generator(metals, ds)
 
 
     generate_stellar_model_fields(ds)
