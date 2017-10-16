@@ -54,14 +54,16 @@ def plot_mass_fraction(t, y, std = None):
     fig, ax = plt.subplots()
 
     for k in _phases:
-        ax.plot(t, y[k], lw = 3, label = k)
+        ax.plot(t-t[0], y[k], lw = line_width, label = k)
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Mass Fraction')
-    ax.legend(loc='best')
-
+    ax.legend(loc='upper right', ncol=2)
+    plt.minorticks_on()
     fig.set_size_inches(8,8)
     plt.tight_layout()
+    ax.set_ylim(0.0,0.9)
+    ax.set_xlim(0.0, np.max(t-t[0]))
     fig.savefig('phase_mass_fraction_evolution.png')
     plt.close()
 
@@ -72,13 +74,15 @@ def plot_volume_fraction(t, y, std = None):
     fig, ax = plt.subplots()
 
     for k in _phases:
-        ax.plot(t, y[k], lw = 3, label = k)
+        ax.plot(t-t[0], y[k], lw = line_width, label = k)
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Volume Fraction')
-    ax.legend(loc='best')
-
+    ax.legend(loc='upper right', ncol=2)
+    ax.set_xlim(0.0, np.max(t-t[0]))
+    plt.minorticks_on()
     fig.set_size_inches(8,8)
+    ax.set_ylim(0.0, 0.9)
     plt.tight_layout()
     fig.savefig('phase_volume_fraction_evolution.png')
     plt.close()
@@ -88,7 +92,7 @@ def plot_volume_fraction(t, y, std = None):
 
 if __name__ == '__main__':
 
-    times, mass = get_fractions(tmin = 100, tmax = 1260, ftype = 'mass')
+    times, mass = get_fractions(tmin = 50, tmax = 1260, ftype = 'mass')
     plot_mass_fraction(times, mass)
-    times, volume = get_fractions(tmin = 100, tmax = 1260, ftype = 'volume')
+    times, volume = get_fractions(tmin = 50, tmax = 1260, ftype = 'volume')
     plot_volume_fraction(times, volume)
