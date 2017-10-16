@@ -3,6 +3,8 @@ __author__ = "Andrew Emerick"
 __email__  = "aemerick11@gmail.com"
 
 import yt
+yt.funcs.mylog.setLevel(40)
+
 from yt.units import dimensions
 import numpy as np
 
@@ -56,8 +58,15 @@ def _mass_function_generator(asym):
     for a in asym:
 
         yt.add_field(('gas', a + '_Mass'), function = return_function(a), units='g')
-
         nfields = nfields + 1
+
+#    if (('O' in asym) and ('Mg' in asym) and ('Si' in 'asym')):
+#        def _alpha_mass(field, data):
+#            alpha = data[('gas','O_Mass')] + data[('gas','Mg_Mass')] + data[('gas','Si_Mass')]
+#            return alpha
+#
+#        yt.add_field(('gas','alpha-mass'), function = _alpha_mass, units = "g")
+#        nfields = nfields + 1
 
     return nfields
 
@@ -89,6 +98,14 @@ def _mass_fraction_function_generator(asym):
         yt.add_field(('gas', a + '_Fraction'), function = return_function(a), units="")
 
         nfields = nfields + 1
+
+#    if (('O' in asym) and ('Mg' in asym) and ('Si' in 'asym')):
+#        def _alpha_mass_fraction(field, data):
+#            alpha = data[('gas','O_Fraction')] + data[('gas','Mg_Fraction')] + data[('gas','Si_Fraction')]
+#            return alpha
+#
+#        yt.add_field(('gas','alpha-mass-fraction'), function = _alpha_mass_fraction, units = "")
+#        nfields = nfields + 1
 
     return nfields
 
@@ -182,6 +199,12 @@ def _particle_abundance_function_generator(ratios, ds = None):
         yt.add_field(('io', fieldname), function = return_function(ele1,ele2,field1,field2),
                               units = "", particle_type = True)
         nfields = nfields + 1
+
+#    def _alpha_mass_fraction(field, data):
+#        O = 
+#        return alpha / 3.0
+#    yt.add_field(('gas','alpha-mass-fraction'), function = _alpha_mass_fraction, units = "")
+#    nfields = nfields + 1
 
     return nfields
 
