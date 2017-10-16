@@ -138,6 +138,13 @@ PLOT_DATA = {
                      r'\Sigma_{\rm{gas}\ \ (M_\odot\ \rm{pc}^{-2})', None,
                      None, u.Msun / u.pc**2, 'viridis'),
 
+             ('O_Fraction'):
+                 (('gas','O_Fraction'), r'O Fraction',
+                   None, (1.0E-7, 1.0E-2), u.pc/u.pc, 'magma'),
+             ('Fe_Fraction'):
+                 (('gas','Fe_Fraction'), r'Fe Fraction',
+                   None, (1.0E-7, 1.0E-2), u.pc/u.pc, 'magma'),
+
              ('gas', 'Density'):
                  ( ('enzo','Density'),
                    r'Density (g cm$^{-3}$)', None, None,
