@@ -64,8 +64,11 @@ def _set_abundance_dictionary():
          76 :  1.40, 77 :  1.38, 78 : 1.62,
          79 :  0.92, 80 :  1.17, 81 : 0.90,
          82 :  1.75, 83 :  0.65}
+
     for anum in x.keys():
         x[anum_to_asym[anum]] = x[anum]
+
+    x['alpha'] = x['O'] + x['Mg'] + x['Si']
 
     return x
 
