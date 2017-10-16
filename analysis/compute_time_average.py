@@ -118,8 +118,21 @@ def compute_time_average(field_path,
     avg = sum / (1.0 * s0)
 
     if np.size(avg) > 0 and (not (x_field is None)):
-        field_path[-1] = x_field
-        x = util.extract_nested_dict(data, field_path)
+        try:
+            temp_field_path     = list(field_path)
+            temp_field_path[-1] = x_field
+            print temp_field_path
+            x = util.extract_nested_dict(data, temp_field_path)
+        except:
+            try:
+                temp_field_path = list(field_path)
+                del(temp_field_path[-1])
+                temp_field_path[-1] = x_field
+                x = util.extract_nested_dict(data, temp_field_path)
+            except:
+                print field_path
+                print "x_field not found in current layer or above layer", x_field
+                raise ValueError
 
     else:
         x = None
