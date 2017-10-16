@@ -165,6 +165,7 @@ def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
 
         # make one plot for each file
         t  = hf[dsname]['Time'].value
+        t  = t - t[0]
         ns = hf[dsname]['Nstars'].value
         ms = hf[dsname]['Mstars'].value
 
