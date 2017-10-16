@@ -723,7 +723,7 @@ class Galaxy(object):
                   'HI':'H_p0_mass', 'HII': 'H_p1_mass'}
 
         def _sum_tracked_metals(d): # sum tracked metals species only
-            return np.sum(d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He','HI','HeI','HeII','HeIII','H2I']])))
+            return np.sum([d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He','HI','HeI','HeII','HeIII','H2I']]))])
 
         # do this for the disk ISM regions
         for crtype in cut_region_names:
