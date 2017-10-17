@@ -1,15 +1,4 @@
-from matplotlib import rc
-
-fsize = 17
-rc('text', usetex=False)
-rc('font', size=fsize)#, ftype=42)
-
-line_width = 4
-point_size = 30
-
-import matplotlib as mpl
-mpl.use('Agg')
-mpl.rcParams['hatch.linewidth'] = 8
+from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 
 import deepdish as dd
