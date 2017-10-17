@@ -5,7 +5,7 @@
 import matplotlib as mpl
 import numpy as np
 mpl.use('Agg')
-
+mpl.rcParams['hatch.linewidth'] = 8
 from matplotlib import rc, cm
 viridis = cm.get_cmap('viridis')
 magma   = cm.get_cmap('magma')
