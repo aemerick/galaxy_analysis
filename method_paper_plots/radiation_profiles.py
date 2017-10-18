@@ -29,12 +29,13 @@ for f in fields:
 if True:
 #
     fig, ax = plt.subplots()
-    color = 'C7'
+    color = 'black'
     # now plot
     plot_histogram(ax, all_profiles['G_o']['radius'], all_profiles['G_o']['avg'],
                         color = color, label = r'G$_{\rm o}$', lw = line_width)
     fillmin = all_profiles['G_o']['min'] #- all_profiles['G_o']['std']
     fillmax = all_profiles['G_o']['avg'] + np.abs( all_profiles['G_o']['std'])
+    fillmax = all_profiles['G_o']['max']
 
     fillmin[fillmin <= 0.0] = 0.00324
 
@@ -42,7 +43,7 @@ if True:
                            facecolor = color, interpolate=False, edgecolor = color, alpha = 0.5)
     ax.set_xlabel(r'Radius (pc)')
     ax.set_xlim(0.0, xmax)
-    ax.set_ylim( 3.0E-3, 1.0)
+    ax.set_ylim( 3.0E-3, 5.0)
     ax.set_ylabel(r'G$_{\rm o}$')
     ax.semilogy()
     plt.minorticks_on()
@@ -90,6 +91,8 @@ if True:
                         color = color1, label = r'Q$_{\rm 0}$', lw = line_width)
     fillmin = all_profiles['Q0_flux']['avg'] #- all_profiles['Q0_flux']['std']
     fillmax = all_profiles['Q0_flux']['avg'] + np.abs(all_profiles['Q0_flux']['std'])
+    fillmax = all_profiles['Q0_flux']['max']
+
     fillmin[ fillmin <= 0.0] = lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
     fillmax[ fillmax <= 0.0] = lower_lim
 
@@ -101,6 +104,7 @@ if True:
                         color = color2, label = r'Q$_{\rm 1}$', lw = line_width)
     fillmin = all_profiles['Q1_flux']['avg'] # - all_profiles['Q1_flux']['std']
     fillmax = all_profiles['Q1_flux']['avg'] + np.abs(all_profiles['Q1_flux']['std'])
+    fillmax = all_profiles['Q1_flux']['max']
 
     fillmin[ fillmin <= 0.0] = lower_lim
     fillmax[ fillmax <= 0.0] = lower_lim
@@ -111,9 +115,9 @@ if True:
 
     ax.set_xlabel(r'Radius (pc)')
     ax.set_xlim(0.0, xmax)
-    ax.set_ylabel(r'Ionizing Radiation Flux (s$^{-1}$ cm$^{-2}$)')
+    ax.set_ylabel(r'Ionizing Radiation Flux (erg s$^{-1}$ cm$^{-2}$)')
     ax.semilogy()
-    ax.set_ylim(2.0E-6, 1.0E-3)
+    ax.set_ylim(2.0E-6, 4.0E-3)
     plt.minorticks_on()
     fig.set_size_inches(8,8)
     ax.legend(loc='best')
