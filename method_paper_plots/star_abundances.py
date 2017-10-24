@@ -9,6 +9,9 @@ from matplotlib.ticker import NullFormatter
 #
 from galaxy_analysis.analysis import Galaxy
 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
 # grab the most recent file
 #workdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 workdir = '/home/emerick/work/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
@@ -51,24 +54,24 @@ def plot_alpha_vs_fe():
 def plot_alpha_vs_fe_with_histograms():
 
     sep = 0.02
-    left, width = 0.125, 0.60
-    bottom, height = 0.15, 0.60
+    left, width = 0.125, 0.65
+    bottom, height = 0.1, 0.65
     left_h = left + width + sep
     bottom_h = bottom + height + sep
 
     rect_scatter = [left,bottom,width,height]
-    rect_colorbar = 
-    rect_histx   = [left, bottom_h, width, 0.95 - bottom_h - (left-bottom)]
-    rect_histy   = [left_h, bottom, 0.95 - left_h, height]
+#    rect_colorbar =
+#    rect_histx   = [left, bottom_h, width, 0.95 - bottom_h - (left-bottom)]
+#    rect_histy   = [left_h, bottom, 0.95 - left_h, height]
 
 #    fig,ax = plt.subplots()
     fig = plt.figure(1, figsize=(8,8))
 #    fig.set_size_inches(8,8)
 
     ax_scatter = plt.axes(rect_scatter)
-    ax_hist_x  = plt.axes(rect_histx)
-    ax_hist_y  = plt.axes(rect_histy)
-    ax_color   = plt.axes(rect_colorbar)
+#    ax_hist_x  = plt.axes(rect_histx)
+#    ax_hist_y  = plt.axes(rect_histy)
+#    ax_color   = plt.axes(rect_colorbar)
 
     ptype     = gal.df['particle_type']
     fe_over_h = gal.df[('io','particle_Fe_over_H')]
@@ -82,7 +85,8 @@ def plot_alpha_vs_fe_with_histograms():
                   s = point_size, lw = 2, c = age[ptype==11], cmap = 'plasma_r', alpha = 0.75)
     p.set_clim([0.0, np.max(age)])
 
-    cb = fig.colorbar(p, ax = ax_scatter, orientation = 'horizontal')
+    cb = fig.colorbar(p, ax = ax_scatter, orientation = 'horizontal', pad = 0.125, fraction = 0.046,
+                         aspect = 40)
     cb.set_label(r'Stellar Age (Myr)')
 #
 #
@@ -95,6 +99,20 @@ def plot_alpha_vs_fe_with_histograms():
     ax_scatter.set_xlabel(r'[Fe/H]')
     ax_scatter.set_ylabel(r'[$\rm \alpha$/Fe]')
     plt.minorticks_on()
+
+    #
+    # find main plot and construct histograms
+    #
+    divider = make_axes_locatable(ax_scatter)
+    left, bottom, width, height  = divider.get_position()
+#    width, height = divider.get_horizontal(), divider.get_vertical()
+    sep = 0.01
+    thickness = np.min( np.array([0.95 - left - width - sep, 0.95 - bottom - height - sep]))
+    rect_histx = [left, bottom + height + sep, width, thickness]
+    rect_histy = [left + width + sep, bottom, thickness, height]
+    ax_hist_x  = plt.axes(rect_histx)
+    ax_hist_y  = plt.axes(rect_histy)
+
 
     nbins = 100
     hist,bins = np.histogram(fe_over_h, bins = nbins)
