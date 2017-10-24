@@ -39,7 +39,7 @@ def get_index_number(n, z = None, z_index = None):
     
     return index1, index2, run_num
 #
-# Load data
+# Load data as globals
 #
 thin   = h5py.File('./../grackle/CloudyData_UVB=HM2012.h5')
 shield = h5py.File('./../grackle/CloudyData_UVB=HM2012_shielded.h5')
@@ -54,6 +54,111 @@ shield_metal_h = shield['CoolingRates']['Metals']['Heating']
 shield_primordial_h = shield['CoolingRates']['Primordial']['Heating']
 
 
+def plot_cooling_curve(data_type = 'shielded'):
+    """
+    Plot the heating / cooling curve for our model at three different
+    typical densities, at redshift zero, and for a fixed metallicity
+    """
+#    data_type = 'thin'          # pick which cooling curve to plot
+
+# ------ load the data according to the table desired --------------------
+    if data_type == 'thin': # optically thin tables
+        data = h5py.File('./../grackle/CloudyData_UVB=HM2012.h5')
+    elif data_type == 'shielded': # our corrected, shielded model
+        data = h5py.File('./../grackle/CloudyData_UVB=HM2012_shielded.h5')
+    elif data_type == 'shielded_cooling_only': # an experiment, heating rates not adjusted, only cooling
+        data = dd.io.load('./../grackle/CloudyData_UVB=HM2012_shielded_cooling_only.h5')
+    elif data_type == 'noUVB': # no UV background
+        data = dd.io.load('./../gracle/CloudyData_noUVB.h5')
+
+# ------------ load cooling and heating rates (if possible) for metals ---------------
+    metal_cool = data['CoolingRates']['Metals']['Cooling']
+    try:
+        metal_heat = data['CoolingRates']['Metals']['Heating']
+    except:
+        print 'failed to load heating' # will fail for no UVB
+
+# --------- same for primordial component --------------------------
+    prim_cool  = data['CoolingRates']['Primordial']['Cooling']
+    try:
+        prim_heat  = data['CoolingRates']['Primordial']['Heating']
+    except:
+        print 'failed to load heating' # will fail for no UVB
+
+
+# ----------- now do all of the plotting ---------------------   
+    plot_n  = [-2, 0, 2]         # number densities to plot
+    z       = 0.0                # redshift zero
+    z_index = None
+    Z       = 0.01               # our metallicity
+    T = np.logspace(1,9,161)     # temperatures in file
+    T = np.log10(T)
+    
+    fig, ax = plt.subplots(1,3, sharey = True)
+    
+    for i in [0,1,2]:
+        
+        n = plot_n[i]
+        index1, index2, run_num = get_index_number(n, z = z, z_index = z_index)
+        
+        try:
+            index2 = 0  
+        
+            total_cool = metal_cool[index1][index2] * Z + prim_cool[index1][index2]
+            #print prim_cool[index1][index2]
+            total_heat = metal_heat[index1][index2] * Z + prim_heat[index1][index2]
+            net = total_cool - total_heat
+        except:
+            total_cool = metal_cool[index1] * Z + prim_cool[index1]
+            print 'failed to compute heating and net '
+    
+        
+        ax[i].plot(T, np.log10(total_cool), lw = 3, color = 'black', ls = ':', label = 'cooling')
+        
+        try:
+            ax[i].plot(T, np.log10(total_heat), lw = 3, color = 'black', ls = '--', label = 'heating')
+        except:
+            print 'failed to plot heating'
+            
+        try:
+            ax[i].plot(T, np.log10(np.abs(net)), lw = 3, color = 'black', ls = '-', label = '|cooling - heating|')
+        except:
+            print 'failed to plot cooling - heating'
+            
+        if i == 0:
+            ax[i].legend(loc='best')
+        ax[i].set_xlabel(r'log(T [K])')
+
+        
+        #ax[i].set_title(r'n = %.3f   -    Z = %0.2f Z$_{\odot}$'%(10**n,Z))
+        x_ann = 1.1
+        y_ann = -21.5
+        ax[i].annotate(r'n = %.3f cm$^{-3}$'%(10**n), xy=(x_ann,y_ann), xytext = (x_ann, y_ann))
+    
+        ax[i].xaxis.set_ticks(np.arange(1,9.1,1))
+        
+        ax[i].set_xlim(0.75, 9.25)
+        ax[i].set_ylim(-30.25, -20.75)
+
+    ax[0].set_ylabel(r'log($\Lambda$ [erg cm$^{3}$ s$^{-1}$])')
+    plt.minorticks_on()
+    fig.set_size_inches(18,6) # 
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0,hspace=0)
+
+
+    if data_type == 'thin':
+        fig.savefig('cooling_rates_opticallythin.png')
+    elif data_type == 'shielded':
+        fig.savefig('cooling_rates_shielded.png')
+    elif data_type == 'shielded_cooling_only':
+        fig.savefig('cooling_rates_shielded_cooling_only.png')
+    elif data_type == 'noUVB':
+        fig.savefig('cooling_rates_noUVB.png')
+
+    return 
+
+# ---------------------------------
 def plot_cooling_model_comparison():
     T = np.logspace(1,9,161)
     T = np.log10(T)
@@ -110,9 +215,9 @@ def plot_cooling_model_comparison():
     
         _plot_data(ax[i], T, net, 'black', 'Our Model')
         
-        x_ann = 1.2
-        y_ann = -21.5
-        ax[i].annotate(r'n = %.3f'%(10**n), xy=(x_ann,y_ann),xytext=(x_ann,y_ann))
+        x_ann = 1.1
+        y_ann = -21.625
+        ax[i].annotate(r'n = %.3f cm$^{-3}$'%(10**n), xy=(x_ann,y_ann),xytext=(x_ann,y_ann))
 
         ax[i].xaxis.set_ticks(np.arange(1,9.1,1))
     
@@ -124,7 +229,7 @@ def plot_cooling_model_comparison():
         ax[index].set_xlabel(xlabel)
         ax[index].set_xticklabels([1,2,3,4,5,6,7,8,9])
 
-    ylabel = r'log($\Lambda$ [(erg cm$^{3}$ s$^{-1}$])'
+    ylabel = r'log($\Lambda$ [erg cm$^{3}$ s$^{-1}$])'
     ax[(0,0)].set_ylabel(ylabel)
     ax[(1,0)].set_ylabel(ylabel)
     ax[(0,0)].legend(loc = 'best')
@@ -136,4 +241,5 @@ def plot_cooling_model_comparison():
 
 
 if __name__ == '__main__':
+    plot_cooling_curve()
     plot_cooling_model_comparison()
