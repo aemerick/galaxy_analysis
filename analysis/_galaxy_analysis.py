@@ -314,6 +314,29 @@ class Galaxy(object):
 
         return
 
+    def calculate_radiation_profiles(self, fields = None, mode = 'disk'):
+
+        if not ('radiation' in self.gas_profiles.keys()):
+            self.gas_profiles['radiation'] = {}
+        if not (mode in self.gas_profiles['radiation'].keys()):
+            self.gas_profiles['radiation'][mode] = {}
+
+        # want to make radial profiles of G_o, Q_0, Q_1, F_LW, F_PE, Gamma_PE
+        fields = [('gas','G_o'), ('gas','FUV_flux'), ('gas','LW_flux'),
+                    ('gas','Pe_heating_rate_masked'), ('gas','Q0_flux'), ('gas','Q1_flux')]
+
+        midplane = self.ds.disk(self.disk.center, self.disk.field_parameters['normal'], self.disk.radius,
+                                 2.5 * np.min(self.disk['dx'].convert_to_units('pc')))
+
+        n_bins = np.ceil( self.disk.radius.convert_to_units('pc').value / 5.0) # 5 pc bins
+        profiles = yt.create_profile(midplane, 'radius', fields, n_bins = n_bins,
+                                        weight_field = 'cell_volume', logs = {'radius':False})
+        self.gas_profiles['radiation'][mode]['xbins'] = profiles.x_bins.convert_to_units('pc').value
+
+        for f in fields:
+            self.gas_profiles['radiation'][mode][f[1]] = profiles[f]
+
+        return self.gas_profiles['radiation'][mode]['xbins'], self.gas_profiles['radiation'][mode]
 
     def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
                                outflow = True, *args, **kwargs):
@@ -566,16 +589,16 @@ class Galaxy(object):
 
         return rbins, centers, profiles
 
-    def compute_radiation_profiles(self, fields = None, mode = 'disk', axis = 'r'):
-        
-        if fields is None:
-            fields = self._radiation_fields()
-
-        xbins, xdata, data = self._get__bins_and_data(mode, axis)
-
-        prof = {}
-
-        return xbins, centers, prof
+#    def compute_radiation_profiles(self, fields = None, mode = 'disk', axis = 'r'):
+#        
+#        if fields is None:
+#            fields = self._radiation_fields()
+#
+#        xbins, xdata, data = self._get__bins_and_data(mode, axis)
+#
+#        prof = {}
+#
+#        return xbins, centers, prof
 
     def compute_all_meta_data(self):
         """
@@ -701,6 +724,7 @@ class Galaxy(object):
 
     def compute_gas_profiles(self):
 
+        junk = self.calculate_radiation_profiles()
         junk = self.calculate_dMdt_profile()               # mass outflow rate
         junk = self.calculate_dMdt_profile(outflow=False)  # mass inflow rate
         junk = self.calculate_surface_density_profile()

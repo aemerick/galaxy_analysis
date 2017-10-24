@@ -78,7 +78,7 @@ def _set_abundance_dictionary():
     x['alpha_3'] = x['alpha'] # overloaded kwarg
 
     # do again for a 5 species alpha, including now S and Ca
-    alpha_5 = (alpha*3 + 10.0**(x['S']-12.0) + 10.0*(x['Ca']-12))/5.0
+    alpha_5 = (alpha*3.0 + 10.0**(x['S']-12.0) + 10.0*(x['Ca']-12))/5.0
     x['alpha_5'] = np.log10(alpha_5) + 12
 
     return x
