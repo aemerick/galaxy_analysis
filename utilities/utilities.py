@@ -12,6 +12,33 @@ import statsmodels.stats.weightstats as stats
 from astroML.time_series import ACF_EK
 import statsmodels.tsa.stattools as stattools
 
+def map_to_pixels(x0,x1,y0=None, y1=None):
+    """
+    Map a single axis (or two axes with optional
+    additional kwargs) in coordinates. Really this can be
+    used to do any general linear mapping, but written to be
+    used for mapping data coordinates to pixel coordinates for overplotting
+    data on already-existing plot images.
+
+    Returns a callable function
+    """
+    def _map_to_pixels(coord0, coord1):
+        m = (coord1[1] - coord0[1]) / (coord1[0] - coord0[0])
+        return (lambda x : m * (x - coord0[0]) + coord0[1])
+
+    p_x = _map_to_pixels(x0,x1)
+
+    if (y0 is None) and (y1 is None):
+        return p_x
+    elif ( (not (y0 is None)) and (not (y1 is None))):
+        p_y = _map_to_pixels(y0,y1)
+        return p_x, p_y
+    else:
+        print "Must supply two additional points for y-axis to generate additional function"
+        raise ValueError
+
+    return
+
 def bin_edges(x):
     xnew = np.zeros(len(x) + 1)
     dx   = np.zeros(len(x) + 1)
