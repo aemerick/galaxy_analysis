@@ -117,6 +117,7 @@ class Galaxy(object):
         self.gas_profiles       = {}
         self.particle_profiles  = {}
         self.time_data          = {}
+        self.observables        = {}
 
         self.construct_regions()
 
@@ -201,6 +202,7 @@ class Galaxy(object):
         self._output_data_dict['time_data']          = self.time_data
         self._output_data_dict['gas_profiles']       = self.gas_profiles
         self._output_data_dict['particle_profiles']  = self.particle_profiles
+        self._output_data_dict['observables']        = self.observables
 
         return
 
@@ -222,6 +224,7 @@ class Galaxy(object):
         self.time_data          = _verify_and_add(self.time_data, 'time_data')
         self.gas_profiles       = _verify_and_add(self.gas_profiles, 'gas_profiles')
         self.particle_profiles  = _verify_and_add(self.particle_profiles, 'particle_profiles')
+        self.observables        = _verify_and_add(self.observables, 'observables')
 
         if 'R_vir' in self.meta_data.keys():
             self.R_vir = self.meta_data['R_vir']
@@ -523,6 +526,50 @@ class Galaxy(object):
 
         return xbins, centers, profiles
 
+    def compute_observables(self, young_star = 10.0 * yt.units.Myr):
+        """
+        Does some computing of observational diagnostics that would be
+        important to check. When possible, does this using various definitions of
+        how one might compute the observable.
+        """
+        #
+        # First, compute the surface densities one would want to compare
+        #        against schmidt law.
+        #
+        # Following Roychowdhury et. al. 2017, 2014, etc., define a "SF region"
+        #   rather than the whole galaxy. For our sake, require this to be at least 100 pc
+        age  = (self.ds.current_time - self.df['creation_time'])
+        r_sf =  self.df['particle_position_cylindrical_radius'][ age <= young_star]
+        if np.size(r_sf) <= 5:
+            r_sf = self.df['particle_position_cylindrical_radius'][ age <= young_star*2 ]
+        r_sf = np.max(r_sf.convert_to_units('pc').value) * yt.units.pc
+        if r_sf < 100.0 * yt.units.pc:
+            r_sf = 100*yt.units.pc
+
+        sf_disk = self.ds.disk([0.5,0.5,0.5],[0,0,1], r_sf, self.disk_region['height'])
+        A       = (np.pi * r_sf * r_sf).convert_to_units("pc**2")
+        A_disk  = (np.pi * self.disk.radius * self.disk.radius).convert_to_units('pc**2')
+
+        self.observables['r_sf']   = r_sf * 1.0
+        self.observables['A_sf']   = A * 1.0
+        self.observables['A']      = A_disk * 1.0
+        self.observables['SD_HI_sf' ] = np.sum( sf_disk['H_p0_mass'].convert_to_units('Msun') ) / A
+        self.observables['SD_gas_sf'] = np.sum( sf_disk['cell_mass'].convert_to_units('Msun') ) / A
+        self.observables['SD_gas_sf_obs'] = self.observables['SD_HI_sf'] * 1.34
+        self.observables['SD_HI'] = np.sum(self.disk['H_p0_mass'].convert_to_units('Msun')) / A_disk
+        self.observables['SD_gas'] = np.sum(self.disk['cell_mass'].convert_to_units('Msun')) / A_disk
+        self.observables['SD_gas_obs'] = self.observables['SD_HI'] * 1.34
+        self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
+        self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
+
+        self.observables['SD_SFR']    = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
+        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+
+        self.observables['SD_stellar'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
+        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+
+
+        return self.observables
 
     def calculate_surface_density_profile(self, fields = None, data_source = None, rbins = None,
                                           *args, **kwargs):
@@ -610,6 +657,7 @@ class Galaxy(object):
         self.compute_particle_meta_data()
         self.compute_gas_meta_data()
         self.compute_time_evolution()
+        self.compute_observables()
 
         return
 
@@ -1177,7 +1225,7 @@ class Galaxy(object):
 
         self.stellar_disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                                     'radius' : 1.0 * yt.units.kpc,
-                                    'height' : 500.0 * yt.units.pc,
+                                    'height' : 400.0 * yt.units.pc,
                                     'center' : self.ds.domain_center,
                                     'dr'     : 10.0 * yt.units.pc,
                                     'dz'     : 10.0 * yt.units.pc}
@@ -1185,7 +1233,7 @@ class Galaxy(object):
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
                             'radius' : 1.0 * yt.units.kpc,
-                            'height' : 1.0 * yt.units.kpc,           # 500 pc above and below
+                            'height' : 2.0 * 0.2 * yt.units.kpc, # 200 pc above and below
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
                             'dz'     : 50.0 * yt.units.pc }
