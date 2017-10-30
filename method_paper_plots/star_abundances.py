@@ -13,8 +13,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 # grab the most recent file
-#workdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
-workdir = '/home/emerick/work/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
+workdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
+#workdir = '/home/emerick/work/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 data_files = np.sort(glob.glob(workdir + 'DD????'))
 name = data_files[-1].split('final_sndriving/')[1]
 gal = Galaxy(name, wdir = workdir)

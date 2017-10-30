@@ -13,7 +13,7 @@ filepath = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_s
 work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 #work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 
-data_list = np.sort(glob.glob('DD*_galaxy*.h5'))
+data_list = np.sort(glob.glob(work_dir + 'DD*_galaxy*.h5'))
 data = dd.io.load( data_list[-1] )
 #data_list, times = utilities.select_data_by_time(dir = work_dir,
 #                                                 tmin=0.0,tmax=1000)
