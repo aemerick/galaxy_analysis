@@ -16,6 +16,7 @@ axis = 'x'
 fields_list = ['number_density', 'temperature', 'H_p0_number_density', 'O_Number_Density']
 nrow,ncol = 4,4
 fsize = 4
+width = (0.5,'kpc')
 
 #nrow,ncol = 2,2
 #fns = ['DD0100/DD0100','DD0150/DD0150']
@@ -39,7 +40,6 @@ grid = AxesGrid(fig, (0.075,0.075,0.875,0.875),
                 cbar_pad      = "0%")
 
 
-width  = (1.5,'kpc')
 
 for i, fn in enumerate(fns):
     for j, field in enumerate(fields_list):
@@ -95,4 +95,4 @@ for i, fn in enumerate(fns):
 #    cax.toggle_label(True)
 #    cax.axis[cax.orientation].set_label('label')
 fig.set_size_inches(fsize*nrow,fsize*ncol)
-plt.savefig('multiplot_4x4_' + axis+ '.png')
+plt.savefig('multiplot_4x4_' + axis+ '_w%.2f.png'%(width[0]))
