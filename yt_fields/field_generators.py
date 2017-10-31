@@ -131,7 +131,7 @@ def _mass_fraction_function_generator(asym):
                         data[('gas','Si_Fraction')]
             return alpha / 3.0
 
-        yt.add_field(('gas','alpha_Fraction'), function = _alpha_mass_fraction, units = "")
+#        yt.add_field(('gas','alpha_Fraction'), function = _alpha_mass_fraction, units = "")
 
         if (('S' in asym) and ('Ca' in asym)):
             def _alpha_5(field, data):
@@ -139,7 +139,7 @@ def _mass_fraction_function_generator(asym):
                                                  data[('gas','Ca_Fraction')]
                 return alpha / 5.0
 
-            yt.add_field( ('gas','alpha_5_Fraction'), function = _alpha_5, units = "")
+#            yt.add_field( ('gas','alpha_5_Fraction'), function = _alpha_5, units = "")
 
         nfields = nfields + 1
 
@@ -209,6 +209,12 @@ def _particle_abundance_function_generator(asym, ds = None):
     if not isinstance(asym, Iterable):
         asym = [asym]
 
+    if not ('H' in asym):
+        asym = asym + ['H']
+
+    if not ('He' in asym):
+        asym = asym + ['He']
+
     def return_function(element, fraction_field):
         def _abundance(field, data):
             mass = data[fraction_field].value * (data['birth_mass'].value *yt.units.Msun).convert_to_units('g').value
@@ -235,7 +241,7 @@ def _particle_abundance_function_generator(asym, ds = None):
 
             return alpha / 3.0
 
-        yt.add_field(('io','particle_alpha_fraction'), function=_alpha_fraction, units = "", particle_type = True)
+#        yt.add_field(('io','particle_alpha_fraction'), function=_alpha_fraction, units = "", particle_type = True)
         yt.add_field(('io','particle_alpha_abundance'), function=_alpha_abundance, units="", particle_type=True)
 
         if ('S' in asym) and ('Ca' in asym):
@@ -249,7 +255,7 @@ def _particle_abundance_function_generator(asym, ds = None):
                                         data[('io','particle_Ca_abundance')]
                 return alpha / 5.0
 
-            yt.add_field( ('io','particle_alpha_5_fraction'), function = _alpha_5_fraction, units = "", particle_type =True)
+#            yt.add_field( ('io','particle_alpha_5_fraction'), function = _alpha_5_fraction, units = "", particle_type =True)
             yt.add_field( ('io','particle_alpha_5_abundance'), function = _alpha_5, units = "", particle_type = True)
 
     return
@@ -290,20 +296,44 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
                               units = "", particle_type = True)
         nfields = nfields + 1
 
-    def _alpha_over_Fe(field,data):
-        alpha = data[('io','particle_alpha_abundance')]
-        Fe    = data[('io','particle_Fe_abundance')]
-        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
+    def _alpha_return_function(base):
+        def _alpha_over_x(field,data):
+            alpha = data[('io','particle_alpha_abundance')]
+            x     = data[('io','particle_' + base + '_abundance')]
 
-    yt.add_field(('io','particle_alpha_over_Fe'), function = _alpha_over_Fe, units = "", particle_type = True)
+            return convert_abundances.abundance_ratio(('alpha',alpha),(base,x), 'abundances')
+
+        return _alpha_over_x
+
+    def _alpha_5_return_function(base):
+        def _alpha_5_over_x(field,data):
+            alpha = data[('io','particle_alpha_5_abundance')]
+            x     = data[('io','particle_' + base + '_abundance')]
+
+            return convert_abundances.abundance_ratio(('alpha_5',alpha),(base,x), 'abundances')
+
+        return _alpha_5_over_x
 
 
-    def _alpha_5_over_Fe(field,data):
-        alpha = data[('io','particle_alpha_5_abundance')]
-        Fe    = data[('io','particle_Fe_abundance')]
-        return convert_abundances.abundance_ratio( ('alpha_5', alpha), ('Fe', Fe), 'abundances')
+    for x in ['H','Fe','Mg','O','S','Na','Ni']:
+        yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
+        yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
 
-    yt.add_field(('io','particle_alpha_5_over_Fe'), function = _alpha_5_over_Fe, units = "", particle_type = True)
+
+#    def _alpha_over_Fe(field,data):
+#        alpha = data[('io','particle_alpha_abundance')]
+#        Fe    = data[('io','particle_Fe_abundance')]
+#        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
+
+#    yt.add_field(('io','particle_alpha_over_Fe'), function = _alpha_over_Fe, units = "", particle_type = True)
+
+
+#    def _alpha_5_over_Fe(field,data):
+#        alpha = data[('io','particle_alpha_5_abundance')]
+#        Fe    = data[('io','particle_Fe_abundance')]
+#        return convert_abundances.abundance_ratio( ('alpha_5', alpha), ('Fe', Fe), 'abundances')
+
+ #   yt.add_field(('io','particle_alpha_5_over_Fe'), function = _alpha_5_over_Fe, units = "", particle_type = True)
 
 
     return nfields
@@ -382,7 +412,7 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
         nfields = nfields + 1
 
     def _alpha_over_Fe(field,data):
-        alpha = data[('gas','Alpha_Abundance')]
+        alpha = data[('gas','alpha_Abundance')]
         Fe    = data[('gas','Fe_Abundance')]
 
         return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
