@@ -180,7 +180,7 @@ def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
         elements = elements + ['alpha']
         nabundances = len(elements)
 
-        for dt in [10, 20, 50]:
+        for dt in [1, 10]:
             outname = dir + dsname + '_abundances_time_%i_evolution.png'%(dt)
 
             nrow, ncol = utilities.rowcoldict[nabundances]
@@ -565,7 +565,59 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             #
             # now do it in time bins to get time evolution
             #
-            for dt in [0.1, 1, 10, 20, 50]:
+
+            # First, lets do the observational version, where we compute the total
+            #  MDF at each point in time (using all stars) and compute median and spread, etc.
+            #  next we will do the instantaneous (binned) version of this
+            g = statgroup.create_group("cumulative")
+            t = ds.current_time.convert_to_units('Myr').value
+            tmax = np.ceil(t)
+            tbins = np.arange(0.0, tmax + 0.1, 0.5) # can go arbitrarily small here
+            hist, bins = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+            g.create_dataset('bins', data = tbins)
+            g.create_dataset('hist', data = np.array(hist))
+
+            t_form   = data['creation_time'].convert_to_units('Myr').value
+            # unfortunately we can't use dynamical_time because we are doing this for a single data output
+            # and want to get WD and SN remnant stars binned appropriately, but their dynamical_time values change
+            # when they form...
+            lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
+            death_time = t_form + lifetime
+
+            stats_array_dict = {}
+            for abundance in aratios.keys():
+                stats_array_dict[abundance] = {}
+                for k in stats.keys():
+                    stats_array_dict[abundance][k] = np.zeros(np.size(tbins) - 1)
+            for i in np.arange(np.size(tbins)-1):
+                not_empty = False
+
+                for abundance in aratios.keys():
+                    if i == 0:
+                        sub_g = g.create_group(abundance)
+
+                    if not( not_empty): # if empty, check if still empty
+                        not_empty = np.sum(hist[:i+1]) > 0
+
+                    if not_empty:
+                        selection = (t_form <= tbins[i]) + (death_time >= tbins[i])
+                        stats = utilities.compute_stats(aratios[abundance][selection], return_dict = True) # +1 b/c index starts at 1
+                        for k in stats.keys():
+                            stats_array_dict[abundance][k][i] = stats[k]
+                    else:
+                        for k in stats.keys():
+                            stats_array_dict[abundance][k][i] = None
+
+            for abundance in aratios.keys():
+                g = hf[groupname + '/statistics/cumulative/' + abundance]
+                for k in stats_array_dict[abundance].keys():
+                    g.create_dataset(k, data = stats_array_dict[abundance][k])
+
+            # now bin by times (using various dt) to get instantaneous median and spread in SF
+            # at any given point in time. This is NOT an observational quantity, but rather a theoretical
+            # bit of information to understand how much formed stars vary in abundance ratio at any
+            # given point in time (i.e. this is the stellar analog to the gas version of these plots)
+            for dt in [0.1, 1, 10]:
                 g = statgroup.create_group('%iMyr'%(dt))
                 t  = ds.current_time.convert_to_units('Myr').value
                 tmax = np.around(t, decimals = -len(str(dt)) + 1)
@@ -589,7 +641,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                         if i == 0:
                             sub_g = g.create_group(abundance)
                         if hist[i] > 0:
-                            stats = utilities.compute_stats(aratios[abundance][index == i+1], return_dict = True)
+                            stats = utilities.compute_stats(aratios[abundance][index == i+1], return_dict = True) # +1 b/c index starts at 1
                             for k in stats.keys():
                                 stats_array_dict[abundance][k][i] = stats[k]
                         else:
@@ -648,7 +700,7 @@ if __name__=='__main__':
     gal = Galaxy(dsnames[-1])
     del(gal)
 
-    generate_abundances(ds_list = ds_list, overwrite = False)
+    generate_abundances(ds_list = ds_list, overwrite = True)
 
     plot_MDF(ds_list = dsnames)
     plot_abundances(ds_list = dsnames, plot_type = 'standard', color_by_age = True, show_average = True)
