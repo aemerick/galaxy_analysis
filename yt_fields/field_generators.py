@@ -367,22 +367,22 @@ def generate_stellar_model_fields(ds):
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
     #
 
-    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1']
+    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1', 'lifetime']
 
     units = {'luminosity' : yt.units.erg/yt.units.s,
              'L_FUV' : yt.units.erg/yt.units.s,
              'L_LW'  : yt.units.erg/yt.units.s,
              'Q0' : 1.0 /yt.units.s, 'Q1' : 1.0 / yt.units.s,
-             'E0' : yt.units.eV, 'E1' : yt.units.eV}
+             'E0' : yt.units.eV, 'E1' : yt.units.eV, 'lifetime' : yt.units.s}
 
     unit_label = {'luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
-                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg'}
+                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 's'}
 
     def _function_generator(field_name):
         def _function(field, data):
             if np.size(data['particle_mass']) == 1:
                 # this is ugly, but a way to bypass yt's validation step
-                # and the fact that the below will print errors during this
+                # because throwing junk values into the routine below will cause problems
                 with utilities.nostdout():
                     p = star_analysis.get_star_property(ds, data, property_names = [field_name],
                                                             dummy_call = True)
@@ -412,6 +412,7 @@ def generate_stellar_model_fields(ds):
         t = data.ds.current_time
 
         return (t - p).convert_to_units('Myr')
+
 
     for field in field_names:
         yt.add_field(('io', 'particle_model_' + field),
