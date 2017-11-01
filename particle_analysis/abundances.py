@@ -582,7 +582,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             # and want to get WD and SN remnant stars binned appropriately, but their dynamical_time values change
             # when they form...
             lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
-            death_time = t_form + lifetime
+            age      = t - t_form
 
             stats_array_dict = {}
             for abundance in aratios.keys():
@@ -590,17 +590,14 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                 for k in stats.keys():
                     stats_array_dict[abundance][k] = np.zeros(np.size(tbins) - 1)
             for i in np.arange(np.size(tbins)-1):
-                not_empty = False
 
+                age = tbins[i] - t_form
+                selection = (age >= 0.0)*(age <= lifetime)
                 for abundance in aratios.keys():
                     if i == 0:
                         sub_g = g.create_group(abundance)
 
-                    if not( not_empty): # if empty, check if still empty
-                        not_empty = np.sum(hist[:i+1]) > 0
-
-                    if not_empty:
-                        selection = (t_form <= tbins[i]) + (death_time >= tbins[i])
+                    if np.size(age[selection]) > 1:
                         stats = utilities.compute_stats(aratios[abundance][selection], return_dict = True) # +1 b/c index starts at 1
                         for k in stats.keys():
                             stats_array_dict[abundance][k][i] = stats[k]
