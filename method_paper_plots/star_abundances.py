@@ -1,7 +1,7 @@
 from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 import glob
-#import deepdish as dd
+import deepdish as dd
 import yt
 from galaxy_analysis.utilities import utilities
 import numpy as np
@@ -147,55 +147,72 @@ def plot_time_evolution():
     Make a panel plot of the time evolution of all elemental abundance ratios
     with respect to both H and Fe (as separate plots)
     """
+    filename = workdir + '/abundances/abundances/abundances.h5'
 
-    hdf5_data   = h5py.File(workdir + '/abundances/abundances/abundances.h5', 'r')
+    hdf5_data   = h5py.File(filename, 'r')
     dfiles = hdf5_data.keys()
     dfile  = dfiles[-1]  # do this with most recent data file
 
-    data = dd.io.load(filename, '/' + dfile)
+    data = dd.io.load(filename, '/' + str(dfile))
     elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
     elements = elements + ['alpha']
 
-    for base in ['H','Fe']:
-        fig, ax = plt.subplots(4,4, sharex = True, sharey = True)
 
-        i,j = 0,0
-        for e in elements:
-            if (base == e):
-                continue
-            print "plotting " + e + "/" + base + " time evolution"
-            index = (i,j)
+    for time_type in ['cumulative','10Myr']:
+        for base in ['H','Fe']:
+            fig, ax = plt.subplots(4,4, sharex = True, sharey = True)
+            fig.set_size_inches(6*4+1,6*4+1)
+            fig.subplots_adjust(hspace=0.0, wspace = 0.0)
 
-            t  = data['statistics']['10Myr']['bins']
-            y  = data['statistics']['10Myr'][e][base]['median']
-            Q1 = data['statistics']['10Myr'][e][base]['Q1']
-            Q3 = data['statistics']['10Myr'][e][base]['Q3']
-            select = (y*0 == 0) # remove nan values
 
-            t  = t[select]
-            t  = t - t[0]
+            i,j = 0,0
+            for e in elements:
+                if (base == e):
+                    continue
+                print "plotting " + e + "/" + base + " time evolution"
+                index = (i,j)
 
-            ax[index].plot( t, y[select], lw = line_width, ls = '-', color = 'black', label = r' ' + e +' ')
-            ax[index].fill_between(t, Q1[select], Q3[select], color = 'black', alpha = 0.5, lw = 0.5 * line_width)
-            ax[index].plot( [np.min(t),np.max(t)], [0.0,0.0], ls = ':', color = 'black', lw = line_width)
-            ax[index].leged(loc = 'upper right')
+                t  = data['statistics'][time_type]['bins']
+                y  = data['statistics'][time_type][e][base]['median']
+                Q1 = data['statistics'][time_type][e][base]['Q1']
+                Q3 = data['statistics'][time_type][e][base]['Q3']
+                select = (y*0 == 0) # remove nan values
 
-            i = i + 1
-            if i >= 4:
-                i = 0
+                t  = t[select]
+                t  = t - t[0]
+
+                ax[index].plot( t, y[select], lw = line_width, ls = '-', color = 'black', label = r' ' + e +' ')
+                ax[index].fill_between(t, Q1[select], Q3[select], color = 'black', alpha = 0.5, lw = 0.5 * line_width)
+                ax[index].set_xlim(0.0, np.max(t))
+                ax[index].plot( [0.0,1000.0], [0.0,0.0], ls = ':', color = 'black', lw = line_width)
+                ax[index].legend(loc = 'upper right')
+
                 j = j + 1
+                if j >= 4:
+                    j = 0
+                    i = i + 1
 
-        for i in np.arange(4):
-            ax[(3,i)].set_xlabel(r'Time (Myr)')
-            ax[(i,0)].set_ylabel(r'[X/' + base +']')
+            for i in np.arange(4):
+                ax[(3,i)].set_xlabel(r'Time (Myr)')
+                ax[(i,0)].set_ylabel(r'[X/' + base +']')
 
-            if base == 'H':
-                ax[(i,0)].set_ylim(-12, -1)
-            elif base == 'Fe':
-                ax[(i,0)].set_ylim(-3.25, 3.25)
+                if base == 'H':
+                    ax[(i,0)].set_ylim(-12.25, 0.125)
+                elif base == 'Fe':
+                    ax[(i,0)].set_ylim(-3.25, 3.25)
 
-        fig.savefig('stellar_x_over_' + base + '_evolution.png')
-        plt.close()
+#            for j in np.arange(3):
+#                ax[(j,i)].set_xticklabels([])
+#                ax[(i,j+1)].set_yticklabels([])
+#            ax[(3,i)].set_xticklabels(np.arange(0,np.max(t)+20,20))
+#            if base == 'Fe':
+#                ax[(i,0)].set_yticklabels([-3,-2,-1,0,1,2,3,])
+#            else:
+#                ax[(i,0)].set_yticklabels([-12, -10, -8, -6, -4, -2, 0])
+
+            plt.minorticks_on()
+            fig.savefig('stellar_x_over_' + base + '_' + time_type +'_evolution.png')
+            plt.close()
 
     return
 
