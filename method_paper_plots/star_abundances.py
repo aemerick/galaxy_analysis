@@ -10,7 +10,7 @@ from matplotlib.ticker import NullFormatter
 from galaxy_analysis.analysis import Galaxy
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+import h5py
 
 # grab the most recent file
 workdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
@@ -142,8 +142,68 @@ def plot_alpha_vs_fe_with_histograms():
 
     return
 
+def plot_time_evolution():
+    """
+    Make a panel plot of the time evolution of all elemental abundance ratios
+    with respect to both H and Fe (as separate plots)
+    """
+
+    hdf5_data   = h5py.File(workdir + '/abundances/abundances/abundances.h5', 'r')
+    dfiles = hdf5_data.keys()
+    dfile  = dfiles[-1]  # do this with most recent data file
+
+    data = dd.io.load(filename, '/' + dfile)
+    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = elements + ['alpha']
+
+    for base in ['H','Fe']:
+        fig, ax = plt.subplots(4,4, sharex = True, sharey = True)
+
+        i,j = 0,0
+        for e in elements:
+            if (base == e):
+                continue
+            print "plotting " + e + "/" + base + " time evolution"
+            index = (i,j)
+
+            t  = data['statistics']['10Myr']['bins']
+            y  = data['statistics']['10Myr'][e][base]['median']
+            Q1 = data['statistics']['10Myr'][e][base]['Q1']
+            Q3 = data['statistics']['10Myr'][e][base]['Q3']
+            select = (y*0 == 0) # remove nan values
+
+            t  = t[select]
+            t  = t - t[0]
+
+            ax[index].plot( t, y[select], lw = line_width, ls = '-', color = 'black', label = r' ' + e +' ')
+            ax[index].fill_between(t, Q1[select], Q3[select], color = 'black', alpha = 0.5, lw = 0.5 * line_width)
+            ax[index].plot( [np.min(t),np.max(t)], [0.0,0.0], ls = ':', color = 'black', lw = line_width)
+            ax[index].leged(loc = 'upper right')
+
+            i = i + 1
+            if i >= 4:
+                i = 0
+                j = j + 1
+
+        for i in np.arange(4):
+            ax[(3,i)].set_xlabel(r'Time (Myr)')
+            ax[(i,0)].set_ylabel(r'[X/' + base +']')
+
+            if base == 'H':
+                ax[(i,0)].set_ylim(-12, -1)
+            elif base == 'Fe':
+                ax[(i,0)].set_ylim(-3.25, 3.25)
+
+        fig.savefig('stellar_x_over_' + base + '_evolution.png')
+        plt.close()
+
+    return
+
+
 if __name__ == '__main__':
-    plot_alpha_vs_fe_with_histograms()
+    plot_time_evolution()
+
+#    plot_alpha_vs_fe_with_histograms()
 
 #    plot_alpha_vs_fe()
 

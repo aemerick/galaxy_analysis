@@ -29,6 +29,7 @@ import itertools
 from galaxy_analysis.plot.plot_styles import *
 from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities
+from galaxy_analysis.analysis import Galaxy
 from astroML.density_estimation import bayesian_blocks, knuth_bin_width
 
 def compute_aratio(ds, data, ratios, particle_type = 11):
@@ -64,15 +65,20 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
             print "Must provide abundance ratio string of style: Fe/H"
             return
 
-        enzo_name1 = ('io','particle_' + ele1 + '_fraction')
-        enzo_name2 = ('io','particle_' + ele2 + '_fraction')
+        if ele1 == ele2:
+            continue
 
-        mass1 = data[enzo_name1][select] * birth_mass
-        mass2 = data[enzo_name2][select] * birth_mass
-
-        aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1),
-                                                             (ele2, mass2),
-                                                             'mass' )
+        aratios[ratio] = data[('io','particle_' + ele1 + '_over_' + ele2)][select]
+#
+#        enzo_name1 = ('io','particle_' + ele1 + '_fraction')
+#        enzo_name2 = ('io','particle_' + ele2 + '_fraction')
+#
+#        mass1 = data[enzo_name1][select] * birth_mass
+#        mass2 = data[enzo_name2][select] * birth_mass
+#
+#        aratios[ratio] = convert_abundances.abundance_ratio( (ele1, mass1),
+#                                                             (ele2, mass2),
+#                                                             'mass' )
     return aratios
 
 def plot_acf(h5file = 'abundances.h5', dir = './abundances/', ds_list = None):
@@ -161,16 +167,17 @@ def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
     if plot_type == 'standard':
         denom = 'Fe'
 
-    for dsname in ds_list:
+    for dsname in [ ds_list[-1] ]:
 
         # make one plot for each file
         t  = hf[dsname]['Time'].value
-        t  = t - t[0]
+        t  = t # - t[0]
         ns = hf[dsname]['Nstars'].value
         ms = hf[dsname]['Mstars'].value
 
         abund    = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He'))])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He') and (not 'alpha' in x))])
+        elements = elements + ['alpha']
         nabundances = len(elements)
 
         for dt in [10, 20, 50]:
@@ -261,7 +268,8 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2)])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
+        elements = elements + ['alpha']
         nabundances = len(elements)
 
         outname = dir + dsname + '_abundances.png'
@@ -397,7 +405,8 @@ def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'stand
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2)])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
+        elements = elements + ['alpha']
         nabundances = len(elements)
 
         outname = dir + dsname + '_MDF.png'
@@ -440,7 +449,7 @@ def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'stand
     return
 
 
-def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwrite = False):
+def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abundances/', overwrite = False):
     """
     Function to generate hdf5 output file containing abundance ratios for all metal
     species in all main sequence stars in all data sets in the given directory.
@@ -459,14 +468,19 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
     else:
         hf = h5py.File(dir + outfile, 'a')
 
-    ds_list = np.sort( glob.glob('./DD????/DD????') )
-    times   = np.zeros(np.size(ds_list))
+    if ds_list is None:
+        ds_list = np.sort( glob.glob('./DD????/DD????') )
+        times   = np.zeros(np.size(ds_list))
+    elif (not (type(ds_list) is list)):
+        # assume a single string passed
+        ds_list = [ds_list]
 
     # get elements present:
     ds              = yt.load(ds_list[-1])
     fields          = ds.field_list
     elements = utilities.species_from_fields(fields, include_primordial=True)
     metals   = [x for x in elements if (x != 'H' and x != 'He')]
+    metals   = metals + ['alpha', 'alpha_5'] # add these two by hand for aggregate metal abundances
     ratios   = [ x +'/H' for x in metals]
 
     if 'Mg' in metals:
@@ -626,9 +640,20 @@ def generate_abundances(outfile = 'abundances.h5', dir = './abundances/', overwr
 
 if __name__=='__main__':
 
-    generate_abundances()
-    plot_MDF()
-    plot_abundances(plot_type = 'standard', color_by_age = True, show_average = True)
-    plot_time_evolution(show_quartile=False)
-#    plot_acf()
+    ds_list = np.sort(glob.glob("DD????/DD????"))
+    ds_list = [ds_list[-1]] # just do most recent file
+    dsnames = [x.split('/DD')[0] for x in ds_list]
+
+
+    gal = Galaxy(dsnames[-1])
+    del(gal)
+
+    generate_abundances(ds_list = ds_list, overwrite = False)
+
+    plot_MDF(ds_list = dsnames)
+    plot_abundances(ds_list = dsnames, plot_type = 'standard', color_by_age = True, show_average = True)
+    plot_time_evolution(ds_list = dsnames, show_quartile=True)
+
+
+#    plot_acf() - computeation of ACF currently broken (see global shutoff parameter)
 

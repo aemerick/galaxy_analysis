@@ -14,16 +14,22 @@ data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                  tmin=0.0,tmax=1000)
 # pre-load all the data
 _all_data = {}
+_all_meta_data = {}
 for i,k in enumerate(data_list):
     try:
-        _all_data[k] = dd.io.load(k, '/observables')
+        _all_data[k]  = dd.io.load(k, '/observables')
+        _all_meta_data[k]  = dd.io.load(k, '/meta_data')
     except:
         print 'skipping data entry ', i, k
 
 # gather all data so it can be readily plotted
 all_data = {}
+all_meta_data = {}
 for k in _all_data[ _all_data.keys()[0] ].keys():
-    all_data[k] = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
+    all_data[k]      = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
+
+for k in _all_meta_data[ _all_meta_data.keys()[0] ].keys():
+    all_meta_data[k] = utilities.extract_nested_dict_asarray(_all_meta_data, [k], self_contained=True)
 
 #
 # Adjust things for now - scaling r to 1/2 of original
@@ -164,5 +170,34 @@ ax.set_xticks([])
 ax.set_yticks([])
 #plt.tight_layout()
 fig.savefig('overplot_roychowdhury_2017_f2_disk.png')
+plt.close()
+
+#
+# Overplot HI mass and SFR plot for Rpychowdhury F10
+#
+x0 = (-4, 247.8)
+x1 = (-3, 481.0)
+y0 = (7, 410.2)
+y1 = (8, 167.2)
+
+fig = plt.figure()
+ax  = fig.add_axes([0.,0.,1.,1.,])
+ax.set_xticks([])
+ax.set_yticks([])
+
+p_x,p_y = utilities.map_to_pixels(x0,x1,y0,y1)
+img = mpimg.imread('roychowdhury_2014_f10.png')
+img_size = np.shape(img)
+dpi = 80.0
+
+fig.set_size_inches(img_size[1] / dpi, img_size[0] / dpi)
+ax.imshow(img)
+
+ax.scatter( p_x(np.log10(all_meta_data['SFR'])), p_y(np.log10(all_meta_data['M_HI'])),
+                             c = times, cmap = 'viridis', s = psize, alpha = 0.75)
+ax.set_xticks([])
+ax.set_yticks([])
+#plt.tight_layout()
+fig.savefig('overplot_roychowdhury_2014_f10_disk.png')
 plt.close()
 
