@@ -443,6 +443,16 @@ def generate_stellar_model_fields(ds):
     unit_label = {'luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
                   'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 's'}
 
+    overload_type = {} # when generating stars, default is use type from simulation
+    for k in units.keys():
+        overload_type[k] = None # keep simulation type when making stars for all fields
+
+    overload_type['lifetime'] = 11 # lifetime field will now be the lifetime of the original MS star
+                                   # and NOT the lifetime from the simulation --- this is done by
+                                   # overloading the particle type to 11, or main sequence. This is
+                                   # also more useful, as the field would just be redundant
+                                   # info if this isn't done. See star_analysis code.
+
     def _function_generator(field_name):
         def _function(field, data):
             if np.size(data['particle_mass']) == 1:
@@ -450,9 +460,10 @@ def generate_stellar_model_fields(ds):
                 # because throwing junk values into the routine below will cause problems
                 with utilities.nostdout():
                     p = star_analysis.get_star_property(ds, data, property_names = [field_name],
-                                                            dummy_call = True)
+                                                            dummy_call = True, overload_type = None)
             else:
-                p = star_analysis.get_star_property(ds, data, property_names = [field_name])
+                p = star_analysis.get_star_property(ds, data, property_names = [field_name],
+                                                        overload_type = overload_type[field_name] )
             p = p * units[field_name]
 
             return p

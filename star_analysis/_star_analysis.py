@@ -10,7 +10,7 @@ from onezone.star import Star, StarList
 
 __all__ = ['get_list_of_stars', 'get_star_property', 'Star', 'StarList']
 
-def get_list_of_stars(ds, data, dummy_call = False):
+def get_list_of_stars(ds, data, dummy_call = False, overload_type = None):
 
     types = {11 : 'star', 12 : 'WD', 13 : 'remnant', 1 : 'N/A'}
 
@@ -18,7 +18,13 @@ def get_list_of_stars(ds, data, dummy_call = False):
     Z      = data['metallicity_fraction'].value
     t_form = data['creation_time'].convert_to_units('Myr').value
     id     = data['particle_index'].value
-    PT     = np.abs( data['particle_type'].value )
+
+    if overload_type is None:
+        PT     = np.abs( data['particle_type'].value )
+    elif overload_type in [11,12,13]:
+        PT = np.ones(np.size(M)) * overload_type
+    else: # if True or rando value, assume MS
+        PT = np.ones(np.size(M)) * 11
 
     yield_names = util.species_from_fields(ds.field_list, include_primordial=True)
     yield_names = ['m_tot','m_metal'] + yield_names
@@ -48,7 +54,8 @@ def get_list_of_stars(ds, data, dummy_call = False):
 
     for i, s in enumerate(star_list):
         s.M = M[i]
-        s.properties['lifetime'] = lifetime[i]
+        if overload_type is None: # use actual lifetimes from the simulation
+            s.properties['lifetime'] = lifetime[i]
         s.set_SNII_properties()
         if ((s.M_o > ds.parameters['IndividualStarSNIaMinimumMass']) and\
             (s.M_o < ds.parameters['IndividualStarSNIaMaximumMass']) and\
@@ -59,7 +66,7 @@ def get_list_of_stars(ds, data, dummy_call = False):
 
     return AllStars
 
-def get_model_yields(ds, data, AllStars = None, sum_only = True):
+def get_model_yields(ds, data, AllStars = None, sum_only = True, overload_type = None):
     """
     Using a provided list of model stars ("AllStars"), or using a generated
     list of model stars, computes the model yields for each species and
@@ -67,7 +74,7 @@ def get_model_yields(ds, data, AllStars = None, sum_only = True):
     """
 
     if AllStars is None:
-        AllStars = get_list_of_stars(ds, data)
+        AllStars = get_list_of_stars(ds, data, overload_type = overload_type)
 
     # now extract all of the yields into a dictionary of arrays
     total_wind_ejecta = {}
@@ -115,13 +122,13 @@ def get_model_yields(ds, data, AllStars = None, sum_only = True):
     return all_ejecta, model_wind_ejecta, model_sn_ejecta
 
 def get_star_property(ds, data, AllStars = None, property_names = None,
-                      dummy_call = False):
+                      dummy_call = False, overload_type = None):
     """
 
     """
 
     if AllStars is None:
-        AllStars = get_list_of_stars(ds, data, dummy_call = dummy_call)
+        AllStars = get_list_of_stars(ds, data, dummy_call = dummy_call, overload_type = overload_type)
 
     single_field = False
 
