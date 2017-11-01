@@ -438,10 +438,10 @@ def generate_stellar_model_fields(ds):
              'L_FUV' : yt.units.erg/yt.units.s,
              'L_LW'  : yt.units.erg/yt.units.s,
              'Q0' : 1.0 /yt.units.s, 'Q1' : 1.0 / yt.units.s,
-             'E0' : yt.units.eV, 'E1' : yt.units.eV, 'lifetime' : yt.units.s}
+             'E0' : yt.units.eV, 'E1' : yt.units.eV, 'lifetime' : yt.units.Myr}
 
     unit_label = {'luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
-                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 's'}
+                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 'Myr'}
 
     overload_type = {} # when generating stars, default is use type from simulation
     for k in units.keys():
