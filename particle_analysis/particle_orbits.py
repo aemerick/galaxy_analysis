@@ -63,6 +63,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
         all_times[:np.size(times)] = times
 
     for i,d in enumerate(dnames):
+        print data_files[i]
         ds  = yt.load( data_files[i] )
         data = ds.all_data()
         t   = ds.current_time.convert_to_units("Myr").value
@@ -72,15 +73,16 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
 
         all_times[i] = t
 
-        for di,p in enumerate(data['particle_index'].value):
-            j = 0
-            for coord in ['x','y','z']:
-                orbit_data['particles'][p][coord][i] = 1.0*(data['particle_position_' + coord][di] - ds.domain_center[j]).convert_to_units('pc').value
-                orbit_data['particles'][p]['v' + coord][i] = 1.0*(data['particle_velocity_'+coord][di].convert_to_units('km/s').value)
-                j = j + 1
+        if ds.parameters['NumberOfParticles'] > 0:
+            for di,p in enumerate(data['particle_index'].value):
+                j = 0
+                for coord in ['x','y','z']:
+                    orbit_data['particles'][p][coord][i] = 1.0*(data['particle_position_' + coord][di] - ds.domain_center[j]).convert_to_units('pc').value
+                    orbit_data['particles'][p]['v' + coord][i] = 1.0*(data['particle_velocity_'+coord][di].convert_to_units('km/s').value)
+                    j = j + 1
 
-            orbit_data['particles'][p]['M'][i]   = 1.0*data['particle_mass'][di].convert_to_units('Msun').value
-            orbit_data['particles'][p]['pt'][i]  = 1.0*data['particle_type'][di].value
+                orbit_data['particles'][p]['M'][i]   = 1.0*data['particle_mass'][di].convert_to_units('Msun').value
+                orbit_data['particles'][p]['pt'][i]  = 1.0*data['particle_type'][di].value
 
     orbit_data['times'] = all_times
 
@@ -90,7 +92,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
 
 
 def plot_orbit_evolution(wdir = '.', filename = 'orbit.h5',
-                         dt = 1.0):
+                         dt = 0.1):
 
     data  = dd.io.load(wdir + '/' + filename)
 
@@ -99,6 +101,9 @@ def plot_orbit_evolution(wdir = '.', filename = 'orbit.h5',
 
     plot_times = np.arange(np.min(times), np.max(times) + dt*0.5, dt)
     n_particles = np.size(pid)
+    angle  = 0.0
+    dtheta = (10.0 / 1.0) * dt # 10 deg per million years
+
     for plot_i, t in enumerate(plot_times):
 
         all_x = np.array([-1E99] * n_particles)
@@ -115,18 +120,24 @@ def plot_orbit_evolution(wdir = '.', filename = 'orbit.h5',
                 all_y[i] =  np.interp( t, times[select], y[select])
                 all_z[i] =  np.interp( t, times[select], z[select])
 
+
+        angle = angle + dtheta
+        if angle > 360:
+            angle = angle - 360
+
         fig = plt.figure()
         ax  = fig.add_subplot(111,projection='3d')
-        fig.set_size_inches(6,6)
-        ax.scatter(all_x, all_y, all_z, s = 10, alpha = 0.75, color = 'black')
+        fig.set_size_inches(8,8)
+        ax.scatter(all_x, all_y, all_z, s = 2, alpha = 0.5, color = 'black')
         ax.set_xlim(-500,500); ax.set_ylim(-500,500); ax.set_zlim(-500,500)
         plt.minorticks_on()
         ax.set_xlabel(r'x (pc)'); ax.set_ylabel(r'y (pc)'); ax.set_zlabel(r'z (pc)')
+        ax.view_init(30, angle)
         fig.savefig("orbit/%00004i_orbit.png"%(plot_i))
         plt.close()
 
     return
 
 if __name__ == "__main__":
-#    generate_dataset()
+    generate_dataset()
     plot_orbit_evolution()
