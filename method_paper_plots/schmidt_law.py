@@ -23,7 +23,10 @@ all_data = {}
 for k in _all_data[ _all_data.keys()[0] ].keys():
     all_data[k] = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
 
-#print all_data['r_sf']
+print all_data['r_sf']
+print np.median(all_data['r_sf'])
+print np.max(all_data['r_sf'])
+print np.min(all_data['r_sf'])
 
 times = times - times[0]
 #
