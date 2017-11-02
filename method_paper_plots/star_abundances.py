@@ -352,8 +352,117 @@ def plot_time_evolution():
 
     return
 
+def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
+    filename = workdir + '/abundances/abundances/abundances.h5'
+
+    hdf5_data   = h5py.File(filename, 'r')
+    dfiles = hdf5_data.keys()
+    dfile  = dfiles[-1]  # do this with most recent data file
+
+    data = dd.io.load(filename, '/' + str(dfile))
+    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = elements + ['alpha']
+    age = data['Time'] - data['creation_time'] # age of all particles in this data set
+
+    # --------------------
+    check_elements = [x for x in elements if (not (x in [X,A,B,C]))]
+    if len(check_elements) > 0:
+        print check_elements, " not in elements list"
+        print "available: ", elements
+        raise ValueError
+
+    sep = 0.02
+    left, width = 0.125, 0.65
+    bottom, height = 0.1, 0.65
+    left_h = left + width + sep
+    bottom_h = bottom + height + sep
+
+    rect_scatter = [left,bottom,width,height]
+#    rect_colorbar =
+#    rect_histx   = [left, bottom_h, width, 0.95 - bottom_h - (left-bottom)]
+#    rect_histy   = [left_h, bottom, 0.95 - left_h, height]
+
+#    fig,ax = plt.subplots()
+    fig = plt.figure(1, figsize=(8,8))
+#    fig.set_size_inches(8,8)
+
+    ax_scatter = plt.axes(rect_scatter)
+#    ax_hist_x  = plt.axes(rect_histx)
+#    ax_hist_y  = plt.axes(rect_histy)
+#    ax_color   = plt.axes(rect_colorbar)
+
+    x_values  = data['abundances'][B][C]
+    y_values  = data['abundances'][X][A]
+
+    age = age - np.min(age) # normalize
+
+    # scatter plot
+    p = ax_scatter.scatter(x_values, y_values
+                  s = point_size, lw = 2, c = age, cmap = 'plasma_r', alpha = 0.75)
+    p.set_clim([0.0, np.max(age)])
+
+    cb = fig.colorbar(p, ax = ax_scatter, orientation = 'horizontal', pad = 0.125, fraction = 0.046,
+                         aspect = 40)
+    cb.set_label(r'Stellar Age (Myr)')
+#
+#
+#
+    ax_scatter.set_xlim(-9,-1)
+    ax_scatter.set_ylim(-1.75,1.75)
+    ax_scatter.tick_params(axis='x',which='minor',bottom='on')
+    ax_scatter.tick_params(axis='y',which='minor',bottom='on')
+
+    ax_scatter.set_xlabel(r'log([' + B + '/' + C + '])')
+    ax_scatter.set_ylabel(r'log([' + X + '/' + A + '])')
+    plt.minorticks_on()
+
+    #
+    # find main plot and construct histograms
+    #
+    divider = make_axes_locatable(ax_scatter)
+    left, bottom, width, height  = divider.get_position()
+#    width, height = divider.get_horizontal(), divider.get_vertical()
+    sep = 0.01
+    thickness = np.min( np.array([0.95 - left - width - sep, 0.95 - bottom - height - sep]))
+    rect_histx = [left, bottom + height + sep, width, thickness]
+    rect_histy = [left + width + sep, bottom, thickness, height]
+    ax_hist_x  = plt.axes(rect_histx)
+    ax_hist_y  = plt.axes(rect_histy)
+
+    # construct the histogram for the horizontal axis (goes up top)
+    nbins = 100
+    hist,bins = np.histogram(x_values, bins = nbins)
+    weights   = np.ones(np.size(x_values)) * (1.0 / (1.0*np.max(hist)))
+    ax_hist_x.hist(x_values, color = 'C0', bins = nbins, weights = weights)
+#    plot_histogram(ax_hist_x, bins, hist / (1.0*np.max(hist)), color = 'black')
+    plt.minorticks_on()
+#    hist,bins = np.histogram(alpha, bins = 24)
+#    plot_histogram(ax_hist_y, bins, hist / (1.0*np.max(hist)), color = 'black', orientation = 'horizontal')
+
+    # now do the same for the vertical axis histogram
+    nbins = 50
+    hist,bins = np.histogram(y_values, bins = nbins)
+    weights = np.ones(np.size(y_values)) * (1.0 / (1.0*np.max(hist)))
+    ax_hist_y.hist(alpha, orientation='horizontal', color = 'C0', bins = nbins, weights = weights)
+
+    ax_hist_x.xaxis.set_major_formatter(NullFormatter())
+    ax_hist_y.yaxis.set_major_formatter(NullFormatter())
+    ax_hist_x.set_xlim(ax_scatter.get_xlim())
+    ax_hist_y.set_ylim(ax_scatter.get_ylim())
+    ticks = [0.0,0.25,0.5,0.75,1.0]
+    ax_hist_x.set_yticks(ticks)
+    ax_hist_y.set_xticks(ticks)
+    ax_hist_y.set_xticklabels(ticks, rotation = 270)
+
+    plt.minorticks_on()
+#    plt.tight_layout()
+    fig.savefig(X + '_over_' + A + '_vs_' + B + '_over_' + C + '_hist.png')
+
+    return
 
 if __name__ == '__main__':
+    plot_ratios_with_histograms('C','O','Fe','H') # C/O vs Fe/H
+    
     plot_panel()
 
     plot_MDF()
