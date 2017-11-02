@@ -492,6 +492,15 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
     if 'Fe' in metals:
         ratios = ratios + [ x + '/Fe' for x in metals]
 
+    if 'O' in metals:
+        ratios = ratios + [ x + '/O' for x in metals]
+
+    if 'C' in metals:
+        ratios = ratios + [ x + '/C' for x in metals]
+
+#    if 'alpha' in metals:
+#        ratios = ratios + [ x + '/alpha' for x in metals]
+
     for i, dsname in enumerate(ds_list):
         ds   = yt.load(dsname)
         data = ds.all_data()
