@@ -335,7 +335,7 @@ def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type =
 
     return
 
-def single_MDF(x, bins = None, norm = 'peak', ax = None):
+def single_MDF(x, bins = None, norm = 'peak', ax = None, label = True, **kwargs):
 
     if bins is None:
         bins = np.linspace(np.min(x), np.max(x), 50)
@@ -348,18 +348,21 @@ def single_MDF(x, bins = None, norm = 'peak', ax = None):
 
     if norm == 'fraction':
         A = 1.0 / (1.0 * np.sum(hist))
-        ax.set_ylabel(r'N / N$_{\rm total}$')
+        if label:
+            ax.set_ylabel(r'N / N$_{\rm total}$')
     elif norm == 'peak':
         max = np.max( [np.max(hist), 1.0] )
         A = 1.0 / (1.0 * max)
-        ax.set_ylabel(r'N / N$_{\rm max}$')
+        if label:
+            ax.set_ylabel(r'N / N$_{\rm max}$')
         ax.set_ylim(0,1)
     elif norm == 'PDF':
         A = 1.0 / (bins[1:] - bins[:-1])
-        ax.set_ylabel(r'PDF')
+        if label:
+            ax.set_ylabel(r'PDF')
 
     y = hist * A
-    plot_histogram(ax, bins, y)
+    plot_histogram(ax, bins, y, **kwargs)
 
     if not (fig is None):
         fig.set_size_inches(8,8)
