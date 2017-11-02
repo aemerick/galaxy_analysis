@@ -50,6 +50,9 @@ def _abundance_function_generator(asym):
 
         return _abundance
 
+    if not ('H' in asym):
+        asym = asym + ['H']
+
     for a in asym:
         yt.add_field(('gas',a + '_Abundance'), function = return_function(a), units = "")
 
@@ -284,7 +287,6 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     nfields = 0
     for r in ratios:
-
         ele1, ele2 = r.rsplit('/')
 
         field1 = ('io','particle_' + ele1 + '_fraction')
@@ -314,8 +316,9 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
         return _alpha_5_over_x
 
-
-    for x in ['H','Fe','Mg','O','S','Na','Ni']:
+    denoms = [x.split('/')[1] for x in ratios]
+    denoms = np.unique(denoms)
+    for x in denoms:
         yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
         yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
 
@@ -411,14 +414,18 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
                               units = "")
         nfields = nfields + 1
 
-    def _alpha_over_Fe(field,data):
-        alpha = data[('gas','alpha_Abundance')]
-        Fe    = data[('gas','Fe_Abundance')]
+    def _return_alpha_over_x(element_name):
+        def _alpha_over_x(field, data):
+            alpha = data[('gas','alpha_Abundance')]
+            x     = data[('gas',element_name + '_Abundance')]
+            return convert_abundances.abundance_ratio(('alpha',alpha),(element_name,x),'abundances')
 
-        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
+        return _alpha_over_x
 
-    yt.add_field(('gas','alpha_over_Fe'), function = _alpha_over_Fe, units = "")
-
+    denoms = [x.split('/')[1] for x in ratios]
+    denoms = np.unique(denoms)
+    for x in denoms:
+        yt.add_field(('gas','alpha_over_' + x), function = _return_alpha_over_x(x), units = "")
 
     return nfields
 
@@ -725,6 +732,7 @@ def _additional_helper_fields(fields):
 
     yt.add_field(('gas','Pe_heating_rate'), function = _pe_heating_cgs, units = 'erg/s/cm**3')
     yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
+    yt.add_field(('gas','H_Mass'), function = _H_total_mass, units = 'g') # define as same
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
     yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')

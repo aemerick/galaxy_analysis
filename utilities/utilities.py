@@ -484,9 +484,12 @@ def ratios_list(species):
     # remove H and He if they are there
     species = sort_by_anum(species)
     species = [x for x in species if x != 'H' and x != 'He']
+#    if 'C' in species and 'O' in species and 'Mg' in species:
+#        species = species + ['alpha']
 
 
     denominators = sort_by_anum(['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C'])
+    # denominators = denominators + ['alpha']
 
     ratios = []
 
