@@ -179,8 +179,8 @@ def plot_panel(A = 'Fe', B = 'Fe', C = 'H', color = True):
             y = np.array(data['abundances'][e][A])
             x = np.array(data['abundances'][B][C])
 
-            p = ax[index].scatter(x, y,
-                           s = point_size*0.5, lw = 2, c = age, cmap = 'plasma_r', alpha = 0.75)
+            p = ax[index].scatter(x, y, s = point_size*0.5,
+                               lw = 2, c = age, cmap = 'plasma_r', alpha = 0.75)
             p.set_clim([0.0, np.max(age)])
             xy = (0.8,0.8)
             ax[index].annotate(e, xy=xy, xytext=xy, xycoords = 'axes fraction',
@@ -361,11 +361,11 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
 
     data = dd.io.load(filename, '/' + str(dfile))
     elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
-    elements = elements + ['alpha']
+    elements = elements + ['alpha'] + ['H']
     age = data['Time'] - data['creation_time'] # age of all particles in this data set
 
     # --------------------
-    check_elements = [x for x in elements if (not (x in [X,A,B,C]))]
+    check_elements = [x for x in [X,A,B,C] if (not (x in elements))]
     if len(check_elements) > 0:
         print check_elements, " not in elements list"
         print "available: ", elements
@@ -397,7 +397,7 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
     age = age - np.min(age) # normalize
 
     # scatter plot
-    p = ax_scatter.scatter(x_values, y_values
+    p = ax_scatter.scatter(x_values, y_values,
                   s = point_size, lw = 2, c = age, cmap = 'plasma_r', alpha = 0.75)
     p.set_clim([0.0, np.max(age)])
 
@@ -443,7 +443,7 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
     nbins = 50
     hist,bins = np.histogram(y_values, bins = nbins)
     weights = np.ones(np.size(y_values)) * (1.0 / (1.0*np.max(hist)))
-    ax_hist_y.hist(alpha, orientation='horizontal', color = 'C0', bins = nbins, weights = weights)
+    ax_hist_y.hist(y_values, orientation='horizontal', color = 'C0', bins = nbins, weights = weights)
 
     ax_hist_x.xaxis.set_major_formatter(NullFormatter())
     ax_hist_y.yaxis.set_major_formatter(NullFormatter())
@@ -462,7 +462,8 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
 
 if __name__ == '__main__':
     plot_ratios_with_histograms('C','O','Fe','H') # C/O vs Fe/H
-    
+    plot_ratios_with_histograms('alpha','Mg','Mg','H')
+
     plot_panel()
 
     plot_MDF()

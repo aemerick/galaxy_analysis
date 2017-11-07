@@ -369,6 +369,7 @@ class Galaxy(object):
         vel = data[velname].convert_to_units(UNITS['Velocity'].units)
 
         profile = {}
+        profile['mass_profile'] = {} # Bin up the total mass in outflowing material
 
         #
         # Following typical definitions, construct bins to be centered at 
@@ -381,6 +382,7 @@ class Galaxy(object):
 
         for field in fields:
             profile[field] = np.zeros(np.size(center))
+            profile['mass_profile'][field] = np.zeros(np.size(center))
 
         # convert from r_vir to kpc
         center = (center * self.R_vir).convert_to_units('kpc')
@@ -405,6 +407,7 @@ class Galaxy(object):
                 Mdot     = Mdot.convert_to_units('Msun/yr')
 
                 profile[field][i] = Mdot
+                profile['mass_profile'][field][i] = np.sum(M[filter])
 
         #
         # save profiles
@@ -562,11 +565,11 @@ class Galaxy(object):
         self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
         self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
 
-        self.observables['SD_SFR']    = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
-        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+        self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
 
-        self.observables['SD_stellar'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
-        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+        self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
 
 
         return self.observables

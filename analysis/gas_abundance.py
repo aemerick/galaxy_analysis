@@ -409,7 +409,10 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
     nplots      = len(plot_fields)
     nrow, ncol  = utilities.rowcoldict[nplots]
 
-    for dsname in [x for x in all_data.keys() if 'DD' in x]:
+    ds_loop = np.sort([x for x in all_data.keys() if 'DD' in x])
+    ds_loop = [ds_loop[-1]]
+
+    for dsname in ds_loop:
         if (len(glob.glob(dsname + '*_fraction*.png')) > 0) and not overwrite:
             continue # do not remake plots
 
@@ -479,7 +482,11 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
     nplots     = len(plot_fields)
     nrow, ncol = utilities.rowcoldict[nplots]
 
-    for dsname in [x for x in all_data.keys() if 'DD' in x]:
+    # only do most recent
+    ds_loop = np.sort([x for x in all_data.keys() if 'DD' in x])
+    ds_loop = [ds_loop[-1]]
+
+    for dsname in ds_loop:
         if (len(glob.glob(dsname + '*_abundances*.png')) > 0) and not overwrite:
             continue # do not remake plots
 
@@ -655,10 +662,10 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 14)
+    generate_all_stats(overwrite=True, nproc = 14)
+
     plot_time_evolution(abundance=False)
     plot_time_evolution(abundance=True)
-
 
     plot_gas_fractions(overwrite=True, fraction_type = 'volume')
     plot_gas_fractions(overwrite=True, fraction_type = 'mass')
