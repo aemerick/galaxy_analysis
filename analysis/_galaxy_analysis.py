@@ -562,11 +562,11 @@ class Galaxy(object):
         self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
         self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
 
-        self.observables['SD_SFR']    = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
-        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+        self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
 
-        self.observables['SD_stellar'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
-        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+        self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
 
 
         return self.observables
