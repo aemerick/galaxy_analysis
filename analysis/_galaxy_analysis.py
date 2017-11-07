@@ -369,6 +369,7 @@ class Galaxy(object):
         vel = data[velname].convert_to_units(UNITS['Velocity'].units)
 
         profile = {}
+        profile['mass_profile'] = {} # Bin up the total mass in outflowing material
 
         #
         # Following typical definitions, construct bins to be centered at 
@@ -405,6 +406,7 @@ class Galaxy(object):
                 Mdot     = Mdot.convert_to_units('Msun/yr')
 
                 profile[field][i] = Mdot
+                profile['mass_profile'][field][i] = np.sum(M[filter])
 
         #
         # save profiles
