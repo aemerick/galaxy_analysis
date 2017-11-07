@@ -382,6 +382,7 @@ class Galaxy(object):
 
         for field in fields:
             profile[field] = np.zeros(np.size(center))
+            profile['mass_profile'][field] = np.zeros(np.size(center))
 
         # convert from r_vir to kpc
         center = (center * self.R_vir).convert_to_units('kpc')
