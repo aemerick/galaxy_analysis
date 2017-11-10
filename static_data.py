@@ -266,8 +266,10 @@ UNITS = {'Time': u.Myr, 'Mass' : u.Msun, 'Velocity' : u.km/u.s, 'Length' : u.pc}
 ISM = { "HIM": "(obj['temperature'].in_units('K') >= 10**(5.5))",
         "WIM": "(obj['temperature'].in_units('K') >= 10**(4)) & (obj['temperature'].in_units('K') < 10**(5.5))",
         "WNM": "(obj['temperature'].in_units('K') >= 10**(2)) & (obj['temperature'].in_units('K') < 10**(4))",
-        "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') <= 100)",
-        "Molecular": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') > 100)"}
+#        "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') <= 100)",
+#        "Molecular": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['number_density'].in_units('cm**(-3)') > 100)",
+        "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['H2_fraction'] <= 0.5)",
+        "Molecular" : "(obj['temperature'].in_units('K') < 10**(2)) & (obj['H2_fraction'] > 0.5)"}
 
 # new name to generalize, but leaving ISM for now
 # to keep backwards compatability with existing scripts - Sep 2017
