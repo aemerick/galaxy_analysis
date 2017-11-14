@@ -4,7 +4,11 @@ import matplotlib.image as mpimg
 import deepdish as dd
 from galaxy_analysis.utilities import utilities
 import numpy as np
-psize = 10.0
+psize = 20.0
+
+obs_cmap = 'plasma'
+sim_cmap = 'viridis'
+
 work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 #work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 
@@ -36,7 +40,7 @@ times = times - times[0]
 #
 fig, ax = plt.subplots()
 ax.scatter( np.log10(all_data['SD_HI_sf']), np.log10(all_data['SD_SFR_sf']), label = 'HI Observed', 
-            c = times, cmap = 'viridis')
+            c = times, cmap = sim_cmap)
 ax.set_xlim(-0.5,5.2)
 ax.set_ylim(-5.0, 3.5)
 ax.set_ylabel(r'log($\Sigma_{\rm SFR}$ / (M$_{\odot}$ yr$^{-1}$ kpc$^{-2}$))')
@@ -68,9 +72,9 @@ dpi = 80.0
 fig.set_size_inches(img_size[1]/dpi, img_size[0]/dpi)
 ax.imshow(img)
 ax.scatter( p_x(np.log10(all_data['SD_gas_sf'])), p_y(np.log10(all_data['SD_SFR_sf'])),
-               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
+               c = times, cmap = sim_cmap, s = psize, alpha = 0.75)
 ax.scatter( p_x(np.log10(all_data['SD_gas_sf_obs'])), p_y(np.log10(all_data['SD_SFR_sf'])),
-               c = times, cmap = 'plasma', s = psize, alpha = 0.75)
+               c = times, cmap = obs_cmap, s = psize, alpha = 0.75)
 ax.set_xticks([])
 ax.set_yticks([])
 #plt.tight_layout()
@@ -81,8 +85,8 @@ plt.close()
 
 fig, ax = plt.subplots()
 
-ax.scatter( np.log10(all_data['SD_gas_sf_obs']), np.log10(all_data['SD_SFR_sf']), label = 'HI Observed', c = times, cmap = 'viridis')
-ax.scatter( np.log10(all_data['SD_gas_sf']), np.log10(all_data['SD_SFR_sf']),c = times, cmap = 'plasma', label = 'Total Gass')
+ax.scatter( np.log10(all_data['SD_gas_sf_obs']), np.log10(all_data['SD_SFR_sf']), label = 'HI Observed', c = times, cmap = obs_cmap, s = psize)
+ax.scatter( np.log10(all_data['SD_gas_sf']), np.log10(all_data['SD_SFR_sf']),c = times, cmap = sim_cmap, label = 'Total Gas', s = psize)
 ax.set_xlim(-0.5,5.2)
 ax.set_ylim(-5.0, 3.5)
 ax.set_ylabel(r'log($\Sigma_{\rm SFR}$ / (M$_{\odot}$ yr$^{-1}$ kpc$^{-2}$))')
@@ -123,7 +127,7 @@ teich_SFR = np.array([-2.75,-3.13,-2.99,-2.61,-3.48,-2.97,-3.27,-2.91,-2.54,-3.2
 teich_SFR_error = np.array([0.16,0.16,0.16,0.16,0.17,0.16,0.20,0.16,0.1,0.16,0.16,0.16])
 
 #ax.errorbar(teich_HI, teich_SFR, xerr=teich_HI_error, yerr=teich_SFR_error, color = 'black', lw = 3)
-ax.scatter(teich_HI, teich_SFR, color = 'black', s = 40.0, label = 'Teich et. al. 2016')
+ax.scatter(teich_HI, teich_SFR, color = 'black', marker = 's', s = 40.0, label = 'Teich et. al. 2016')
 
 plt.minorticks_on()
 fig.set_size_inches(8,8)
@@ -138,8 +142,8 @@ plt.close()
 fig, ax = plt.subplots()
 
 x = np.log10(all_data['SD_gas_sf_obs'])
-ax.scatter( x , np.log10(all_data['SD_SFR_sf']) - x - 6, c = times, cmap = 'viridis')
-ax.scatter( np.log10(all_data['SD_gas_sf']) , np.log10(all_data['SD_SFR_sf']) - np.log10(all_data['SD_gas_sf']) - 6, c = times, cmap = 'plasma')
+ax.scatter( x , np.log10(all_data['SD_SFR_sf']) - x - 6, c = times, cmap=obs_cmap, s = psize)
+ax.scatter( np.log10(all_data['SD_gas_sf']) , np.log10(all_data['SD_SFR_sf']) - np.log10(all_data['SD_gas_sf']) - 6, c = times, cmap = sim_cmap, s = psize)
 ax.set_xlim(-0.5,5.2)
 ax.set_ylim(-11.2, -6)
 ax.set_ylabel(r'log(($\Sigma_{\rm SFR}$ / $\Sigma_{\rm gas}$) / yr$^{-1}$)')
@@ -158,7 +162,7 @@ teich_SFE = np.array([-9.40, -9.33, -9.49, -9.03, -10.14, -9.16, -9.59, -9.28, -
 teich_SFE_error = np.array([0.33,0.33,0.31,0.33,0.30,0.32,0.22,0.70,0.26,0.31,0.33,0.32])
 
 #ax.errorbar(teich_HI, teich_SFE, xerr=teich_HI_error, yerr=teich_SFE_error, color = 'black', lw = 3)
-ax.scatter(teich_HI, teich_SFE, color = 'black', s = 40.0, label = 'Teich et. al. 2016')
+ax.scatter(teich_HI, teich_SFE, marker = 's', color = 'black', s = 50.0, label = 'Teich et. al. 2016')
 
 plt.minorticks_on()
 fig.set_size_inches(8,8)
@@ -190,9 +194,9 @@ ax.imshow(img)
 xdata = np.log10(all_data['SD_gas_sf'])
 ydata = np.log10(all_data['SD_SFR_sf']) - xdata - 6
 ax.scatter( p_x(xdata), p_y(ydata),
-               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
+               c = times, cmap = sim_cmap, s = psize, alpha = 0.75)
 ax.scatter( p_x(np.log10(all_data['SD_gas_sf_obs'])), p_y(ydata),
-               c = times, cmap = 'plasma', s = psize, alpha = 0.75)
+               c = times, cmap = obs_cmap, s = psize, alpha = 0.75)
 ax.set_xticks([])
 ax.set_yticks([])
 #plt.tight_layout()
