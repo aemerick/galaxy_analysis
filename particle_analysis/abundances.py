@@ -498,6 +498,9 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
     if 'C' in metals:
         ratios = ratios + [ x + '/C' for x in metals]
 
+    if 'Ba' in metals:
+        ratios = ratios + [ x + '/Ba' for x in metals]
+
 #    if 'alpha' in metals:
 #        ratios = ratios + [ x + '/alpha' for x in metals]
 
@@ -523,10 +526,24 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
 
             MS = data['particle_type'] == 11
 
-            g.create_dataset('Nstars', data = np.size(data['particle_mass'][ MS]))
+            Nstars = np.size(data['particle_mass'][MS])
+            g.create_dataset('Nstars', data = Nstars)
             g.create_dataset('Mstars', data = np.sum( data['particle_mass'][ MS].convert_to_units('Msun').value))
             g.create_dataset('creation_time', data = data['creation_time'][MS].convert_to_units('Myr').value)
             g.create_dataset('birth_mass', data = data['birth_mass'][MS].value)
+            g.create_dataset('metallicity', data = data['metallicity_fraction'][MS].value)
+            spatial = g.create_group('kinematics')
+
+            r  = np.zeros(Nstars)
+            vr = np.zeros(Nstars)
+            for i, xname in enumerate(['x','y','z']):
+                x  = (data['particle_position_' + xname][MS] - ds.domain_center[i]).convert_to_units('pc').value
+                vx = (data['particle_velocity_' + xname][MS]).convert_to_units('km/s').value
+                r  += x**2
+                vr += vx**2
+                spatial.create_dataset( xname, data = x)
+            spatial.create_dataset('r', data = np.sqrt(r))
+            spatial.create_dataset('vr', data = np.sqrt(vr))
 
             sg = hf.create_group(groupname + '/abundances')
             for abundance in aratios.keys():
