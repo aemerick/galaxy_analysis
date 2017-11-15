@@ -1,3 +1,4 @@
+
 from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 "-----------------------------------------"
@@ -66,7 +67,8 @@ def plot_mass_fraction(t, y, std = None):
     ax.set_xlim(0.0, np.max(t-t[0]))
     fig.savefig('phase_mass_fraction_evolution.png')
     ax.set_ylim(1.0E-5, 1.0)
-    ax.semilog_y()
+    ax.semilogy()
+    ax.legend(loc='lower right', ncol=2)
     fig.savefig('phase_mass_fraction_evolution_log.png')
     plt.close()
 
@@ -90,6 +92,7 @@ def plot_volume_fraction(t, y, std = None):
     fig.savefig('phase_volume_fraction_evolution.png')
     ax.set_ylim(1.0E-5, 1.0)
     ax.semilogy()
+    ax.legend(loc='lower right', ncol = 2)
     fig.savefig('phase_volume_fraction_evolution_log.png')
     plt.close()
 

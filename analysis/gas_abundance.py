@@ -537,17 +537,17 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
 
 def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
                         abundance = False, show_std = False, show_quartile = False,
-                        fraction_type = 'mass'):
+                        fraction_type = 'mass', plot_type = 'Fe'):
 
     # for each dataset, plot the distributions of gas fractions in each phase
 
     all_data   = dd.io.load(dir + fname)
     all_fields = all_data['abundance_fields']
 
+    share_axis = False
     if abundance:
-        plot_type = 'standard'
 
-        if plot_type == 'standard' or plot_type == 'Fe':
+        if plot_type == 'standard':
             all_fields  = all_data['abundance_fields']
 
             # plot all over Fe and Fe over H
@@ -557,8 +557,13 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
         elif len(plot_type) <= 2:
             # assume it is a species name
             plot_fields = utilities.sort_by_anum([x for x in all_fields if ('_over_' + plot_type) in x])
-            if (plot_type + '_over_H') in all_fields:
-                plot_fields = plot_fields + [plot_type + '_over_H']
+
+
+#           No longer doing this - plot separately with everything else to allow for share axis
+#            if (plot_type + '_over_H') in all_fields:
+#                plot_fields = plot_fields + [plot_type + '_over_H']
+
+            share_axis = True
     else:
         plot_fields = utilities.sort_by_anum(all_data['metal_species'])
         plot_fields = [x + '_Fraction' for x in plot_fields]
@@ -576,11 +581,18 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
     times = times - times[0]
 
     # set up plot - define the phase names we want to loop over
-    fig, ax = plt.subplots(nrow, ncol)
+    if share_axis:
+        fig, ax = plt.subplots(nrow,ncol, sharex=True, sharey=True)
+    else:
+        fig, ax = plt.subplots(nrow, ncol)
+
     fig.set_size_inches(4*nrow, 4*ncol)
+    fig.subplots_adjust(hspace=0.0, wspace = 0.0)
+
     all_phases  = ['CNM','WNM','HIM','star_forming','halo'] # these are all that are available
 
     axi, axj = 0, 0
+    xmin, xmax = 1.0E99, -1.0E99
     for field in plot_fields:
         axind = (axi,axj)
 
@@ -602,30 +614,68 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
                 Q3  = utilities.extract_nested_dict_asarray(all_data, key_list + ['Q3'], loop_keys = all_ds)
                 # filter out "None" that can appear
                 select = (Q1>-np.inf)*(Q3>-np.inf)*(times>-np.inf)
-                print times[select]
-                print Q1[select]
-                print Q3[select]
-                print _mask_color[phase], phase
+#                print times[select]
+#                print Q1[select]
+#                print Q3[select]
+#                print _mask_color[phase], phase
+                xmin = np.min( [xmin, np.min(times[select])])
+                xmax = np.max( [xmax, np.max(times[select])])
                 ax[axind].fill_between(times[select], np.array(Q1[select]).astype(float),
                                            np.array(Q3[select]).astype(float), color = _mask_color[phase], alpha = 0.5, lw = 2.0)
 
         # set axis limits and labels based on whether or not we are plotting
         # abundance ratios or number fractions
         if abundance:
-            if '_over_H' in field:
-                ax[axind].set_ylim(-6, 0)
-            else:
-                ax[axind].set_ylim(-3, 3)
-
             label = field.split('_over_')
-            ax[axind].set_ylabel('[' + label[0] + '/' + label[1] + ']')
-            ax[axind].set_xlabel(r'Time')
+            if share_axis:
+                xy = (0.125, 0.8)
+                ax[axind].annotate(label[0], xy = xy, xytext=xy,
+                             xycoords = 'axes fraction', textcoords = 'axes fraction')
+
+                label = r'log([X/' + label[1] + '])'
+            else:
+                label = r'log([' + label[0] +'/' + label[1] + '])'
+
+            # set axis limits and labels according to shared restrictions
+            if (share_axis and axj == 0) or (not share_axis):
+                ax[axind].set_xlim(xmin, xmax)
+                ax[axind].set_ylabel(label)
+
+            if (share_axis and axi == nrow) or (not share_axis):
+                ax[axind].set_xlabel(r'Time (Myr)')
+
+            if (share_axis and axi == 0) or (not share_axis):
+                dx = 0.0 # some slop to get axis labels to not clash
+                if share_axis:
+                    dx = 0.15
+                if '_over_H' in field:
+                    ax[axind].set_ylim(-8 - dx, 0 + dx)
+                else:
+                    ax[axind].set_ylim(-3 - dx, 3 + dx)
+
         else:
-#            ax[axind].set_ylim(-8, 0)
-            ax[axind].semilogy()
-            ax[axind].set_xlabel(r'Time')
-            ax[axind].set_ylabel(r'log [' + field + ']')
-            ax[axind].set_ylim(ymax*1.0E-6, ymax*1.3)
+
+            if share_axis:
+                xy = (0.125, 0.8)
+                ax[axind].annotate(field.split('_Frac')[0], xy = xy,
+                                      xytext=xy, xycoords = 'axes fraction',
+                                      textcoords = 'axes fraction')
+
+                label = r'log([X Fraction])'
+            else:
+                label = r'log([' + field + '])'
+
+            if (share_axis and axj ==0) or (not share_axis):
+                ax[axind].set_xlim(xmin, xmax)
+                ax[axind].set_ylabel(label)
+
+            if (share_axis and axi ==nrow) or (not share_axis):
+                ax[axind].set_xlabel(r'Time (Myr)')
+
+            if (share_axis and axi == 0) or (not share_axis):
+                ax[axind].set_ylim(1.0E-12, 3.0E-2)
+                ax[axind].semilog_y()
+
 
         ax[axind].minorticks_on()
         axj = axj + 1
@@ -635,10 +685,12 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
 
     ax[(0,0)].legend(loc='best', ncol=2)
 
-    plt.tight_layout()
+    if not share_axis:
+        plt.tight_layout()
+
     plt.minorticks_on()
     if abundance:
-        outname = 'time_evolution_' + fraction_type + '_abundances.png'
+        outname = 'time_evolution_' + fraction_type + '_abundances_over_' + plot_type + '.png'
     else:
         outname = 'time_evolution_' + fraction_type + '_fractions.png'
 
@@ -662,10 +714,13 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=True, nproc = 14)
+#    generate_all_stats(overwrite=False, nproc = 14)
 
-    plot_time_evolution(abundance=False)
-    plot_time_evolution(abundance=True)
+    plot_time_evolution(abundance=True, plot_type = 'Fe')
+    plot_time_evolution(abundance=True, plot_type = 'H')
+    plot_time_evolution(abundance=True, plot_type = 'Fe', show_quartile = True)
+    plot_time_evolution(abundance=True, plot_type = 'H',  show_quartile = True)
+
 
     plot_gas_fractions(overwrite=True, fraction_type = 'volume')
     plot_gas_fractions(overwrite=True, fraction_type = 'mass')
