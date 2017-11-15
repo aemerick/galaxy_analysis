@@ -322,8 +322,12 @@ def compute_SNII_error(ds, data, uselog = True):
 
 
 if __name__=="__main__":
-    name = np.sort(glob.glob('DD????/DD????'))[-1]
-    ds = yt.load(name)
+    name_list = np.sort(glob.glob('DD????/DD????'))
+    try:
+        ds = yt.load(name_list[-1])
+    except:
+        print "Could not load ", name_list[-1], " trying the next one"
+        ds = yt.load(name_list[-2])
     data = ds.all_data()
 
     if ('enzo','wind_mass_ejected') in ds.field_list or\
