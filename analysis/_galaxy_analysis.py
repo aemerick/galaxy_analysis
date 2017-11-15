@@ -1327,7 +1327,7 @@ class Galaxy(object):
 
         # BoundarMassFluxFieldNumbers stores field number which is connected
         # to field name via data label
-        num_flux = len( [x for x in ds.parameters.keys() if 'BoundaryMassFluxFieldNumbers' in x])
+        num_flux = len( [x for x in self.ds.parameters.keys() if 'BoundaryMassFluxFieldNumbers' in x])
 
         if hasattr(self, 'boundary_mass_flux'):
             if len(self.boundary_mass_flux.keys()) == num_flux:
@@ -1337,12 +1337,12 @@ class Galaxy(object):
 
         conv = 1.0
         if APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES: # obnoxius on purpose, see note at top
-            conv = np.max( self.data['dx'].convert_to_units('code_length').value )
+            conv = np.max( self.df['dx'].convert_to_units('code_length').value )
             conv = 1.0 / (conv**2) # correct by dividing by dx^2
 
-        for i in num_flux:
-            field = ds.parameters["DataLabel[%i]"%(ds.parameters['BoundaryMassFluxFieldNumbers[%i]'%(i)])]
-            self.boundary_mass_flux[field] = ds.parameters['BoundaryMassFluxContainer[%i]'%(i)]) * conv
+        for i in np.arange(num_flux):
+            field = self.ds.parameters["DataLabel[%i]"%(self.ds.parameters['BoundaryMassFluxFieldNumbers[%i]'%(i)])]
+            self.boundary_mass_flux[field] = self.ds.parameters['BoundaryMassFluxContainer[%i]'%(i)] * conv
 
 
         # easy !
