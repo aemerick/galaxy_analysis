@@ -3,6 +3,13 @@ from __future__ import division
 import yt
 yt.funcs.mylog.setLevel(40)
 
+#
+# Nov 2017: Units bug in Enzo domain mass flux that needs to be corrected
+#           by root grid dx^2. However, to avoid confusion, for now,
+#           just make this a global post-process correction. Leaving as bug
+#           in Enzo.
+#
+APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES = True
 
 import numpy as np
 from scipy import optimize
@@ -126,11 +133,13 @@ class Galaxy(object):
 
 #        self._has_boundary_mass_file, self.boundary_mass_flux =\
 #                    process_boundary_flux(data = None, wdir = self.wdir)
+#
+#        self._has_boundary_mass_file = os.path.isfile(self.wdir + "filtered_boundary_mass_flux.dat")
+#
+#        if self._has_boundary_mass_file:
+#            self.boundary_mass_flux = np.genfromtxt(self.wdir + "filtered_boundary_mass_flux.dat", names = True)
 
-        self._has_boundary_mass_file = os.path.isfile(self.wdir + "filtered_boundary_mass_flux.dat")
-
-        if self._has_boundary_mass_file:
-            self.boundary_mass_flux = np.genfromtxt(self.wdir + "filtered_boundary_mass_flux.dat", names = True)
+        self._load_boundary_mass_flux() # load directly from parameter file
 
         if os.path.isfile( self.hdf5_filename ):
             self.load()
@@ -864,24 +873,26 @@ class Galaxy(object):
 
         mdict['OutsideBox'] = {}
         if self._has_boundary_mass_file:
-            index = np.argmin( np.abs(self.current_time - self.boundary_mass_flux['Time']) )
-            diff = np.abs(self.boundary_mass_flux['Time'][index] - self.current_time)
-            if diff > 1.0: 
-                print "WARNING: Nearest boundary mass flux data point is > 1 Myr from current simulation time"
-                print "T_now = %5.5E T_file = %5.5E diff = %5.5E"%(self.current_time, self.boundary_mass_flux['Time'][index], diff)
-
-
-            if np.size(index) > 1:
-                index = index[0]
-
+#            index = np.argmin( np.abs(self.current_time - self.boundary_mass_flux['Time']) )
+#            diff = np.abs(self.boundary_mass_flux['Time'][index] - self.current_time)
+#            if diff > 1.0: 
+#                print "WARNING: Nearest boundary mass flux data point is > 1 Myr from current simulation time"
+#                print "T_now = %5.5E T_file = %5.5E diff = %5.5E"%(self.current_time, self.boundary_mass_flux['Time'][index], diff)
+#
+#
+#            if np.size(index) > 1:
+#                index = index[0]
+#
             for s in self.species_list:
-                mdict['OutsideBox'][s] = self.boundary_mass_flux[s + '_Density'][index]
+                mdict['OutsideBox'][s] = self.boundary_mass_flux[s + '_Density'] # [index]
 
             _fields = ['HI_Density','HII_Density','H2I_Density','H2II_Density','HM_Density']
-            mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
+#            mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
+            mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field] for field in _fields])
             _fields = ['HeI_Density','HeII_Density','HeIII_Density']
-            mdict['OutsideBox']['He'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
-            mdict['OutsideBox']['Metals'] = self.boundary_mass_flux['Metal_Density'][index]
+#            mdict['OutsideBox']['He'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
+            mdict['OutsideBox']['He']     = np.sum([self.boundary_mass_flux[field] for field in _fields])
+            mdict['OutsideBox']['Metals'] = self.boundary_mass_flux['Metal_Density'] # [index]
         else:
             for s in ['H','He','Metals'] + self.species_list:
                 mdict['OutsideBox'][s] = 0.0
@@ -1307,16 +1318,34 @@ class Galaxy(object):
         return
 
     def _load_boundary_mass_flux(self):
+        """
+        Previously, this was done by reading an external file containing
+        cumulative mass loss from grid at each root grid timestep. Instead,
+        this is stored directly in the paramater file. Its gross, but
+        just do this.
+        """
+
+        # BoundarMassFluxFieldNumbers stores field number which is connected
+        # to field name via data label
+        num_flux = len( [x for x in ds.parameters.keys() if 'BoundaryMassFluxFieldNumbers' in x])
+
+        if hasattr(self, 'boundary_mass_flux'):
+            if len(self.boundary_mass_flux.keys()) == num_flux:
+                return # don't need to re-make this
 
         self.boundary_mass_flux = {}
 
-        if not os.path.isfile(self.wdir + 'boundary_mass_flux.dat'):
-            return
+        conv = 1.0
+        if APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES: # obnoxius on purpose, see note at top
+            conv = np.max( self.data['dx'].convert_to_units('code_length').value )
+            conv = 1.0 / (conv**2) # correct by dividing by dx^2
 
-        f = np.genfromtxt(self.wdir + 'boundary_mass_flux.dat')
+        for i in num_flux:
+            field = ds.parameters["DataLabel[%i]"%(ds.parameters['BoundaryMassFluxFieldNumbers[%i]'%(i)])]
+            self.boundary_mass_flux[field] = ds.parameters['BoundaryMassFluxContainer[%i]'%(i)]) * conv
 
-        # do data filtering --- code this somewhere else and do it with function call
 
+        # easy !
         return
 
     @property
