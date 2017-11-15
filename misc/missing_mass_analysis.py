@@ -15,6 +15,7 @@ import numpy as np
 import glob
 from onezone import star
 
+from galaxy_analysis.analysis import Galaxy
 from galaxy_analysis.utilities import utilities as util
 
 #
@@ -110,14 +111,20 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
             grid_masses[k] = grid_masses[k] - np.sum(d0[k + '_Density'] * ds.mass_unit / ds.length_unit**3 *\
                                        d0['cell_volume']).convert_to_units('Msun').value
 
+    gal = Galaxy(str(ds))
+    outflow_masses = gal.boundary_mass_flux
+
     print total_model_ejecta
     print grid_masses
+    print outflow_masses
 
     print grid_masses.keys()
-    print "Element Total_on_Grid Total_model_mass Percent_error"
+    print "Element Total_on_Grid Total_Outflow Sum_Injected Total_model_mass Percent_error"
     for k in grid_masses.keys():
-        error =100 *  (grid_masses[k] - total_model_ejecta[k] ) / total_model_ejecta[k]
-        print "%2s     %8.8E %8.8E %3.3f"%(k,grid_masses[k], total_model_ejecta[k], error)
+        okey = k + '_Density'
+        error =100 *  (outflow_masses[okey] + grid_masses[k] - total_model_ejecta[k] ) / total_model_ejecta[k]
+        print "%2s     %8.8E %8.8E %8.8E %8.8E %4.4f"%(k,grid_masses[k], outflow_masses[okey], grid_masses[k] + outflow_masses[okey],
+                                                 total_model_ejecta[k], error)
 
     return all_stars, model_sn_ejecta, model_wind_ejecta, total_model_ejecta
 
