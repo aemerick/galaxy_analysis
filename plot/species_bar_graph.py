@@ -79,19 +79,25 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
 
        colors = {'Disk' : 'purple', 'stars' : 'gold',
                  'Halo' : 'black'}
-       colors = {'Disk': plasma(0.0), 'stars': plasma(1.0),
-                 'Halo': plasma(0.5)}
+       colors = {'Disk': 'C0', 'stars': plasma(1.0),
+                 'Halo': 'C1', 'Outside Halo' : 'C2'}
        barplot = {}
        bottom  = np.zeros(N)
        sum     = np.zeros(N)
        # plot!
-       for f in fields:
+       for f in ['stars','Disk','Halo']:
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
                                color = colors[f], bottom = bottom, label = f, **kwargs)
            bottom += bar_values * 1.0
            sum    = sum + bottom
+
+       bar_values = 1.0 - bottom
+       barplot['Outside Halo'] = ax.bar(index, bar_values, width,
+                                        color = colors['Outside Halo'], bottom = bottom, label = 'Outside Halo', **kwargs)
+       bottom += bar_values * 1.0
+       sum = sum + bottom
 
    else:
        fields = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM', 'stars']
