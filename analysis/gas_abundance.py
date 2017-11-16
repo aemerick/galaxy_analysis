@@ -714,7 +714,7 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-#    generate_all_stats(overwrite=False, nproc = 14)
+    generate_all_stats(overwrite=False, nproc = 28)
 
     plot_time_evolution(abundance=True, plot_type = 'Fe')
     plot_time_evolution(abundance=True, plot_type = 'H')
