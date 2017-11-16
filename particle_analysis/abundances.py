@@ -32,6 +32,24 @@ from galaxy_analysis.utilities import utilities
 from galaxy_analysis.analysis import Galaxy
 from astroML.density_estimation import bayesian_blocks, knuth_bin_width
 
+def compute_mass_fractions(ds, data, elements, particle_type = 11):
+
+    ptype = data['particle_type']
+    if particle_type == 'all':
+        select = (ptype ==ptype)
+    else:
+        select = (ptype == particle_type)
+
+    birth_mass = birth_mass[select]
+
+    mass_fractions = OrderedDict()
+
+    for e in elements:
+        mass_fractions[e] = data['particle_' + e + '_fraction'][select]
+
+    return mass_fractions
+
+
 def compute_aratio(ds, data, ratios, particle_type = 11):
     """
     For a given data set (ds) and data structure, generates abundances ratios
@@ -522,7 +540,8 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             #
             # Compute and store abundance ratios and relevant properties for all MS stars
             #
-            aratios = compute_aratio(ds, data, ratios) # by default, only does MS stars
+            aratios         = compute_aratio(ds, data, ratios) # by default, only does MS stars
+            mass_fractions  = compute_mass_fractions(ds, data, ratios)
 
             MS = data['particle_type'] == 11
 
@@ -545,6 +564,19 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             spatial.create_dataset('r', data = np.sqrt(r))
             spatial.create_dataset('vr', data = np.sqrt(vr))
 
+#
+            mf = hf.create_group(groupname + '/mass_fractions')
+            for e in elements:
+                mf.create_dataset(  e, data = mass_fractions[e])
+            mf_statgroup = hf.create_group(groupname + '/mass_fraction_statistics')
+            all = mf_statgroup.create_group('all_MS')
+            for e in elements:
+                stats = utilities.compute_stats( mass_fractions[e], return_dict = True)
+                g     = all.create_group(e)
+                for k in stats.keys():
+                    g.create_dataset(k, data = stats[k])
+
+#
             sg = hf.create_group(groupname + '/abundances')
             for abundance in aratios.keys():
                 sg.create_dataset( abundance, data = aratios[abundance])
@@ -564,9 +596,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             # Aka... ignore observational / physical reality and treat them all as tracers
             #
             aratios = compute_aratio(ds, data, ratios, particle_type = 'all')
-
             tracers = statgroup.create_group('all_particles')
-
             for abundance in aratios.keys():
                 stats = utilities.compute_stats(aratios[abundance], return_dict = True)
                 g     = tracers.create_group(abundance)
@@ -589,6 +619,103 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
 
                 for k in stats.keys():
                     g.create_dataset(k, data = stats[k])
+
+            mass_fractions      = compute_mass_fractions(ds, data, elements, particle_type = 'all')
+            tracers = mf_statgroup.create_group('all_particles')
+            for e in elements:
+                stats = utilities.compute_stats(mass_fractions[e], return_dict = True)
+#
+# left off here
+#
+
+            g = mf_statgroup.create_group("cumulative")
+            t = ds.current_time.convert_to_units('Myr').value
+            tmax = np.ceil(t)
+            tbins = np.arange(0.0, tmax + 0.1, 0.5)
+            hist,bins = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+            g.create_dataset('bins', data = tbins)
+            g.create_dataset('hist', data = np.array(hist))
+            t_form = data['creation_time'].convert_to_units('Myr').value
+            lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
+            age = t - t_form
+
+            mf_stats_array_dict = {}
+            for e in elements:
+                mf_stats_array_dict[e] = {}
+                for k in stats.keys():
+                    mf_stats_array_dict[e][k] = np.zeros(np.size(tbins)-1)
+
+            for i in np.arange(np.size(tbins)-1):
+
+                age = tbins[i] - t_form
+                selection = (age >= 0.0)*(age <= lifetime)
+                for e in elements.keys():
+                    if i == 0:
+                        sub_g = g.create_group(e)
+
+                    if np.size(age[selection]) > 1:
+                        stats = utilities.compute_stats(mass_fractions[e][selection], return_dict = True) # +1 b/c index starts at 1
+                        for k in stats.keys():
+                            mf_stats_array_dict[e][k][i] = stats[k]
+                    else:
+                        for k in stats.keys():
+                            mf_stats_array_dict[e][k][i] = None
+
+            for e in elements.keys():
+                g = hf[groupname + '/mass_fraction_statistics/cumulative/' + e]
+                for k in mf_stats_array_dict[e].keys():
+                    g.create_dataset(k, data = mf_stats_array_dict[e][k])
+
+            for dt in [0.1, 1, 10]:
+                g = mf_statgroup.create_group('%iMyr'%(dt))
+                t  = ds.current_time.convert_to_units('Myr').value
+                tmax = np.around(t, decimals = -len(str(dt)) + 1)
+                if tmax < t:
+                    tmax = tmax + dt
+                tbins = np.arange(0.0, tmax + 0.5*dt, dt)
+
+                index = np.digitize(data['creation_time'].convert_to_units('Myr').value, tbins)
+                hist, bins  = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+                g.create_dataset('bins', data = tbins)
+                g.create_dataset('hist', data = np.array(hist))
+
+                mf_stats_array_dict = {}
+                for e in elements.keys():
+                    mf_stats_array_dict[e] = {}
+                    for k in stats.keys():
+                        mf_stats_array_dict[e][k] = np.zeros(np.size(tbins) - 1)
+
+                for i in np.arange(np.size(tbins)-1):
+                    for e in elements.keys():
+                        if i == 0:
+                            sub_g = g.create_group(e)
+                        if hist[i] > 0:
+                            stats = utilities.compute_stats(mass_fractions[e][index == i+1], return_dict = True) # +1 b/c index starts at$
+                            for k in stats.keys():
+                                mf_stats_array_dict[e][k][i] = stats[k]
+                        else:
+                            for k in stats.keys():
+                                mf_stats_array_dict[e][k][i] = None
+
+                for e in elements.keys():
+                    # - - - - - Produce a gap-less, interpolated mean to compute the ACF
+                    if False: # don't do this anymore
+                        first        = np.where( np.logical_not(np.isnan( mf_stats_array_dict[e]['mean'] )))[0][0]
+                        mean         = mf_stats_array_dict[e]['mean'][first:]
+                        select       = np.logical_not(np.isnan(mean))
+                        clean_mean   = mean[select]
+                        tcent        = 0.5 * (tbins[1:] + tbins[:-1])
+                        tcent        = tcent[first:]
+                        clean_t      = tcent[select]
+                        f_interp     = interp1d(clean_t, clean_mean)
+                        interp_mean  = mean
+                        interp_mean[np.logical_not(select)] = f_interp( tcent[np.logical_not(select)] )
+                        stats_array_dict[e]['interp_mean'] = interp_mean
+                        stats_array_dict[e]['acf'] = utilities.acf(interp_mean, nlags = len(tcent))
+
+                    g = hf[groupname + '/mass_fraction_statistics/%iMyr/'%(dt) + e]
+                    for k in stats_array_dict[e].keys():
+                        g.create_dataset(k, data = mf_stats_array_dict[e][k])
 
 
             #
