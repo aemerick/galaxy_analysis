@@ -520,7 +520,7 @@ def plot_mass_fraction_time_evolution():
 
     data = dd.io.load(filename, '/' + str(dfile))
     elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
-    elements = elements + ['alpha']
+#    elements = elements + ['alpha']
 
 
     for time_type in ['cumulative','10Myr']:
@@ -535,9 +535,9 @@ def plot_mass_fraction_time_evolution():
             index = (i,j)
 
             t  = data['mass_fraction_statistics'][time_type]['bins']
-            y  = data['mass_fraction_statistics'][time_type][e][base]['median']
-            Q1 = data['mass_fraction_statistics'][time_type][e][base]['Q1']
-            Q3 = data['mass_fraction_statistics'][time_type][e][base]['Q3']
+            y  = data['mass_fraction_statistics'][time_type][e]['median']
+            Q1 = data['mass_fraction_statistics'][time_type][e]['Q1']
+            Q3 = data['mass_fraction_statistics'][time_type][e]['Q3']
             select = (y*0 == 0) # remove nan values
 
             t  = t[select]
@@ -559,7 +559,7 @@ def plot_mass_fraction_time_evolution():
             ax[(i,0)].set_ylabel(r'log(X Mass Fraction)')
 
             ax[(i,0)].set_ylim(1.0E-10, 1.0E-4)
-            ax[(i,0]].semilogy()
+            ax[(i,0)].semilogy()
 
 #            for j in np.arange(3):
 #                ax[(j,i)].set_xticklabels([])
@@ -687,6 +687,7 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
     return
 
 if __name__ == '__main__':
+    plot_mass_fraction_time_evolution() # 
 
 #    plot_ratios_with_histograms('C','O','Fe','H') # C/O vs Fe/H
 #    plot_ratios_with_histograms('alpha','Mg','Mg','H')
@@ -708,7 +709,7 @@ if __name__ == '__main__':
 #    plot_alpha_vs_fe()
 
 #    plot_alpha_vs_fe_movie()
-    plot_spatial_profiles(bins=np.arange(0,505,10))
-    plot_spatial_profiles(field = 'Fe',abundance=True, bins = np.arange(0,505,10))
-    plot_spatial_profiles(field = 'H', abundance=True, bins = np.arange(0,505,10))
+#    plot_spatial_profiles(bins=np.arange(0,505,10))
+#    plot_spatial_profiles(field = 'Fe',abundance=True, bins = np.arange(0,505,10))
+#    plot_spatial_profiles(field = 'H', abundance=True, bins = np.arange(0,505,10))
 
