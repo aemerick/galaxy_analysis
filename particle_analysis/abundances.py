@@ -40,7 +40,6 @@ def compute_mass_fractions(ds, data, elements, particle_type = 11):
     else:
         select = (ptype == particle_type)
 
-    birth_mass = birth_mass[select]
 
     mass_fractions = OrderedDict()
 
@@ -541,7 +540,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
             # Compute and store abundance ratios and relevant properties for all MS stars
             #
             aratios         = compute_aratio(ds, data, ratios) # by default, only does MS stars
-            mass_fractions  = compute_mass_fractions(ds, data, ratios)
+            mass_fractions  = compute_mass_fractions(ds, data, elements)
 
             MS = data['particle_type'] == 11
 
@@ -649,7 +648,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
 
                 age = tbins[i] - t_form
                 selection = (age >= 0.0)*(age <= lifetime)
-                for e in elements.keys():
+                for e in elements:
                     if i == 0:
                         sub_g = g.create_group(e)
 
@@ -661,7 +660,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                         for k in stats.keys():
                             mf_stats_array_dict[e][k][i] = None
 
-            for e in elements.keys():
+            for e in elements:
                 g = hf[groupname + '/mass_fraction_statistics/cumulative/' + e]
                 for k in mf_stats_array_dict[e].keys():
                     g.create_dataset(k, data = mf_stats_array_dict[e][k])
@@ -680,13 +679,13 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                 g.create_dataset('hist', data = np.array(hist))
 
                 mf_stats_array_dict = {}
-                for e in elements.keys():
+                for e in elements:
                     mf_stats_array_dict[e] = {}
                     for k in stats.keys():
                         mf_stats_array_dict[e][k] = np.zeros(np.size(tbins) - 1)
 
                 for i in np.arange(np.size(tbins)-1):
-                    for e in elements.keys():
+                    for e in elements:
                         if i == 0:
                             sub_g = g.create_group(e)
                         if hist[i] > 0:
@@ -697,7 +696,7 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                             for k in stats.keys():
                                 mf_stats_array_dict[e][k][i] = None
 
-                for e in elements.keys():
+                for e in elements:
                     # - - - - - Produce a gap-less, interpolated mean to compute the ACF
                     if False: # don't do this anymore
                         first        = np.where( np.logical_not(np.isnan( mf_stats_array_dict[e]['mean'] )))[0][0]
@@ -710,11 +709,11 @@ def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abun
                         f_interp     = interp1d(clean_t, clean_mean)
                         interp_mean  = mean
                         interp_mean[np.logical_not(select)] = f_interp( tcent[np.logical_not(select)] )
-                        stats_array_dict[e]['interp_mean'] = interp_mean
-                        stats_array_dict[e]['acf'] = utilities.acf(interp_mean, nlags = len(tcent))
+                        mf_stats_array_dict[e]['interp_mean'] = interp_mean
+                        mf_stats_array_dict[e]['acf'] = utilities.acf(interp_mean, nlags = len(tcent))
 
                     g = hf[groupname + '/mass_fraction_statistics/%iMyr/'%(dt) + e]
-                    for k in stats_array_dict[e].keys():
+                    for k in mf_stats_array_dict[e].keys():
                         g.create_dataset(k, data = mf_stats_array_dict[e][k])
 
 
