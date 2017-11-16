@@ -872,7 +872,7 @@ class Galaxy(object):
         mdict['stars']['Total Tracked Metals'] = _sum_tracked_metals(mdict['stars'])
 
         mdict['OutsideBox'] = {}
-        if self._has_boundary_mass_file:
+#        if self._has_boundary_mass_file:
 #            index = np.argmin( np.abs(self.current_time - self.boundary_mass_flux['Time']) )
 #            diff = np.abs(self.boundary_mass_flux['Time'][index] - self.current_time)
 #            if diff > 1.0: 
@@ -883,19 +883,19 @@ class Galaxy(object):
 #            if np.size(index) > 1:
 #                index = index[0]
 #
-            for s in self.species_list:
-                mdict['OutsideBox'][s] = self.boundary_mass_flux[s + '_Density'] # [index]
+        for s in self.species_list:
+            mdict['OutsideBox'][s] = self.boundary_mass_flux[s + '_Density'] # [index]
 
-            _fields = ['HI_Density','HII_Density','H2I_Density','H2II_Density','HM_Density']
-#            mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
-            mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field] for field in _fields])
-            _fields = ['HeI_Density','HeII_Density','HeIII_Density']
-#            mdict['OutsideBox']['He'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
-            mdict['OutsideBox']['He']     = np.sum([self.boundary_mass_flux[field] for field in _fields])
-            mdict['OutsideBox']['Metals'] = self.boundary_mass_flux['Metal_Density'] # [index]
-        else:
-            for s in ['H','He','Metals'] + self.species_list:
-                mdict['OutsideBox'][s] = 0.0
+        _fields = ['HI_Density','HII_Density','H2I_Density','H2II_Density','HM_Density']
+#        mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
+        mdict['OutsideBox']['H'] = np.sum([ self.boundary_mass_flux[field] for field in _fields])
+        _fields = ['HeI_Density','HeII_Density','HeIII_Density']
+#        mdict['OutsideBox']['He'] = np.sum([ self.boundary_mass_flux[field][index] for field in _fields])
+        mdict['OutsideBox']['He']     = np.sum([self.boundary_mass_flux[field] for field in _fields])
+        mdict['OutsideBox']['Metals'] = self.boundary_mass_flux['Metal_Density'] # [index]
+#        else:
+#            for s in ['H','He','Metals'] + self.species_list:
+#                mdict['OutsideBox'][s] = 0.0
         mdict['OutsideBox']['Total Tracked Metals'] = _sum_tracked_metals(mdict['OutsideBox'])
 
         if self._has_particles:
