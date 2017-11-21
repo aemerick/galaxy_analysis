@@ -1,3 +1,6 @@
+#
+# This is a great example of bad code
+#
 import deepdish as dd
 from matplotlib import rc,cm
 plasma = cm.get_cmap('plasma')
@@ -120,17 +123,20 @@ run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
              '25'    : pleiades + '/starIC/run11_2rs/corrected_sndriving',
 #             'r11 ibug'     : pleiades + '/starIC/run11_2rs/ion_bugfix',
              '30'     : pleiades + '/starIC/run11_30km/final_sndriving' ,
+             '30_3pc' : pleiades + '/starIC/run11_30km/3pc',
              '40'     : pleiades + '/starIC/run11_40km/corrected_sndriving'}
 
 color_dict['17'] = ps.orange
 color_dict['25'] = ps.magenta
 color_dict['r11 ibug']  = ps.magenta
 color_dict['30']  = ps.purple
+color_dict['30_3pc'] = ps.blue
 color_dict['40']  = ps.black
 ls_dict['17'] = '-'
 ls_dict['25'] = '-'
 ls_dict['r11 ibug']  = '--'
 ls_dict['30'] = '-'
+ls_dict['30_3pc'] = '-'
 ls_dict['40'] = '-'
 
 color_dict['r11_smooth'] = ps.blue
@@ -305,10 +311,50 @@ feedback_comparisons = {'ion_no-otrad-sn' : stampede2 + '/run11_30km/ion_no-otra
                         'Shortrad' : pleiades + '/starIC/run11_30km/final_shortrad',
 
                         'SN only' : stampede2 + '/run11_30km/sn_only'}
+feedback_plot_1 = ['Full']
+x = 'Radiation Only - No SN'
+feedback_comparisons[x] = feedback_comparisons['otrad_ion-no-sn']
+ls_dict[x] = '-'; color_dict[x] = ps.purple
+feedback_plot_1 += [x]
+x = 'SN + PE + LW - No Ion'
+feedback_comparisons[x] = feedback_comparisons['sn_otrad_no-ion']
+ls_dict[x] = '-'; color_dict[x] = ps.orange
+feedback_plot_1 += [x]
+x= 'SN + Ion - No PE+LW'
+feedback_comparisons[x] = feedback_comparisons['sn_ion-no-otrad']
+ls_dict[x] = '-'; color_dict[x] = ps.blue
+feedback_plot_1 += [x]
+x = 'Full - No RP'
+feedback_comparisons[x] = feedback_comparisons['sn_otrad_ion_noRP']
+ls_dict[x] = '-'; color_dict[x] = 'green'
+feedback_plot_1 += [x]
+x = "SN + Ion + Pe - no LW"
+feedback_comparisons[x] = feedback_comparisons['sn_ion_PE-no-LW']
+ls_dict[x] = '--'; color_dict[x] = 'blue'
+feedback_plot_1 += [x]
+x = "SN + Ion + LW - no PE"
+feedback_comparisons[x] = feedback_comparisons['sn_ion_LW-no-PE']
+ls_dict[x] = '--'; color_dict[x] = 'red'
+feedback_plot_1 += [x]
 
-for i,k in enumerate(feedback_comparisons.keys()):
-    color_dict[k] = plasma(i / (1.0 * len(feedback_comparisons.keys())))
-    ls_dict[k]    = '-'
+feedback_plot_2 = ['Full']
+x = 'PE+LW Only'
+feedback_comparisons[x] = feedback_comparisons['otrad_no-ion-sn']
+ls_dict[x] = '-'; color_dict[x] = ps.purple
+feedback_plot_2 +=[x]
+x = 'Ionizing Only'
+feedback_comparisons[x] = feedback_comparisons['ion_no-otrad-sn']
+ls_dict[x] = '-'; color_dict[x] = ps.orange
+feedback_plot_2 += [x]
+x = 'SN Only'
+feedback_comparisons[x] = feedback_comparisons['SN only']
+ls_dict[x] = '-'; color_dict[x] = ps.blue
+feedback_plot_2 += [x]
+
+
+#for i,k in enumerate(feedback_comparisons.keys()):
+#    color_dict[k] = plasma(i / (1.0 * len(feedback_comparisons.keys())))
+#    ls_dict[k]    = '-'
 ls_dict['Full'] = '-' ; color_dict['Full'] = 'black'
 ls_dict['Shortrad'] = '--' ; color_dict['Shortrad'] = 'black'
 ls_dict['SN only'] = '-'; color_dict['SN only'] = plasma(1.0)
@@ -751,11 +797,14 @@ if __name__ == '__main__':
 #    all_s = ['r11 fiducial', 'r11 2xr_s', 'r11 30km', 'r11 40km']
 
 #    all_s = ['Fiducial','collapse','cool_ramp','cool_ramp2','cool_ramp3','CR2 SN']
-    all_s = feedback_comparisons.keys()
+#    all_s = feedback_comparisons.keys()
 
-#    all_s = ['17','25','30','40']
+    all_s = ['17','25','30','40','30_3pc']
 #    all_s = ['30']
 #    all_s = PERT_DATA_PATHS.keys()
+
+#    all_s = feedback_plot_1
+#    all_s = feedback_plot_2
 
     if True:
         plot_mass(sim_names = all_s, species = 'HI')
@@ -780,7 +829,7 @@ if __name__ == '__main__':
         plot_sfr(sim_names = all_s, sampling = 100)
         plot_snr(sim_names = all_s)
 
-    if True:
+    if False:
         for species in ['total', 'metals', 'O', 'N', 'Fe', 'Sr']:
             print 'mass outflow for ' + species
             plot_mass_loading(sim_names = all_s, species = species, z = 0.1)
@@ -794,5 +843,5 @@ if __name__ == '__main__':
         plot_mass_loading(sim_names = all_s, species = species, z = 0.25, mass_loading = True)
         plot_mass_loading(sim_names = all_s, species = species, z = 0.5, mass_loading = True)
         plot_mass_loading(sim_names = all_s, species = species, z = 1.0, mass_loading = True)
-#        plot_mass_loading(sim_names = all_s, species = species, z = 500)
+        plot_mass_loading(sim_names = all_s, species = species, z = 500)
 
