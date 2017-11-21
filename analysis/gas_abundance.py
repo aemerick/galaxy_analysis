@@ -66,6 +66,10 @@ def _star_forming_region(galaxy):
 
 def _CNM(galaxy):
     return _ISM_region(galaxy,'CNM')
+def _WIM(galaxy):
+    return _ISM_region(galaxy,'WIM')
+def _molecular(galaxy):
+    return _ISM_region(galaxy,'molecular')
 def _WNM(galaxy):
     return _ISM_region(galaxy,'WNM')
 def _HIM(galaxy):
@@ -87,6 +91,8 @@ def _ISM_region(galaxy, name):
 _mask_color = {'star_forming' : 'gold',
                'CNM'          : 'blue',
                'WNM'          : 'green',
+               'WIM'          : 'orange',
+               'molecular'    : 'purple',
                'HIM'          : 'red',
                'halo'         : 'black'}
 
@@ -94,7 +100,9 @@ _mask_ls    = {'star_forming' : '-',
                'CNM'          : '-',
                'WNM'          : '-',
                'HIM'          : '-',
-               'halo'         : '-'}
+               'halo'         : '-',
+               'WIM'          : '-',
+               'molecular'    : '-'}
 
 
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
@@ -105,7 +113,9 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
                    'CNM': _CNM,
                    'WNM': _WNM,
                    'HIM': _HIM,
-                   'halo': _halo}
+                   'halo': _halo,
+                   'WIM' : _WIM,
+                   'molecular' : _molecular}
 
     data = {}
     for m in all_masks.keys():
@@ -714,15 +724,15 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 28)
+    generate_all_stats(overwrite=True, nproc = 28)
 
-    plot_time_evolution(abundance=True, plot_type = 'Fe')
-    plot_time_evolution(abundance=True, plot_type = 'H')
-    plot_time_evolution(abundance=True, plot_type = 'Fe', show_quartile = True)
-    plot_time_evolution(abundance=True, plot_type = 'H',  show_quartile = True)
+#    plot_time_evolution(abundance=True, plot_type = 'Fe')
+#    plot_time_evolution(abundance=True, plot_type = 'H')
+#    plot_time_evolution(abundance=True, plot_type = 'Fe', show_quartile = True)
+#    plot_time_evolution(abundance=True, plot_type = 'H',  show_quartile = True)
 
 
-    plot_gas_fractions(overwrite=True, fraction_type = 'volume')
-    plot_gas_fractions(overwrite=True, fraction_type = 'mass')
+#    plot_gas_fractions(overwrite=True, fraction_type = 'volume')
+#    plot_gas_fractions(overwrite=True, fraction_type = 'mass')
 
-    plot_abundances(plot_type = 'standard', fraction_type = 'mass')
+#    plot_abundances(plot_type = 'standard', fraction_type = 'mass')
