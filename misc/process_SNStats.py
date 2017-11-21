@@ -10,7 +10,7 @@
            and to post-process check if SN are resolved at the given
            resolution
 """
-
+from galaxy_analysis.plot.plot_styles import *
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
@@ -147,19 +147,27 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
     cent = 0.5 * (bins[1:] + bins[:-1])
 
     ax.set_xlabel(r'log[Supernova PDS Radius (pc)]')
-    ax.set_ylabel(r'Count')
+    if norm:
+        ax.set_ylabel(r'Fraction of Total')
+    else:
+        ax.set_ylabel(r'Count')
 
     normalization = 1.0
     if norm:
         normalization = 1.0 / (1.0 * np.sum(avg_hist))
-    ax.step(cent, avg_hist * normalization , lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
+    #ax.step(cent, avg_hist * normalization , lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
+    plot_histogram(ax, bins, avg_hist*normalization, lw = line_width, ls = '-', color = 'black', label = r'<$n$>')
 
     if norm:
         normalization = 1.0 / (1.0 * np.sum(max_hist))
 
-    ax.step(cent, max_hist * normalization, lw = 3, ls = '-', color = 'orange',   label = r'$n_{\rm max}$', where='post')
+    #ax.step(cent, max_hist * normalization, lw = 3, ls = '-', color = 'orange',   label = r'$n_{\rm max}$', where='post')
+    plot_histogram(ax, bins, max_hist*normalization, lw = line_width, ls = '-', color = 'orange', label = r'$n_{\rm max}$')
+
+
 
     ax.set_ylim(0, np.max([np.max(avg_hist*normalization),np.max(max_hist*normalization)])*1.5)
+    ax.set_xlim(np.floor(np.min(bins)),np.ceil(np.max(bins)))
 
     if dx is not None:
         logdx = np.log10(dx)
@@ -168,17 +176,24 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
         ax.plot( [logdx,logdx], ax.get_ylim(), ls = '-', color = 'black', lw =3)
 
     # find fraction that are unresolved
-    if norm:
+    if True:
         avg_unres = np.size(R_avg[R_avg < 4.5 *dx]) / (1.0 *np.size(R_avg))
         max_unres = np.size(R_max[R_max < 4.5 *dx]) / (1.0 *np.size(R_max))
 
         txy_1 = (0.75*logdx, ax.get_ylim()[1]*0.8)
         txy_2 = (txy_1[0]  , txy_1[1] - 0.05)
 
-        ax.annotate('%0.2f %%'%(100.0*avg_unres), xy = txy_1, xytext = txy_1,
-                        color = 'black')
-        ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
-                        color = 'orange')
+#        ax.annotate('%0.2f %%'%(100.0*avg_unres), xy = txy_1, xytext = txy_1,
+#                        color = 'black')
+#        ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
+#                        color = 'orange')
+
+        print "avg    max   ", 100*avg_unres, 100 * max_unres
+        ax.annotate(r"Resolved (4.5$\times$ dx)", xy=(logdx-0.15,txy_1[1]),xytext=(logdx-0.15,txy_1[1]),
+                      color='black', rotation=90)
+        ax.annotate(r"Cell Width", xy=(np.log10(dx)-0.15,txy_1[1]),
+                                   xytext=(np.log10(dx)-0.15,txy_1[1]),
+                                   color = 'black', rotation=90)
 
 
 
@@ -205,7 +220,7 @@ def plot_density(data, estimate_n = True):
         avg_dens = rho_to_n(avg_dens)
         max_dens = rho_to_n(max_dens)
 
-        bins = np.linspace(-3,3,30)
+        bins = np.linspace(-5,3,40)
     else:
         bins = 10
 
@@ -214,13 +229,16 @@ def plot_density(data, estimate_n = True):
     max_hist, bins = np.histogram(np.log10(max_dens), bins = bins)
     cent = 0.5 * (bins[1:] + bins[:-1])
 
-    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
-    ax.step(cent, max_hist, lw = 3 , ls = '-', color = 'orange', label = r'$n_{\rm max}$', where = 'post')
+#    ax.step(cent, avg_hist, lw = 3, ls = '-', color = 'black', label = r'<$n$>', where = 'post')
+    plot_histogram(ax, bins, avg_hist, lw = line_width, ls = '-', color = 'black', label = r'<$n$>')
+#    ax.step(cent, max_hist, lw = 3 , ls = '-', color = 'orange', label = r'$n_{\rm max}$', where = 'post')
+    plot_histogram(ax, bins, max_hist, lw = line_width, ls = '-', color = 'orange', label = r'$n_{\rm max}$')
 
     ax.set_xlabel(r'log[ n (cm$^{-3}$)]')
     ax.set_ylabel(r'Count')
 
     ax.set_ylim(0, np.max([np.max(avg_hist),np.max(max_hist)])*1.5)
+    ax.set_xlim(np.floor(np.min(bins)), np.ceil(np.max(bins)))
     ax.legend(loc='best')
     plt.tight_layout()
     ax.minorticks_on()
@@ -238,5 +256,5 @@ if __name__ == "__main__":
     data = read_all_data(directory)
     save_data(data, directory)
     plot_density(data)
-    plot_rpds(data, dx = 2.5)
-    plot_rpds(data, dx = 2.5, norm = True)
+    plot_rpds(data, dx = 1.8, ncell = 1)
+    plot_rpds(data, dx = 1.8, norm = True, ncell = 1)
