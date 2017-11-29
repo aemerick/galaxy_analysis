@@ -143,10 +143,11 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
 
    # make legend, reverse label ordering
    handles, labels = ax.get_legend_handles_labels()
-   ax.legend(handles[::-1], labels[::-1], loc='best')
+   ax.legend(handles[::-1], labels[::-1], loc='lower left')
 
    if fraction:
        ax.set_ylim(0.0,1.0)
+       ax.set_ylabel('Mass Fraction')
    else:
        ax.semilogy()
 
