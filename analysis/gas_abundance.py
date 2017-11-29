@@ -23,7 +23,11 @@ from galaxy_analysis.utilities import utilities as utilities
 from galaxy_analysis.static_data import ISM
 
 
-
+#
+# depending on size of file this takes a while to compute everything
+#    for now, limit files to be roughly under 24 hours of computation
+#    can always restart after 
+maximum_files_to_compute = 10*28 # set maximum number of files to compute in one run
 
 #
 # Brainstorming:
@@ -69,7 +73,7 @@ def _CNM(galaxy):
 def _WIM(galaxy):
     return _ISM_region(galaxy,'WIM')
 def _molecular(galaxy):
-    return _ISM_region(galaxy,'molecular')
+    return _ISM_region(galaxy,'Molecular')
 def _WNM(galaxy):
     return _ISM_region(galaxy,'WNM')
 def _HIM(galaxy):
@@ -92,7 +96,7 @@ _mask_color = {'star_forming' : 'gold',
                'CNM'          : 'blue',
                'WNM'          : 'green',
                'WIM'          : 'orange',
-               'molecular'    : 'purple',
+               'Molecular'    : 'purple',
                'HIM'          : 'red',
                'halo'         : 'black'}
 
@@ -102,7 +106,7 @@ _mask_ls    = {'star_forming' : '-',
                'HIM'          : '-',
                'halo'         : '-',
                'WIM'          : '-',
-               'molecular'    : '-'}
+               'Molecular'    : '-'}
 
 
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
@@ -115,7 +119,7 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
                    'HIM': _HIM,
                    'halo': _halo,
                    'WIM' : _WIM,
-                   'molecular' : _molecular}
+                   'Molecular' : _molecular}
 
     data = {}
     for m in all_masks.keys():
@@ -255,17 +259,29 @@ def compute_abundance_stats(ds, data_source, mask = None,
 def _parallel_loop(dsname, fraction_fields):
 
     groupname = dsname.rsplit('/')[1]
+    print "starting computation on ", groupname
     gal = Galaxy(groupname)
 
+#
+#
+#
+#
     # limit ourselves to Fe and H demoninators for now to speed up computation
     abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
                                                               select_denom = ['Fe','H'])
     species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
     metal_species = utilities.species_from_fields(gal.ds.field_list)
 
+#
 #    don't recompute things unless overwrite is set
-#    if groupname in hf.keys() and (not overwrite):
-#        return g['skip_this_one_' + dsname]
+#
+#    if (not overwrite) and (existing_keys is None):
+#        print "Cannot check for overwrites without knowing existing data"
+#        raise ValueError
+#
+#
+#        if (groupname in existing_keys) and (not overwrite):
+#           return {groupname + '_skip_this_one' : {}} # g['skip_this_one_' + dsname]
 
     dictionary = {groupname : {}}
     #hf[groupname] = {} # make an empty key for this group
@@ -283,6 +299,7 @@ def _parallel_loop(dsname, fraction_fields):
 
     del(gal)
 
+    print "ending computation on ", groupname
 
     return dictionary
 
@@ -309,7 +326,17 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     hf = dd.io.load(hdf5_filename)
 
     ds_list = np.sort( glob.glob('./DD????/DD????'))
+    for i, dsname in enumerate(ds_list):
+        ds = yt.load(dsname)
+        if ds.parameters['NumberOfParticles'] > 0:
+            start_index = i
+            del(ds)
+            break
+        del(ds)
+
     times = np.zeros(np.size(ds_list))
+    ds_list = ds_list[start_index:]
+    times   = times[start_index:]
 
     # get the fields
     ds = yt.load(ds_list[0])
@@ -366,23 +393,24 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         if not overwrite:
             ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in hf.keys() ]))]
 
-        #print ds_list
-        #print fraction_fields
+        if len(ds_list) > maximum_files_to_compute:
+            print "restricting file computation to ", maximum_files_to_compute, " down from ", len(ds_list)
+            ds_list = ds_list[:maximum_files_to_compute]
 
-        with closing(Pool(processes=nproc)) as pool:
-            result = pool.map(_parallel_loop_star, itertools.izip(ds_list, itertools.repeat(fraction_fields)))
 
-            # bring the result together into hf
-            for r in result:
-                print r.keys()
-                if (not ('skip_this_one' in r.keys()[0])):
-                    hf[r.keys()[0]] = r[r.keys()[0]]
+        # construct the pool, and map the results to a holder
+        #   pool splits computation among processors
+        pool = Pool(nproc)
+        results = pool.map_async(_parallel_loop_star, itertools.izip(ds_list, itertools.repeat(fraction_fields)))
+        pool.close()
+        pool.join()
 
-            pool.terminate()
+        # gather results and add to output
+        for r in results.get():
+            hf[r.keys()[0]] = r[r.keys()[0]]
 
-        # end pool
         # define these fields (which are defined in the Pool funtion but don't want to
-        # deal with passing this back.
+        # deal with passing this back) ------
         if len(ds_list) > 0:
             gal = Galaxy(ds_list[0].split('/')[1])
             abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
@@ -390,7 +418,6 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
             metal_species = utilities.species_from_fields(gal.ds.field_list)
             del(gal)
-    #
 
     # save field names
     if not ('species' in hf.keys()):
@@ -724,7 +751,7 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=True, nproc = 28)
+    generate_all_stats(overwrite=False, nproc = 28)
 
 #    plot_time_evolution(abundance=True, plot_type = 'Fe')
 #    plot_time_evolution(abundance=True, plot_type = 'H')
