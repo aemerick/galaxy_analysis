@@ -62,8 +62,12 @@ maximum_files_to_compute = 10*28 # set maximum number of files to compute in one
 def _star_forming_region(galaxy):
     """
     """
-    
     mask        = galaxy.disk[('gas','is_star_forming')]
+    data_source = galaxy.disk
+    return data_source, mask
+
+def _disk(galaxy):
+    mask        = np.ones(np.shape(galaxy.disk['x'])) # all cells
     data_source = galaxy.disk
     return data_source, mask
 
@@ -98,7 +102,8 @@ _mask_color = {'star_forming' : 'gold',
                'WIM'          : 'orange',
                'Molecular'    : 'purple',
                'HIM'          : 'red',
-               'halo'         : 'black'}
+               'halo'         : 'black',
+               'Disk'         : 'cyan'}
 
 _mask_ls    = {'star_forming' : '-',
                'CNM'          : '-',
@@ -106,7 +111,8 @@ _mask_ls    = {'star_forming' : '-',
                'HIM'          : '-',
                'halo'         : '-',
                'WIM'          : '-',
-               'Molecular'    : '-'}
+               'Molecular'    : '-',
+               'Disk'         : '-'}
 
 
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
@@ -119,7 +125,8 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
                    'HIM': _HIM,
                    'halo': _halo,
                    'WIM' : _WIM,
-                   'Molecular' : _molecular}
+                   'Molecular' : _molecular,
+                   'Disk'   : _disk}
 
     data = {}
     for m in all_masks.keys():
@@ -134,7 +141,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
                                 fraction_fields = None,
                                 abundance_fields = None,
                                 mask_abundances = True,
-                                unpoluted_threshold = -10):
+                                unpoluted_threshold = -18):
     """
     Computes the mass and volume weighted distributions of metal
     species mass fractions AND metal species abundance ratios (in
@@ -155,8 +162,8 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     # if None, do this for everything
     if mask is None:
-        mask = np.ones(np.shape(data_source['Density']))
-        mask = (mask == 1)
+        mask = np.ones(np.shape(data_source['x'])) # all cells
+        # mask = (mask == 1)
 
     # make the masked data set
 
@@ -202,11 +209,12 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
         #  for the abundance ratio fields, we want to get rid
         #  of the things that have 'primordial' abundances
-        #  to make interpretation cleaner
+        #  to make interpretation cleaner -
         if mask_abundances and 'over' in field:
             ele            = field.split('_over_')[0]
-            over_H         = ele + '_over_H'
-            unpoluted_mask = data_source[over_H] > unpoluted_threshold
+#            over_H         = ele + '_over_H'
+            test_field     = ('gas','O_Fraction')
+            unpoluted_mask = data_source[test_field] > unpoluted_threshold
 
             mask = mask * unpoluted_threshold
             mask = np.array(mask).astype(bool)
@@ -237,11 +245,14 @@ def compute_abundance_stats(ds, data_source, mask = None,
                 hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
 
             #print mask_empty, any(mask) print np.size(fdata), np.size(cv) print fdata, cv
+            centers = 0.5 * (bins[1:] + bins[:-1])
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
             data_dict['volume_fraction'][field] = {'hist': hist}
+            data_dict['volume_fraction'][field]['median'] = centers[np.argmax(hist)]
 
             stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
             data_dict['mass_fraction'][field]   = {'hist': hist2}
+            data_dict['mass_fraction'][field]['median'] = centers[np.argmax(hist)]
 
             for k in stats:
                 data_dict['volume_fraction'][field][k] = stats[k]
