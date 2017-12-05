@@ -164,18 +164,21 @@ def compute_abundance_stats(ds, data_source, mask = None,
     # for each individual species in each cell. In addition to
     # common abundance ratios (do X / Fe, X / H, and X / Mg)
 
-    fbins = np.logspace(-20, 0, 401)
-    abins = np.linspace(-10,10, 401)
+    fbins = np.logspace(-20,  0, 401)
+    abins = np.linspace(-10, 10, 401)
+
+    rbins = np.arange(0.0, 620.0, 20.0) * yt.units.pc # 20 parsec bins?
 
     data_dict = {}
     data_dict['volume_fraction']  = {}
-    data_dict['mass_fraction'] = {}
-    data_dict['abundance'] = {}
+    data_dict['mass_fraction']    = {}
+    data_dict['radial_profile']   = {}
 
     data_dict['volume_fraction']['bins'] = fbins
     data_dict['mass_fraction']['bins'] = fbins
     data_dict['volume_fraction']['abins'] = abins
     data_dict['mass_fraction']['abins'] = abins
+    data_dict['radial_profile']['rbins'] = rbins
 
     mask = np.array(mask).astype(bool)
 
@@ -199,6 +202,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
             bins = abins
         else:
             bins = fbins
+        centers = 0.5 * (bins[1:] + bins[:-1])
 
         #  for the abundance ratio fields, we want to get rid
         #  of the things that have 'primordial' abundances
@@ -220,36 +224,62 @@ def compute_abundance_stats(ds, data_source, mask = None,
             data_dict['volume_fraction'][field] = {'hist':np.zeros(np.size(bins)-1)}
             data_dict['mass_fraction'][field]   = {'hist':np.zeros(np.size(bins)-1)}
             stats = utilities.compute_weighted_stats(np.zeros(10), np.ones(10), return_dict=True) # arbitrary - just trying to get keys
+            data_dict['radial_profile'][field] = {}
             for k in stats:
                 data_dict['volume_fraction'][field][k] = None
                 data_dict['mass_fraction'][field][k]   = None
+                data_dict['radial_profile'][field][k]  = [None] * (np.size(rbins) - 1)
+
         else:
 
             fdata = data_source[field][mask]
+            r_cyl = data_source['cylindrical_radius'][mask]
 
-            # compute volume fraction
-            hist  = np.zeros(np.size(bins) -1)
-            hist2 = np.zeros(np.size(bins) -1)
+            # compute the histograms of the data
+            mass_hist, temp = np.histogram(fdata, weights = cm, bins = bins) / total_mass
+            vol_hist, temp  = np.histogram(fdata, weights = cv, bins = bins) / total_volume
 
-
-            for i in np.arange(np.size(bins) - 1):
-                hist[i]  = np.sum( cv[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_volume
-                hist2[i] = np.sum( cm[ (fdata < bins[i+1]) * (fdata >= bins[i]) ] ) / total_mass
-
-            #print mask_empty, any(mask) print np.size(fdata), np.size(cv) print fdata, cv
+            # now compute descriptive statistics for each weighting
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
-            data_dict['volume_fraction'][field] = {'hist': hist}
+            data_dict['volume_fraction'][field] = {'hist': vol_hist}
+            data_dict['volume_fraction'][field]['median'] = centers[np.argmax(vol_hist)]
 
             stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
-            data_dict['mass_fraction'][field]   = {'hist': hist2}
+            data_dict['mass_fraction'][field]   = {'hist': mass_hist}
+            data_dict['mass_fraction'][field]['median'] = centers[np.argmax(mass_hist)]
 
+            # save these into the dictionary
             for k in stats:
                 data_dict['volume_fraction'][field][k] = stats[k]
                 data_dict['mass_fraction'][field][k]   = stats2[k]
 
+                # set up radial profile bins
+                data_dict['radial_profile'][field][k]  = np.zeros(np.size(rbins)-1)
+
+            # now compute the radial profile - mass weighted ONLY
+            for i in np.arange(np.size(rbins)-1):
+                selection = (r_cyl >= rbins[i]) * (r_cyl < rbins[i+1])
+                x         = fdata[selection] # sub-select field
+                w         = cm[selection]    #
+
+                if np.size(x) >= 3:
+                    hist, temp = np.histogram(x, weights = w, bins = bins)
+
+                    stats     = utilities.compute_weighted_stats(x, w, return_dict = True)
+                    for k in stats:
+                        data_dict['radial_profile'][field][k][i] = stats[k]
+                    data_dict['radial_profile'][field]['median'][i] = centers[np.argmax(hist)]
+
+                else:
+                    for k in stats:
+                        data_dict['radial_profile'][field][k][i] = None
+                    data_dict['radial_profile'][field]['median'][i] = None
+
     #
     # general properties
     #
+    data_dict['general'] = {'total_volume' : total_volume.convert_to_units('pc**3'),
+                            'total_mass'   : total_mass.convert_to_units('Msun')}
 
     # data_dict['general']['number_density'] = masked_data
 
