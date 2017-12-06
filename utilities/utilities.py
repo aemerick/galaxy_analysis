@@ -390,10 +390,13 @@ def compute_weighted_stats(x, w, return_dict = True):
     d = {}
     d['mean']     = s.mean
     d['std' ]     = s.std
-    q             = s.quantile( np.array([0.25, 0.75]), return_pandas = False)
+    q             = s.quantile( np.array([0.25, 0.75, 0.10, 0.90]), return_pandas = False)
     d['Q1']       = q[0]
     d['Q3']       = q[1]
+    d['Q10']      = q[2] # save 10% and 90% intervals as well
+    d['Q90']      = q[3]
     d['inner_quartile_range'] = q[1] - q[0]
+    d['q90_q10_range']        = q[3] - q[2]
     d['variance'] = s.var
     d['min']      = np.min(x)
     d['max']      = np.max(x)
