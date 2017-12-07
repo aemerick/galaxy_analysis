@@ -24,12 +24,6 @@ from galaxy_analysis.static_data import ISM
 
 
 #
-# depending on size of file this takes a while to compute everything
-#    for now, limit files to be roughly under 24 hours of computation
-#    can always restart after 
-maximum_files_to_compute = 10*28 # set maximum number of files to compute in one run
-
-#
 # Brainstorming:
 #    - Functions to go through all star forming regions in the
 #      galaxy, defined as regions where:
@@ -51,7 +45,8 @@ maximum_files_to_compute = 10*28 # set maximum number of files to compute in one
 #                       --- General    ---> (n, T, P, G_o, t_dyn dists)
 #
 #
-#   mask_types: - 1) Star forming regions
+#   mask_types: -
+#                 1) Star forming regions
 #                 2) Disk CNM
 #                 3) Disk WNM
 #                 4) Disk HIM
@@ -233,10 +228,15 @@ def compute_abundance_stats(ds, data_source, mask = None,
             data_dict['mass_fraction'][field]   = {'hist':np.zeros(np.size(bins)-1)}
             stats = utilities.compute_weighted_stats(np.zeros(10), np.ones(10), return_dict=True) # arbitrary - just trying to get keys
             data_dict['radial_profile'][field] = {}
+
             for k in stats:
                 data_dict['volume_fraction'][field][k] = None
                 data_dict['mass_fraction'][field][k]   = None
                 data_dict['radial_profile'][field][k]  = [None] * (np.size(rbins) - 1)
+
+            data_dict['mass_fraction'][field]['mode'] = None
+            data_dict['volume_fraction'][field]['mode'] = None
+            data_dict['radial_profile'][field]['mode'] = [None] * (np.size(rbins) - 1)
 
         else:
 
@@ -250,19 +250,21 @@ def compute_abundance_stats(ds, data_source, mask = None,
             # now compute descriptive statistics for each weighting
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
             data_dict['volume_fraction'][field] = {'hist': vol_hist}
-            data_dict['volume_fraction'][field]['median'] = centers[np.argmax(vol_hist)]
+            data_dict['volume_fraction'][field]['mode'] = centers[np.argmax(vol_hist)]
 
             stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
             data_dict['mass_fraction'][field]   = {'hist': mass_hist}
-            data_dict['mass_fraction'][field]['median'] = centers[np.argmax(mass_hist)]
+            data_dict['mass_fraction'][field]['mode'] = centers[np.argmax(mass_hist)]
 
             # save these into the dictionary
+            data_dict['radial_profile'][field] = {} # and set up rprof
             for k in stats:
                 data_dict['volume_fraction'][field][k] = stats[k]
                 data_dict['mass_fraction'][field][k]   = stats2[k]
 
                 # set up radial profile bins
                 data_dict['radial_profile'][field][k]  = np.zeros(np.size(rbins)-1)
+            data_dict['radial_profile'][field]['mode'] = np.zeros(np.size(rbins)-1)
 
             # now compute the radial profile - mass weighted ONLY
             for i in np.arange(np.size(rbins)-1):
@@ -276,12 +278,12 @@ def compute_abundance_stats(ds, data_source, mask = None,
                     stats     = utilities.compute_weighted_stats(x, w, return_dict = True)
                     for k in stats:
                         data_dict['radial_profile'][field][k][i] = stats[k]
-                    data_dict['radial_profile'][field]['median'][i] = centers[np.argmax(hist)]
+                    data_dict['radial_profile'][field]['mode'][i] = centers[np.argmax(hist)]
 
                 else:
                     for k in stats:
                         data_dict['radial_profile'][field][k][i] = None
-                    data_dict['radial_profile'][field]['median'][i] = None
+                    data_dict['radial_profile'][field]['mode'][i] = None
 
     #
     # general properties
@@ -431,21 +433,31 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         if not overwrite:
             ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in hf.keys() ]))]
 
-        if len(ds_list) > maximum_files_to_compute:
-            print "restricting file computation to ", maximum_files_to_compute, " down from ", len(ds_list)
-            ds_list = ds_list[:maximum_files_to_compute]
-
-
         # construct the pool, and map the results to a holder
         #   pool splits computation among processors
-        pool = Pool(nproc)
-        results = pool.map_async(_parallel_loop_star, itertools.izip(ds_list, itertools.repeat(fraction_fields)))
-        pool.close()
-        pool.join()
 
-        # gather results and add to output
-        for r in results.get():
-            hf[r.keys()[0]] = r[r.keys()[0]]
+        #
+        # do this in a loop, so we can save progressively once a full set of processors is complete
+        #   saves you if there is a crash (kinda). This way we do better memory management if
+        #   operating on many large datasets.
+        #
+        for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+
+            sub_list = list(sub_list)
+            sub_list = [s for s in sub_list if s is not None] # remove None values
+            reduced_nproc = np.min( [len(sub_list), nproc] )  # only run on needed processors
+
+            pool = Pool(reduced_nproc)
+            results = pool.map_async(_parallel_loop_star,
+                                      itertools.izip(sub_list, itertools.repeat(fraction_fields)))
+            pool.close() # no more processes
+            pool.join()  # wait and join running processes
+
+            # gather results and add to output
+            for r in results.get():
+                hf[r.keys()[0]] = r[r.keys()[0]]
+            del(results)
+
 
         # define these fields (which are defined in the Pool funtion but don't want to
         # deal with passing this back) ------

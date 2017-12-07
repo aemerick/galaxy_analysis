@@ -554,31 +554,38 @@ class Galaxy(object):
         r_sf =  self.df['particle_position_cylindrical_radius'][ age <= young_star]
         if np.size(r_sf) <= 5:
             r_sf = self.df['particle_position_cylindrical_radius'][ age <= young_star*2 ]
-        r_sf = np.max(r_sf.convert_to_units('pc').value) * yt.units.pc
-        if r_sf < 100.0 * yt.units.pc:
-            r_sf = 100*yt.units.pc
 
-        sf_disk = self.ds.disk([0.5,0.5,0.5],[0,0,1], r_sf, self.disk_region['height'])
-        A       = (np.pi * r_sf * r_sf).convert_to_units("pc**2")
-        A_disk  = (np.pi * self.disk.radius * self.disk.radius).convert_to_units('pc**2')
+        if np.size(r_sf) == 0: # no stars formed !!!
+            keys = ['r_sf','A_sf','A','SD_HI_sf','SD_gas_sf','SD_gas_sf_obs','SD_HI',
+             'SD_gas','SD_gas_obs','SD_H2_sf','SD_H2','SD_SFR','SD_SFR_sf','SD_stellar','SD_stellar_sf']
+            for k in keys:
+                self.observables[k] = 0.0
+        else:
+            r_sf = np.max(r_sf.convert_to_units('pc').value) * yt.units.pc
+            if r_sf < 100.0 * yt.units.pc:
+                r_sf = 100*yt.units.pc
 
-        self.observables['r_sf']   = r_sf * 1.0
-        self.observables['A_sf']   = A * 1.0
-        self.observables['A']      = A_disk * 1.0
-        self.observables['SD_HI_sf' ] = np.sum( sf_disk['H_p0_mass'].convert_to_units('Msun') ) / A
-        self.observables['SD_gas_sf'] = np.sum( sf_disk['cell_mass'].convert_to_units('Msun') ) / A
-        self.observables['SD_gas_sf_obs'] = self.observables['SD_HI_sf'] * 1.34
-        self.observables['SD_HI'] = np.sum(self.disk['H_p0_mass'].convert_to_units('Msun')) / A_disk
-        self.observables['SD_gas'] = np.sum(self.disk['cell_mass'].convert_to_units('Msun')) / A_disk
-        self.observables['SD_gas_obs'] = self.observables['SD_HI'] * 1.34
-        self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
-        self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
+            sf_disk = self.ds.disk([0.5,0.5,0.5],[0,0,1], r_sf, self.disk_region['height'])
+            A       = (np.pi * r_sf * r_sf).convert_to_units("pc**2")
+            A_disk  = (np.pi * self.disk.radius * self.disk.radius).convert_to_units('pc**2')
 
-        self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
-        self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
+            self.observables['r_sf']   = r_sf * 1.0
+            self.observables['A_sf']   = A * 1.0
+            self.observables['A']      = A_disk * 1.0
+            self.observables['SD_HI_sf' ] = np.sum( sf_disk['H_p0_mass'].convert_to_units('Msun') ) / A
+            self.observables['SD_gas_sf'] = np.sum( sf_disk['cell_mass'].convert_to_units('Msun') ) / A
+            self.observables['SD_gas_sf_obs'] = self.observables['SD_HI_sf'] * 1.34
+            self.observables['SD_HI'] = np.sum(self.disk['H_p0_mass'].convert_to_units('Msun')) / A_disk
+            self.observables['SD_gas'] = np.sum(self.disk['cell_mass'].convert_to_units('Msun')) / A_disk
+            self.observables['SD_gas_obs'] = self.observables['SD_HI'] * 1.34
+            self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
+            self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
 
-        self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
-        self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
+            self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
+            self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
+
+            self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
+            self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
 
 
         return self.observables

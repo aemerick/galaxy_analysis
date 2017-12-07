@@ -6,11 +6,7 @@ import deepdish as dd
 
 from galaxy_analysis.static_data import asym_to_anum
 
-# to compute weighted statistics on a distribution
-import statsmodels.stats.weightstats as stats
-
 from astroML.time_series import ACF_EK
-import statsmodels.tsa.stattools as stattools
 
 def map_to_pixels(x0,x1,y0=None, y1=None):
     """
@@ -354,7 +350,7 @@ def sort_by_anum(names):
 
 def compute_stats(x, return_dict = False, acf = False):
 
-    if not return_dict:
+    if not return_dict: # for bakcwards compatability - will remove eventually
         return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
 
     d = {}
@@ -363,9 +359,9 @@ def compute_stats(x, return_dict = False, acf = False):
     d['mean'] = np.average(x)
     d['median'] = np.median(x)
     d['std'] = np.std(x)
-    d['Q1']  = np.percentile(x, 25.0)
-    d['Q3']  = np.percentile(x, 75.0)
+    d['decile_1'], d['Q1'], d['Q3'], d['decile_9'] = np.percentile(x, [0.1,0.25,0.75,0.9])
     d['inner_quartile_range'] = d['Q3'] - d['Q1']
+    d['d9_d1_range']          = d['decile_9'] - d['decile_1']
     d['variance'] = np.var(x)
 
     if (len(x) > 0) and acf:
@@ -375,26 +371,58 @@ def compute_stats(x, return_dict = False, acf = False):
 
     return d
 
+def weighted_quantile(values, quantiles, weight=None, values_sorted=False):
+    """
+        As taken from:
+        https://stackoverflow.com/questions/21844024/weighted-percentile-using-numpy
+
+        Very close to np.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: np.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of initial array
+    :return: np.array with computed quantiles.
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    if weight is None:
+        weight = np.ones(len(values))
+    weight = np.array(weight)
+    assert np.all(quantiles >= 0) and np.all(quantiles <= 1), 'quantiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        weight = weight[sorter]
+
+    weighted_quantiles = np.cumsum(weight) - 0.5 * weight
+    weighted_quantiles /= np.sum(weight)
+
+    return np.interp(quantiles, weighted_quantiles, values)
+
 def compute_weighted_stats(x, w, return_dict = True):
     """
-    Returns a dictionary containing stats information to be easiy chunked
-    into a data set. Does this by constructing a weighted stats object
-    using the statsmodels 
+    Returns a dictionary containing statistics information that can
+    be easily tossed into a data set. Uses exclusively numpy-based routines
+    to compute the relevant weighted statistics.
     """
 
-    s = stats.DescrStatsW(x, weights = w)
-
-    if not return_dict:
-        return s
-
     d = {}
-    d['mean']     = s.mean
-    d['std' ]     = s.std
-    q             = s.quantile( np.array([0.25, 0.75]), return_pandas = False)
-    d['Q1']       = q[0]
-    d['Q3']       = q[1]
-    d['inner_quartile_range'] = q[1] - q[0]
-    d['variance'] = s.var
+    d['mean']     = np.average(                x, weights=w)
+    d['variance'] = np.average( (x-d['mean'])**2, weights=w)
+    d['std']      = np.sqrt(d['variance'])
+
+    # no weighted quantiles in numpy - need to use defined function
+    q             = weighted_quantile(x, [0.1, 0.25, 0.5, 0.75, 0.9], weight=w)
+    d['decile_1']  = q[0] # decile 1
+    d['Q1']        = q[1] # quartile 1
+    d['median']    = q[2]
+    d['Q3']        = q[3]
+    d['decile_9']  = q[4]
+    d['inner_quartile_range'] = d['Q3'] - d['Q1']
+    d['d9_d1_range']        = d['decile_9'] - d['decile_1']
+
     d['min']      = np.min(x)
     d['max']      = np.max(x)
 
