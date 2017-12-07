@@ -234,9 +234,9 @@ def compute_abundance_stats(ds, data_source, mask = None,
                 data_dict['mass_fraction'][field][k]   = None
                 data_dict['radial_profile'][field][k]  = [None] * (np.size(rbins) - 1)
 
-            data_dict['mass_fraction'][field]['median'] = None
-            data_dict['volume_fraction'][field]['median'] = None
-            data_dict['radial_profile'][field]['median'] = [None] * (np.size(rbins) - 1)
+            data_dict['mass_fraction'][field]['mode'] = None
+            data_dict['volume_fraction'][field]['mode'] = None
+            data_dict['radial_profile'][field]['mode'] = [None] * (np.size(rbins) - 1)
 
         else:
 
@@ -250,11 +250,11 @@ def compute_abundance_stats(ds, data_source, mask = None,
             # now compute descriptive statistics for each weighting
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
             data_dict['volume_fraction'][field] = {'hist': vol_hist}
-            data_dict['volume_fraction'][field]['median'] = centers[np.argmax(vol_hist)]
+            data_dict['volume_fraction'][field]['mode'] = centers[np.argmax(vol_hist)]
 
             stats2 = utilities.compute_weighted_stats(fdata, cm, return_dict = True)
             data_dict['mass_fraction'][field]   = {'hist': mass_hist}
-            data_dict['mass_fraction'][field]['median'] = centers[np.argmax(mass_hist)]
+            data_dict['mass_fraction'][field]['mode'] = centers[np.argmax(mass_hist)]
 
             # save these into the dictionary
             data_dict['radial_profile'][field] = {} # and set up rprof
@@ -264,7 +264,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
                 # set up radial profile bins
                 data_dict['radial_profile'][field][k]  = np.zeros(np.size(rbins)-1)
-            data_dict['radial_profile'][field]['median'] = np.zeros(np.size(rbins)-1)
+            data_dict['radial_profile'][field]['mode'] = np.zeros(np.size(rbins)-1)
 
             # now compute the radial profile - mass weighted ONLY
             for i in np.arange(np.size(rbins)-1):
@@ -278,12 +278,12 @@ def compute_abundance_stats(ds, data_source, mask = None,
                     stats     = utilities.compute_weighted_stats(x, w, return_dict = True)
                     for k in stats:
                         data_dict['radial_profile'][field][k][i] = stats[k]
-                    data_dict['radial_profile'][field]['median'][i] = centers[np.argmax(hist)]
+                    data_dict['radial_profile'][field]['mode'][i] = centers[np.argmax(hist)]
 
                 else:
                     for k in stats:
                         data_dict['radial_profile'][field][k][i] = None
-                    data_dict['radial_profile'][field]['median'][i] = None
+                    data_dict['radial_profile'][field]['mode'][i] = None
 
     #
     # general properties
