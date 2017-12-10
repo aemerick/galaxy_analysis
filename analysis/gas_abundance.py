@@ -20,6 +20,7 @@ import itertools
 # --- internal ---
 from galaxy_analysis import Galaxy
 from galaxy_analysis.utilities import utilities as utilities
+from galaxy_analysis.utilities import functions
 from galaxy_analysis.static_data import ISM
 
 
@@ -167,7 +168,7 @@ def compute_abundance_stats(ds, data_source, mask = None,
     # common abundance ratios (do X / Fe, X / H, and X / Mg)
 
     fbins = np.logspace(-20,  0, 401)
-    abins = np.linspace(-10, 10, 401)
+    abins = np.linspace(-10,  4, 501)
 
     rbins = np.arange(0.0, 620.0, 20.0) * yt.units.pc # 20 parsec bins?
 
