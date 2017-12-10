@@ -439,7 +439,7 @@ def generate_stellar_model_fields(ds):
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
     #
 
-    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1', 'lifetime']
+    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1']
 
     units = {'luminosity' : yt.units.erg/yt.units.s,
              'L_FUV' : yt.units.erg/yt.units.s,
@@ -480,27 +480,33 @@ def generate_stellar_model_fields(ds):
     def _model_L0(field, data):
         Q0 = data[('io','particle_model_Q0')]
         E0 = data[('io','particle_model_E0')]
-
         return (E0 * Q0).convert_to_units('erg/s')
 
     def _model_L1(field, data):
         Q1 = data[('io','particle_model_Q1')]
         E1 = data[('io','particle_model_E1')]
-
         return (E1 * Q1).convert_to_units('erg/s')
-   
 
     def _age(field, data):
         p = data[('io','creation_time')]
         t = data.ds.current_time
-
         return (t - p).convert_to_units('Myr')
-
 
     for field in field_names:
         yt.add_field(('io', 'particle_model_' + field),
                      function = _function_generator(field), units=unit_label[field],
                 	     particle_type = True)
+
+    def _lifetime(field, data):
+        m = data['birth_mass'].value
+        z = data['metallicity_fraction'].value
+
+        lt = SE_table.interpolate({'mass' : m, 'metallicity' : z}, 'lifetime')
+        lt = (lt * yt.units.s).convert_to_units('Myr')
+
+        return lt
+    yt.add_field(('io','particle_model_lifetime'), function = _lifetime, units = 'Myr',
+                 particle_type = True)
 
     yt.add_field(('io', 'particle_age'), function = _age, units = 'Myr',
                  particle_type = True)
