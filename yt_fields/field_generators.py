@@ -18,6 +18,10 @@ from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 from galaxy_analysis.misc import dm_halo
 
+from onezone import data_tables
+
+SE_table = data_tables.StellarEvolutionData()
+
 FIELDS_DEFINED = False
 
 def _density_function_generator(asym):
@@ -501,10 +505,16 @@ def generate_stellar_model_fields(ds):
         m = data['birth_mass'].value
         z = data['metallicity_fraction'].value
 
-        lt = SE_table.interpolate({'mass' : m, 'metallicity' : z}, 'lifetime')
-        lt = (lt * yt.units.s).convert_to_units('Myr')
+        if np.size(m) == 1:  # get around yt's checking
+            lt = np.shape(m) * yt.units.Myr
+        else:
+            lt = np.zeros(np.size(m))
+            for i in np.arange(np.size(m)):
+                lt[i] = SE_table.interpolate({'mass' : m[i], 'metallicity' : z[i]}, 'lifetime')
+            lt = (lt * yt.units.s).convert_to_units('Myr')
 
         return lt
+
     yt.add_field(('io','particle_model_lifetime'), function = _lifetime, units = 'Myr',
                  particle_type = True)
 
