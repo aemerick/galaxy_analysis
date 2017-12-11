@@ -17,7 +17,7 @@ class fit_function():
 
     def fit_function(self, xdata, ydata, *args, **kwargs):
         if 'p0' in kwargs.keys():
-            self.p0 = p0
+            self.p0 = kwargs['p0']
 
         self.popt, self.pcov = curve_fit(self._f, xdata, ydata,
                                                  *args, **kwargs)
