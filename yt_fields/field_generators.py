@@ -207,6 +207,144 @@ def _number_density_function_generator(asym):
 
     return nfields
 
+def _generate_rates(ds):
+    """
+    Generate reaction rate equations
+    """
+
+    kunit = 1.0 # 
+
+    def k8(T):
+        T = T.convert_to_units('K').value
+        k8 = 1.35E-9 * (T**(9.8493E-2) + 3.2852E-1 *\
+                          T**(5.561E-1) + 2.881E-7 * T**2.1826) /\
+            (1.0 + 6.191E-3 * T**1.0461 + 8.9712E-11*T**3.0424 +\
+               3.2576E-14 * T**3.7741)
+        return k8  # now in cgs
+
+    def k10(T): # have arg T to look same as other functions
+        k10 = 6.0E-10
+
+        return k10
+
+    def k19(T):
+        T = T.convert_to_units('K').value
+        k19 = 5.0E-7 * np.sqrt(100.0 / T)
+        return k19
+
+    def k22(T):
+        T = T.convert_to_units('K').value
+        # for GLover 2008 three body rate ONLY
+        k22 = 7.7E-31 / T**0.464
+        return k22
+
+    def k13(T):
+        T = T.convert_to_units('K').value
+        k13 = 10.0**(-178.4239 - 68.42243 * np.log10(T)
+                        + 43.20243 * np.log10(T)**2
+                        - 4.633167 * np.log10(T)**3
+                        + 69.70086 * np.log10(1.0 + 40870.38 / T)
+                        - (23705.7 / T))
+        ###############
+#        above  is for use with Glover 2008 three body rate
+#
+#        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+#        T_lim = 0.3
+#
+#        k13 = np.ones(np.shape(T)) * 1.0E-20
+#
+#        k13[ T > T_lim] = 1.0670825E-10*T_eV**(2.012) /\
+#               (np.exp(4.463/T_eV) * (1.0 + 0.2472 * T_eV)**3.512)
+
+        return k13
+
+    def k11(T):
+        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+        T_lim = 0.3
+        k11 = np.ones(np.shape(T)) * 1.0E-20
+
+        log_T = np.log(T.convert_to_units('K').value)
+
+        k11[ T_eV > T_lim] = (np.exp(-21237.15/T) *\
+                (- 3.3232183E-7
+                 + 3.3735382E-7  * log_T
+                 - 1.4491368E-7  * log_T**2
+                 + 3.4172805E-8  * log_T**3
+                 - 4.7813720E-9  * log_T**4
+                 + 3.9731542E-10 * log_T**5
+                 - 1.8171411E-11 * log_T**6
+                 + 3.5311932E-13 * log_T**7))
+
+        return k11
+
+    def k12(T):
+        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+        T_lim = 0.3
+        k12  = np.ones(np.shape(T)) * 1.0E-20
+
+        k12[T>T_lim] = 4.4886E-9*T**(0.109127)*np.exp(-101858.0/T)
+
+        return k12
+
+#    def k29(T)
+#
+#        return k29
+
+    reaction_units = 1.0 / yt.units.cm**3 / yt.units.s
+    ru_label = '1/s/cm**3'
+    def _k8_reaction_rate(field, data):
+        rr = k8(data['Temperature'].convert_to_units('K'))
+        rr = 2.0 * rr * data[('gas','H_m1_number_density')].convert_to_cgs().value *\
+                        data[('gas','H_p0_number_density')].convert_to_cgs().value
+        return rr * reaction_units
+
+    def _k10_reaction_rate(field,data):
+        rr = k10(data['Temperature'].convert_to_units('K'))
+        rr = rr * data[('gas','H2_p1_number_density')].convert_to_cgs().value *\
+                  data[('gas','H_p0_number_density')].convert_to_cgs().value
+        return rr * reaction_units
+
+    def _k19_reaction_rate(field,data):
+        rr = k19(data['Temperature'].convert_to_units('K'))
+        rr = rr * data[('gas','H2_p1_number_density')].convert_to_cgs().value *\
+                  data[('gas','H_m1_number_density')].convert_to_cgs().value
+        return rr * reaction_units
+
+    def _k22_reaction_rate(field, data):
+        rr = k22(data['Temperature'].convert_to_units('K'))
+        rr = rr * (data[('gas','H_p0_number_density')].convert_to_cgs().value)**3
+        return rr * reaction_units
+
+    yt.add_field(('gas','k8_rr'),
+                 function = _k8_reaction_rate, units = ru_label)
+    yt.add_field(('gas','k10_rr'),
+                 function = _k10_reaction_rate, units = ru_label)
+    yt.add_field(('gas','k19_rr'),
+                 function = _k19_reaction_rate, units = ru_label)
+    yt.add_field(('gas','k22_rr'),
+                 function = _k22_reaction_rate, units = ru_label)
+
+
+    # rates
+    # scoef
+    #  2.0 * (    k8  *   HM * HI         - set with interp
+    #             k10 * H2II * HI * 0.5   - set with interp
+    #             k19 * H2II * HM * 0.5   - set with interp
+    #             k22 * HI   * (HI*HI)    - set with interp
+    #
+    # acoef
+    #    k13*HI + k11*HII + k12*de + k29 + k31shield
+
+    # idust
+    #   + 2 * H2dust * HI * rhoH
+    #
+    # H2I = (scoef*dtit + H2I) / (1.0 + acoef*dtit)
+    #
+    #    passes density field
+
+
+    return
+
 def _particle_abundance_function_generator(asym, ds = None):
 
     if not (ds is None):
