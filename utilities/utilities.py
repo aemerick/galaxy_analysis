@@ -408,13 +408,21 @@ def compute_weighted_stats(x, w, return_dict = True):
     to compute the relevant weighted statistics.
     """
 
+    _x = 1.0 * x
+    if hasattr(x,'value'):
+        _x = x.value
+
+    _w = 1.0 * w
+    if hasattr(w,'value'):
+        _w = w.value
+
     d = {}
-    d['mean']     = np.average(                x, weights=w)
-    d['variance'] = np.average( (x-d['mean'])**2, weights=w)
+    d['mean']     = np.average(                _x, weights=_w)
+    d['variance'] = np.average( (_x-d['mean'])**2, weights=_w)
     d['std']      = np.sqrt(d['variance'])
 
     # no weighted quantiles in numpy - need to use defined function
-    q             = weighted_quantile(x, [0.1, 0.25, 0.5, 0.75, 0.9], weight=w)
+    q             = weighted_quantile(_x, [0.1, 0.25, 0.5, 0.75, 0.9], weight=_w)
     d['decile_1']  = q[0] # decile 1
     d['Q1']        = q[1] # quartile 1
     d['median']    = q[2]
@@ -423,8 +431,12 @@ def compute_weighted_stats(x, w, return_dict = True):
     d['inner_quartile_range'] = d['Q3'] - d['Q1']
     d['d9_d1_range']        = d['decile_9'] - d['decile_1']
 
-    d['min']      = np.min(x)
-    d['max']      = np.max(x)
+    d['min']      = np.min(_x)
+    d['max']      = np.max(_x)
+
+    if hasattr(x, 'value'):
+        for k in d.keys():
+            d[k] = d[k] * x.unit_quantity
 
     return d
 
