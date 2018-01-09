@@ -11,12 +11,12 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 
 yt.enable_parallelism()
 
-fns = ['DD0050/DD0050','DD0100/DD0100','DD0150/DD0150','DD0187/DD0187']
+fns = ['DD0050/DD0050','DD0210/DD0210', 'DD0380/DD0380', 'DD0550/DD0550']
 axis = 'x'
-fields_list = ['number_density', 'temperature', 'H_p0_number_density', 'O_Number_Density']
+fields_list = ['number_density', 'temperature', 'H_p0_number_density', 'H2_p0_number_density']
 nrow,ncol = 4,4
 fsize = 4
-width = (0.5,'kpc')
+width = (1.55,'kpc')
 
 #nrow,ncol = 2,2
 #fns = ['DD0100/DD0100','DD0150/DD0150']
@@ -52,7 +52,8 @@ for i, fn in enumerate(fns):
         if field == 'number_density':
             p = yt.ProjectionPlot(gal.ds, axis, field, weight_field = 'number_density',
                                   width = width, data_source = region)
-            p.set_zlim(field, 1.0E-3, 1.0E3)
+#            p.set_zlim(field, 1.0E-3, 1.0E3)
+            p.set_zlim(field, 0.9E-3, 0.9E3)
             p.set_cmap(field, 'viridis')
             p.set_colorbar_label(field, r'n (cm$^{-3}$)')
 
@@ -61,19 +62,29 @@ for i, fn in enumerate(fns):
 
         elif field == 'temperature':
             p = yt.SlicePlot(gal.ds, axis, field, width = width, data_source = region)
-            p.set_zlim(field, 1.0E2, 1.0E7)
+#            p.set_zlim(field, 1.0E2, 1.0E7)
+            p.set_zlim(field, 1.1E2, 0.9E7)
             p.set_cmap(field, 'RdYlBu_r')
             p.set_colorbar_label(field, r'T (K)')
         elif field == 'H_p0_number_density':
             p = yt.ProjectionPlot(gal.ds, axis, field, width = width, data_source = region,
                                   weight_field = None)
-            p.set_zlim(field, 1.0E16, 1.0E22)
+#            p.set_zlim(field, 1.0E16, 1.0E22)
+            p.set_zlim(field, 1.1E16, 0.9E22)
             p.set_cmap(field, 'Greys')
             p.set_colorbar_label(field, r'N$_{\rm HI}$ (cm$^{-2}$)')
+        elif field == 'H2_p0_number_density':
+            p = yt.ProjectionPlot(gal.ds, axis, field, width = width, data_source = region,
+                                  weight_field = None)
+#            p.set_zlim(field, 6.0E18, 1.0E21)
+            p.set_zlim(field, 6.1E18, 0.9E21)
+            p.set_cmap(field, 'plasma')
+            p.set_colorbar_label(field, r'N$_{\rm H_2}$ (cm$^{-2}$)')
         elif field == 'O_Number_Density':
             p = yt.ProjectionPlot(gal.ds, axis, field, width = width, data_source = region,
                                   weight_field=None)
-            p.set_zlim(field, 1.0E12, 1.0E17)
+#            p.set_zlim(field, 1.0E12, 1.0E17)
+            p.set_zlim(field, 1.1E12, 0.9E17)
             p.set_cmap(field, 'magma')
             p.set_colorbar_label(field, r'N$_{\rm O}$ (cm$^{-2}$)')
 
