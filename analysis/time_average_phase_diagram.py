@@ -77,7 +77,7 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
                                zfield = 'cell_mass', x_unit = None, y_unit = None,
                                weight_field = None,
                                x_bins=None, y_bins=None, outname = None,
-                               zunit = None, zlim = None,
+                               zunit = None, zlim = None, xlabel = None, ylabel = None, zlabel = None,
                                region_type = 'FullBox', region_kwargs = {},
                                xlog = True, ylog = True, zlog=False, cmap = 'cubehelix'):
 
@@ -204,6 +204,13 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     main_pd.set_log(zfield, zlog)
     if not (zlim is None):
         main_pd.set_zlim(zfield, zlim[0], zlim[1])
+
+    if not (xlabel is None):
+        main_pd.set_xlabel(xlabel)
+    if not (ylabel is None):
+        main_pd.set_ylabel(ylabel)
+    if not (zlabel is None):
+        main_pd.set_colorbar_label(zf, zlabel)
 
     outname = xfield + "_" + yfield + "_" + zfield + "_" + outname
 
