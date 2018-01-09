@@ -35,13 +35,33 @@ def obtain_mprod(fieldname):
 def obtain_outflow_rates(outflow_field):
     _temp_dict = {}
     all_data = {}
+
     for i,k in enumerate(data_list):
         _temp_dict[k] = dd.io.load(k,
                              '/gas_profiles/outflow/sphere')
-        all_data[k] =  _temp_dict[k][ ('gas',outflow_field) ] # Becuase i'm dumb
+        if outflow_field == 'Total Tracked Metals':
+            all_data[k] = np.zeros(np.shape(_temp_dict[k][ ('gas', elements[0] + '_Mass')]))
+            for x in elements:
+                all_data[k] = all_data[k] + np.array( _temp_dict[k][ ('gas', x + '_Mass')])
+        else:
+            all_data[k] =  _temp_dict[k][ ('gas',outflow_field) ] # Becuase i'm dumb
 
     all_data =np.array( [all_data[k] for k in all_data.keys()])
+    print np.shape(all_data)
     return all_data
+
+def obtain_stellar_mass():
+    m = np.ones(np.size(data_list))
+    for i,k in enumerate(data_list):
+        m[i] = dd.io.load(k, '/particle_meta_data/total_birth_mass')
+    return m
+
+def obtain_metal_mass():
+    m = np.ones(np.size(data_list))
+    for i,k in enumerate(data_list):
+        m[i] = dd.io.load(k, '/gas_meta_data/masses/FullBox')['Total Tracked Metals'] +\
+               dd.io.load(k, '/gas_meta_data/masses/OutsideBox')['Total Tracked Metals']
+    return m
 
 def obtain_sfr(smooth_sfr = True):
     sfr = np.ones(np.size(data_list))
@@ -138,17 +158,21 @@ def plot_species_outflow_panel(method = 'fraction'):
 
     return
 
-def basic_outflow_loading_plot():
+def plot_basic_outflow_and_loading():
     #
     # Mass Outflow Plot
     #
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    all_data = obtain_outflow_rates('cell_mass')
-    sfr      = obtain_sfr()
+    all_data   = obtain_outflow_rates('cell_mass')
+    metal_data = obtain_outflow_rates('Total Tracked Metals')
+    metal_mass = obtain_metal_mass()
+    stellar_mass = obtain_stellar_mass() # total mass in stars produced at a time, NOT M_* of galaxy
+    sfr        = obtain_sfr()
 
     binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
+    binned_metal_mass = 1.0 * metal_data
     for i,loc in enumerate([0.1, 0.25, 0.5, 1.0]):
         loc_bin = np.argmin(np.abs(xpos-loc)) # get the right position bin
         y = binned_y[:,loc_bin]
@@ -197,7 +221,7 @@ def basic_outflow_loading_plot():
     ax.set_ylabel(r'Mass Loading Factor')
     ax.semilogy()
     ax.set_xlim(0.0, np.max(newx-newx[0]))
-    ax.set_ylim(0.1,300)
+    ax.set_ylim(0.1,500)
 
     plt.tight_layout()
     #ax.legend(loc='best')
@@ -205,11 +229,79 @@ def basic_outflow_loading_plot():
     fig.savefig('total_mass_loading.png')
     plt.close()
 
+    #
+    # Metal Mass Loading
+    #
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8,8)
+
+    for i, loc in enumerate([0.1,0.25,0.5,1.0]):
+        loc_bin = np.argmin(np.abs(xpos-loc)) # get the right position bin
+        print np.shape(binned_y), np.shape(binned_metal_mass), np.size(sfr), np.size(metal_mass), np.size(stellar_mass)
+        y = binned_metal_mass[:,loc_bin] / (sfr  * (metal_mass / stellar_mass)) # metal mass loading factor
+        print loc, np.min(y), np.max(y), np.average(y)
+        print np.min(metal_mass), np.max(metal_mass), np.min(stellar_mass),np.max(stellar_mass)
+
+        bin_edges=utilities.bin_edges(np.round(times))
+        # rebin with 10 Myr bins, rather than previous 1 Myr bins
+        newx,rebiny=utilities.simple_rebin(1.0*bin_edges,1.0*y,
+                       np.arange(np.min(bin_edges),np.max(bin_edges)+2,10), 'average')
+
+        plot_histogram(ax, newx-newx[0], rebiny, lw = line_width, color = plasma(i/4.0),
+                       label = r"%0.1f R$_{\rm vir}$"%(loc))
+
+    ax.set_xlabel(r'Time (Myr)')
+    ax.set_ylabel(r'Metal Mass Loading Factor')
+    ax.semilogy()
+    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_ylim(0.07, 15)
+
+    plt.tight_layout()
+    #ax.legend(loc='best')
+    plt.minorticks_on()
+    fig.savefig('metal_mass_loading.png')
+    plt.close()
+
+    #
+    # Metal Mass Loading
+    #
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8,8)
+
+    for i, loc in enumerate([0.1,0.25,0.5,1.0]):
+        loc_bin = np.argmin(np.abs(xpos-loc)) # get the right position bin
+        print np.shape(binned_y), np.shape(binned_metal_mass), np.size(sfr), np.size(metal_mass), np.size(stellar_mass)
+        y = binned_metal_mass[:,loc_bin] / (sfr) # metal mass loading factor
+        print loc, np.min(y), np.max(y), np.average(y)
+        print np.min(metal_mass), np.max(metal_mass), np.min(stellar_mass),np.max(stellar_mass)
+
+        bin_edges=utilities.bin_edges(np.round(times))
+        # rebin with 10 Myr bins, rather than previous 1 Myr bins
+        newx,rebiny=utilities.simple_rebin(1.0*bin_edges,1.0*y,
+                       np.arange(np.min(bin_edges),np.max(bin_edges)+2,10), 'average')
+
+
+        print np.sum(rebiny) / (1.0*np.size(rebiny)), '-------------'
+        plot_histogram(ax, newx-newx[0], rebiny, lw = line_width, color = plasma(i/4.0),
+                       label = r"%0.1f R$_{\rm vir}$"%(loc))
+
+    ax.set_xlabel(r'Time (Myr)')
+    ax.set_ylabel(r'Metal Mass Loading Factor')
+    ax.semilogy()
+    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_ylim(1.0E-6, 1.0)
+
+    plt.tight_layout()
+    #ax.legend(loc='best')
+    plt.minorticks_on()
+    fig.savefig('metal_mass_outflow.png')
+    plt.close()
+
     return
 
 
 if __name__ == "__main__":
 
-    plot_species_outflow_panel()
-#    plot_basic_outflow_and_loading()
+#    plot_species_outflow_panel()
+    plot_basic_outflow_and_loading()
 
