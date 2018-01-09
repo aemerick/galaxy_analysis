@@ -11,8 +11,8 @@ from galaxy_analysis.utilities import utilities as util
 def compute_time_average(field_path,
                          dir = '.', tmin = None, tmax = None,
                          times = None, data_list = None,
-                         self_contained = False, index = None,
-                         x_field = 'xbins'):
+                         self_contained = False, sc_data = None, index = None,
+                         x_field = 'xbins', return_quartiles = False):
     """
     Computes the time average of some quantity pre-computed for a given
     set of simulations dumps using the galaxy analysis framework. The quantity
@@ -39,8 +39,9 @@ def compute_time_average(field_path,
         data_list = np.sort(glob.glob(dir + '/DD????_galaxy_data.h5'))
 
     if self_contained:
-        sc_data   = dd.io.load(data_list)
-        data_list = np.sort(sc_data.keys())
+        if sc_data is None:
+            sc_data   = dd.io.load(data_list)
+            data_list = np.sort(sc_data.keys())
 
     # get list of times from all data sets
     if times is None:
@@ -82,7 +83,9 @@ def compute_time_average(field_path,
     s2 = 0.0 * std
     avg = 0.0 * sum
     M2  = 0.0 * sum
-    for d in avg_data_list:
+    store_profiles = [None] * np.size(avg_data_list)
+
+    for i,d in enumerate(avg_data_list):
         if self_contained:
             data = sc_data[ d ]
         else:
@@ -93,6 +96,7 @@ def compute_time_average(field_path,
             y = y[index]
 
         sum += y
+        store_profiles[i] = y
 
         min  = np.min( [y,min], axis=0)
         max  = np.max( [y,max], axis=0)
@@ -105,6 +109,10 @@ def compute_time_average(field_path,
     std = np.sqrt( M2 / (1.0*(s0 - 1)))
 
     avg = sum / (1.0 * s0)
+
+    q1  = np.percentile(np.array(store_profiles), 25, axis = 0)
+    q2  = np.percentile(np.array(store_profiles), 50, axis = 0)
+    q3  = np.percentile(np.array(store_profiles), 75, axis = 0)
 
     if np.size(avg) > 0 and (not (x_field is None)):
         try:
@@ -126,7 +134,10 @@ def compute_time_average(field_path,
     else:
         x = None
 
-    return x, avg, min, max, std
+    if return_quartiles:
+        return x, avg, min, max, std, q1, q2, q3
+    else:
+        return x, avg, min, max, std
 
 def plot_time_average(x, y, std = None, min = None, max = None,
                             facecolor = 'none', color = 'black', hatch = None, hatchcolor=None,
