@@ -18,7 +18,7 @@ fig.set_size_inches(8,8)
 sum = None
 for phase in ['WNM','WIM','HIM']: #['cold','warm','hot']:
 
-    x,avg,min,max,std = compute_time_average(['gas_profiles','velocity','halo',phase], tmin = 100, tmax = 200,
+    x,avg,min,max,std = compute_time_average(['gas_profiles','velocity','halo',phase], tmin = 250, tmax = 350,
                                              dir = filepath, x_field = 'vbins')
     x, avg = utilities.simple_rebin(x, avg, 10) # re-bin in 10 km/s
 
@@ -34,8 +34,8 @@ plot_histogram(ax, x, sum, color = 'black', lw = line_width, ls = '-', label = '
 ax.set_xlabel(r'Outflow Velocity (km s$^{-1})$')
 ax.set_ylabel(r'Mass (M$_{\odot}$)')
 ax.semilogy()
-ax.set_xlim(0.0 ,np.max(x))
-ax.set_ylim(1.0, 1.0E5)
+ax.set_xlim(0.0 ,np.max(x[sum>0.1]))
+ax.set_ylim(0.1, 4.0E5)
 plt.minorticks_on()
 ax.legend(loc='best')
 
