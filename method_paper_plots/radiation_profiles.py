@@ -14,15 +14,17 @@ workdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sn
 
 fields = ['G_o','LW_flux','FUV_flux','Q0_flux','Q1_flux','Pe_heating_rate_masked']
 
-xmax = 750.0
+xmax = 600.0
+TMIN = 300.0
+TMAX = 350.0
 
 # gather time averaged profiles for all
 all_profiles = {}
 for f in fields:
-    radius, avg, min, max, std = ta.compute_time_average(['gas_profiles','radiation','disk',f], dir = workdir,
-                                              tmin = 135.0, tmax = 185.1, x_field = 'xbins')
+    radius, avg, min, max, std, q1,q2,q3= ta.compute_time_average(['gas_profiles','radiation','disk',f], dir = workdir,
+                                              tmin = TMIN, tmax = TMAX, x_field = 'xbins', return_quartiles =True)
     all_profiles[f] = {'avg':avg,'min':min,'max':max,'std':std, 'radius' : radius,
-                       'centers' : 0.5*(radius[1:] + radius[:-1])}
+                       'centers' : 0.5*(radius[1:] + radius[:-1]), 'q1' : q1, 'q2' : q2, 'q3' : q3, 'median' : q2}
 
 
 # G_o plot
@@ -79,7 +81,7 @@ if True:
 
 if True:
     fig, ax = plt.subplots()
-    color1 = 'C0'
+    color1 = 'black'
     color2 = 'C1'
 
     # now plot
@@ -89,38 +91,39 @@ if True:
 
     plot_histogram(ax, all_profiles['Q0_flux']['radius'], all_profiles['Q0_flux']['avg'] * q0_conv,
                         color = color1, label = r'Q$_{\rm 0}$', lw = line_width)
-    fillmin = all_profiles['Q0_flux']['avg'] #- all_profiles['Q0_flux']['std']
-    fillmax = all_profiles['Q0_flux']['avg'] + np.abs(all_profiles['Q0_flux']['std'])
+
+    fillmin = all_profiles['Q0_flux']['q1']
     fillmax = all_profiles['Q0_flux']['max']
 
-    fillmin[ fillmin <= 0.0] = lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
-    fillmax[ fillmax <= 0.0] = lower_lim
+    fillmin[ fillmin <= 0.0] = np.min(fillmin[fillmin>0.0]) # lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
+    fillmax[ fillmax <= 0.0] = np.min(fillmax[fillmax>0.0]) #lower_lim
 
     # shade in std
     ax.fill_between(all_profiles['Q0_flux']['centers'], fillmin*q0_conv, fillmax*q0_conv,
                            facecolor = color1, interpolate=False, edgecolor = color1, alpha = 0.5)
 
-    plot_histogram(ax, all_profiles['Q1_flux']['radius'], all_profiles['Q1_flux']['avg']*q1_conv,
-                        color = color2, label = r'Q$_{\rm 1}$', lw = line_width)
-    fillmin = all_profiles['Q1_flux']['avg'] # - all_profiles['Q1_flux']['std']
-    fillmax = all_profiles['Q1_flux']['avg'] + np.abs(all_profiles['Q1_flux']['std'])
+#    plot_histogram(ax, all_profiles['Q1_flux']['radius'], all_profiles['Q1_flux']['avg']*q1_conv,
+#                        color = color2, label = r'Q$_{\rm 1}$', lw = line_width)
+
+    fillmin = all_profiles['Q1_flux']['q1']
     fillmax = all_profiles['Q1_flux']['max']
 
-    fillmin[ fillmin <= 0.0] = lower_lim
-    fillmax[ fillmax <= 0.0] = lower_lim
+    fillmin[ fillmin <= 0.0] = np.min(fillmin[fillmin>0.0]) # lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
+    fillmax[ fillmax <= 0.0] = np.min(fillmax[fillmax>0.0]) #lower_lim
+
 
     # shade in std
-    ax.fill_between(all_profiles['Q1_flux']['centers'], fillmin*q1_conv, fillmax*q1_conv,
-                           facecolor = color2, interpolate=False, edgecolor = color2, alpha = 0.5)
+#    ax.fill_between(all_profiles['Q1_flux']['centers'], fillmin*q1_conv, fillmax*q1_conv,
+#                           facecolor = color2, interpolate=False, edgecolor = color2, alpha = 0.5)
 
     ax.set_xlabel(r'Radius (pc)')
     ax.set_xlim(0.0, xmax)
     ax.set_ylabel(r'Ionizing Radiation Flux (erg s$^{-1}$ cm$^{-2}$)')
     ax.semilogy()
-    ax.set_ylim(2.0E-6, 4.0E-3)
+    ax.set_ylim(1.0E-9, 1.0E-3)
     plt.minorticks_on()
     fig.set_size_inches(8,8)
-    ax.legend(loc='best')
+ #   ax.legend(loc='best')
     plt.tight_layout()
     fig.savefig('ionizing_photon_profile.png')
     plt.close()
