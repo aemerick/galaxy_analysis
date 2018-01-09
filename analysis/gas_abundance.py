@@ -1,3 +1,5 @@
+SKIP_ABUNDANCES = True
+
 import yt
 import numpy as np
 from galaxy_analysis.plot.plot_styles import *
@@ -136,7 +138,7 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
 def compute_abundance_stats(ds, data_source, mask = None,
                                 fraction_fields = None,
                                 abundance_fields = None,
-                                mask_abundances = True,
+                                mask_abundances = False,
                                 unpoluted_threshold = -18):
     """
     Computes the mass and volume weighted distributions of metal
@@ -203,6 +205,10 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
         if 'over' in field:
             bins = abins
+
+            if SKIP_ABUNDANCES:
+                continue # WARNING FOR DEBUGGING PURPOSES
+
         else:
             bins = fbins
         centers = 0.5 * (bins[1:] + bins[:-1])
