@@ -46,7 +46,7 @@ times = times - times[0]
 # Plot SD_SFR vs. atomic
 #
 fig, ax = plt.subplots()
-ax.scatter( np.log10(all_data['SD_HI']), np.log10(all_data['SD_SFR']), label = 'HI Observed', 
+ax.scatter( np.log10(all_data['SD_HI']), np.log10(all_data['SD_SFR']), # label = 'HI Observed', 
             c = times, cmap = 'viridis')
 ax.set_xlim(-0.5,5.2)
 ax.set_ylim(-5.0, 3.5)
@@ -78,10 +78,10 @@ img_size = np.shape(img)
 dpi = 80.0
 fig.set_size_inches(img_size[1]/dpi, img_size[0]/dpi)
 ax.imshow(img)
-ax.scatter( p_x(np.log10(all_data['SD_gas'])), p_y(np.log10(all_data['SD_SFR'])),
-               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
+#ax.scatter( p_x(np.log10(all_data['SD_gas'])), p_y(np.log10(all_data['SD_SFR'])),
+#               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
 ax.scatter( p_x(np.log10(all_data['SD_gas_obs'])), p_y(np.log10(all_data['SD_SFR'])),
-               c = times, cmap = 'plasma', s = psize, alpha = 0.75)
+              c = times, cmap = 'plasma', s = psize, alpha = 0.75)
 ax.set_xticks([])
 ax.set_yticks([])
 #plt.tight_layout()
@@ -162,8 +162,8 @@ ax.imshow(img)
 
 xdata = np.log10(all_data['SD_gas'])
 ydata = np.log10(all_data['SD_SFR']) - xdata - 6
-ax.scatter( p_x(xdata), p_y(ydata),
-               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
+#ax.scatter( p_x(xdata), p_y(ydata),
+#               c = times, cmap = 'viridis', s = psize, alpha = 0.75)
 ax.scatter( p_x(np.log10(all_data['SD_gas_obs'])), p_y(ydata),
                c = times, cmap = 'plasma', s = psize, alpha = 0.75)
 ax.set_xticks([])
