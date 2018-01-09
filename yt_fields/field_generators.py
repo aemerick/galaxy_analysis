@@ -567,24 +567,38 @@ def _additional_helper_fields(fields):
         return lw.convert_to_units('1/s') 
 
     def _G_o(field,data):
-
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
         Z   = (data['Metal_Density'] / data['Density']).value
         n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
-               data['H2_p0_number_density'] + data['H2_p1_number_density']).convert_to_units('cm**(-3)').value
+                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
+        g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)
+        d_to_g = 1.0 / (10.0**(g_to_d))
+        D = d_to_g / 6.616595E-3
+        epsilon = 0.01488637246 * (n_H)**(0.235269059)
+        atten = np.exp( - 1.33E-21 * D * data['dx'].convert_to_units('cm').value * n_H)
+        G_o = pe / (1.3E-24 * n_H * epsilon * D * atten)
+        return G_o * (data['Density'] / data['Density'])
+
+    def _G_eff(field,data):
+        pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
+        Z   = (data['Metal_Density'] / data['Density']).value
+        n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
+                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
 
         g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)
+
         d_to_g = 1.0 / (10.0**(g_to_d))
 
         D = d_to_g / 6.616595E-3
 
         epsilon = 0.01488637246 * (n_H)**(0.235269059)
 
-        atten = np.exp( - 1.33E-21 * D * data['dx'].convert_to_units('cm').value * n_H)
+        # atten = np.exp( - 1.33E-21 * D * data['dx'].convert_to_units('cm').value * n_H)
 
-        G_o = pe / (1.3E-24 * n_H * epsilon * D * atten)
+        G_eff = pe / (1.3E-24 * n_H * epsilon * D)
 
-        return G_o * (data['Density'] / data['Density'])
+        return G_eff * (data['Density'] / data['Density'])
+
 
     def _FUV_flux(field, data):
         # 1.59E-3 converts from MW normalized flux density to flux dens in cgs
@@ -754,6 +768,7 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
+    yt.add_field(('gas','G_eff'), function = _G_eff, units = "")
     yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','Q0_flux'), function = _Q0_flux, units = "erg/s/cm**2")
