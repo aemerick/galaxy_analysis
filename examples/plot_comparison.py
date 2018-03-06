@@ -23,7 +23,7 @@ from galaxy_analysis.plot import plot_styles as ps
 
 
 global_tmin = 0.0
-global_tmax = 200.0
+global_tmax = 500.0
 #global_tmax = 270.0
 #
 #
@@ -124,6 +124,10 @@ run11_IC = { 'r11_smooth' : stampede + '/run11/200cc',
 #             'r11 ibug'     : pleiades + '/starIC/run11_2rs/ion_bugfix',
              '30'     : pleiades + '/starIC/run11_30km/final_sndriving' ,
              '30_3pc' : pleiades + '/starIC/run11_30km/3pc',
+             '30_3pch' : pleiades + '/starIC/run11_30km/3pc_hsn',
+             '30_3pcmh' : pleiades + '/starIC/run11_30km/3pc_mhsn',
+             '30_6pch' : pleiades + '/starIC/run11_30km/6pc_hsn',
+             '30_3pcvh' : pleiades + '/starIC/run11_30km/3pc_vhsn',
              '40'     : pleiades + '/starIC/run11_40km/corrected_sndriving'}
 
 color_dict['17'] = ps.orange
@@ -131,12 +135,18 @@ color_dict['25'] = ps.magenta
 color_dict['r11 ibug']  = ps.magenta
 color_dict['30']  = ps.purple
 color_dict['30_3pc'] = ps.blue
+color_dict['30_3pch'] = ps.orange
+color_dict['30_3pcmh'] = ps.magenta
+color_dict['30_6pch'] = 'C1'
 color_dict['40']  = ps.black
 ls_dict['17'] = '-'
 ls_dict['25'] = '-'
 ls_dict['r11 ibug']  = '--'
 ls_dict['30'] = '-'
 ls_dict['30_3pc'] = '-'
+ls_dict['30_3pch'] = '-'
+ls_dict['30_6pch'] = '-'
+ls_dict['30_3pcmh'] = '-'
 ls_dict['40'] = '-'
 
 color_dict['r11_smooth'] = ps.blue
@@ -799,29 +809,35 @@ if __name__ == '__main__':
 #    all_s = ['Fiducial','collapse','cool_ramp','cool_ramp2','cool_ramp3','CR2 SN']
 #    all_s = feedback_comparisons.keys()
 
-    all_s = ['17','25','30','40','30_3pc']
+    all_s = ['30','30_3pc','30_3pch','30_3pcmh','30_6pch']
 #    all_s = ['30']
 #    all_s = PERT_DATA_PATHS.keys()
 
 #    all_s = feedback_plot_1
 #    all_s = feedback_plot_2
 
+    plot_sfr(sim_names = all_s)
+    plot_sfr(sim_names = all_s, sampling = 1)
+    plot_sfr(sim_names = all_s, sampling = 100)
+    plot_snr(sim_names = all_s)
+    print "done with sfr"
+
     if True:
         plot_mass(sim_names = all_s, species = 'HI')
         plot_mass(sim_names = all_s, species = 'HII')
         plot_mass(sim_names = all_s, species = 'H2')
-        plot_mass(sim_names = all_s, species = 'H2_total')
-        plot_mass(sim_names = all_s, species = 'He_total')
+#        plot_mass(sim_names = all_s, species = 'H2_total')
+#        plot_mass(sim_names = all_s, species = 'He_total')
         plot_mass(sim_names = all_s, species = 'H_total')
         plot_mass(sim_names = all_s, species = 'stars')
         plot_mass(sim_names = all_s, species = 'total')
         plot_mass(sim_names = all_s, species = 'metals')
-        plot_mass(sim_names = all_s, species = 'Fe')
-        plot_mass(sim_names = all_s, species = 'O')
-        plot_mass(sim_names = all_s, species = 'C')
-        plot_mass(sim_names = all_s, species = 'Mg')
-        plot_mass(sim_names = all_s, species = 'N')
-        plot_mass(sim_names = all_s, species = 'Si')
+#        plot_mass(sim_names = all_s, species = 'Fe')
+#        plot_mass(sim_names = all_s, species = 'O')
+#        plot_mass(sim_names = all_s, species = 'C')
+#        plot_mass(sim_names = all_s, species = 'Mg')
+#        plot_mass(sim_names = all_s, species = 'N')
+#        plot_mass(sim_names = all_s, species = 'Si')
 
 
         plot_sfr(sim_names = all_s)

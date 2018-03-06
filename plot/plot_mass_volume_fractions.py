@@ -7,6 +7,8 @@ import deepdish as dd
 from galaxy_analysis.utilities import utilities
 import numpy as np
 
+TMAX = 500.0 # maximum (normalized) plot time
+
 
 _phases = ['Molecular','CNM','WNM','WIM','HIM']
 
@@ -64,7 +66,7 @@ def plot_mass_fraction(t, y, std = None):
     fig.set_size_inches(8,8)
     plt.tight_layout()
     ax.set_ylim(0.0,0.9)
-    ax.set_xlim(0.0, np.max(t-t[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(t-t[0])])  )
     fig.savefig('phase_mass_fraction_evolution.png')
     ax.set_ylim(1.0E-5, 1.0)
     ax.semilogy()
@@ -84,7 +86,7 @@ def plot_volume_fraction(t, y, std = None):
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Volume Fraction')
     ax.legend(loc='upper right', ncol=2)
-    ax.set_xlim(0.0, np.max(t-t[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(t-t[0])]) )
     plt.minorticks_on()
     fig.set_size_inches(8,8)
     ax.set_ylim(0.0, 0.9)

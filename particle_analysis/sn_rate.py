@@ -57,6 +57,10 @@ def future_snr(ds, data, times = None, sn_type = 'II'):
 
         pcut = (pt == 12) * (mass > 0.0)
 
+    elif any( [sn_type in x for x in _agb_labels]):
+
+        pcut = (pt == 11) * (birth_mass < agb_threshold)
+
     explosion_times = creation_time[pcut] + lifetimes[pcut]
     explosion_times = explosion_times * yt.units.Myr
 
@@ -109,7 +113,8 @@ def snr(ds, data, times = None, sn_type = 'II'):
     mass          = data['particle_mass'].convert_to_units("Msun").value
     creation_time = data['creation_time'].convert_to_units('Myr').value
     metallicity   = data['metallicity_fraction'].value
-    lifetimes     = data['dynamical_time'].convert_to_units('Myr').value
+#    lifetimes     = data['dynamical_time'].convert_to_units('Myr').value
+    lifetimes     = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
     pt            = data['particle_type'].value
 
     # check to see if there are any SN candidates in the first place
@@ -150,13 +155,11 @@ def snr(ds, data, times = None, sn_type = 'II'):
         pcut *= (mass == 0.0)
 
     elif any( [sn_type in x for x in _agb_labels]):
+        agb_threshold	   = ds.parameters['IndividualStarSNIIMassCutoff']
 
-        #
-        # these are a little complicated - all WD type that didn't explode,
-        # as well as remnant type below AGB mass threshold (i.e. stars that die
-        # but don't go SN
+        pcut = (pt > 11)  # all dead stars
+        pcut = pcut * (birth_mass <= agb_threshold)
 
-        raise NotImplementedError
  #       pcut  = (pt == 12)
  #       pcut *= (mass > 0.0)
 

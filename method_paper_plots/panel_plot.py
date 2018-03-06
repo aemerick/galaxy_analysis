@@ -11,8 +11,8 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 
 yt.enable_parallelism()
 
-fns = ['DD0050/DD0050','DD0210/DD0210', 'DD0380/DD0380', 'DD0550/DD0550']
-axis = 'x'
+fns = ['DD0046/DD0046','DD0196/DD0196', 'DD0346/DD0346', 'DD0546/DD0546']
+axis = 'z'
 fields_list = ['number_density', 'temperature', 'H_p0_number_density', 'H2_p0_number_density']
 nrow,ncol = 4,4
 fsize = 4

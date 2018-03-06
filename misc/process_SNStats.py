@@ -79,7 +79,8 @@ def read_all_data(directory = '.', filter = True):
     # grep for IndividualStarSNStats flag in output files, combine to one
     bash_commands = ["grep --no-filename -e '^IndividualStarSNStats' " + directory + "/*.o* > temp_combined_output_o.txt",
                      "grep --no-filename -e '^IndividualStarSNStats' " + directory + "/*.e* > temp_combined_output_e.txt",
-                     "cat " + directory + "/temp_combined_output_e.txt " + directory + "/temp_combined_output_o.txt > " + directory + "/temp_combined_output.txt",
+                     "grep --no-filename -e '^IndividualStarSNStats' " + directory + "/*output* > temp_combined_output_output.txt",
+                     "cat " + directory + "/temp_combined_output_e.txt " + directory + "/temp_combined_output_o.txt " + directory + "/temp_combined_output_output.txt > " + directory + "/temp_combined_output.txt",
                      "sed '/P/d' " + directory + "/temp_combined_output.txt > " + directory + "/temp_combined_output_2.txt",
                      "sed '/Load/d' " + directory + "/temp_combined_output_2.txt > " + directory + "/combined_output.txt",
                      "rm " + directory + "/temp_combined_output*.txt"]
@@ -253,8 +254,10 @@ if __name__ == "__main__":
 
     directory = '.'
 
+    dx = 1.8
+
     data = read_all_data(directory)
     save_data(data, directory)
     plot_density(data)
-    plot_rpds(data, dx = 1.8, ncell = 1)
-    plot_rpds(data, dx = 1.8, norm = True, ncell = 1)
+    plot_rpds(data, dx = dx, ncell = 1)
+    plot_rpds(data, dx = dx, norm = True, ncell = 1)

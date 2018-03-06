@@ -10,6 +10,7 @@ import os
 
 # some general plot styles for consistency
 from galaxy_analysis.plot import plot_styles as ps
+from galaxy_analysis.utilities import utilities
 
 colors = {'Disk' : ps.black,
               'CNM'  : ps.purple,
@@ -78,7 +79,7 @@ def plot_sequestering(directory = './', fields = None, elements = None,
         exclude      = ['H','HI','HII','H2','Metals','Total','He','HeI','HeII','HeIII']
         metal_fields = utilities.sort_by_anum([x for x in metal_fields if (not any([y in x for y in exclude]))])
 
-        individual_metals
+        individual_metals = metal_fields
         all_elements = ['H','He','Metals'] + individual_metals
 
     for element in all_elements:

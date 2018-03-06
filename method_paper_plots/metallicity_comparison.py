@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
+TMAX = 500.0
+
 # filepath = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving'
 work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 #work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
@@ -60,7 +62,7 @@ ax.plot( times, all_data['outflow'][:,5], lw = line_width, color = 'C1',  ls = '
 
 ax.set_ylabel(r'Metallicity')
 ax.set_xlabel(r'Time (Myr)')
-ax.set_xlim(times[0], times[-1])
+ax.set_xlim(times[0], np.min([TMAX,times[-1]]))
 ax.semilogy()
 ax.set_ylim(1.0E-4, 5.0E-3)
 

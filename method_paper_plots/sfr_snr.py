@@ -8,6 +8,9 @@ import glob
 
 separate_axis = False
 
+TMAX = 500.0
+
+
 filepath = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving'
 
 work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
@@ -22,6 +25,7 @@ all_data = {}
 times = data['time_data']['time'] / 1.0E6
 sfr   = (data['time_data']['SFR'])
 snr   = (data['time_data']['SNII_snr'])
+agbr  = data['time_data']['AGB_rate']
 #sfr = np.ones(np.size(data_list))
 #snr = np.ones(np.size(data_list))
 #for i,k in enumerate(data_list):
@@ -51,7 +55,7 @@ ax.set_xlabel(r'Time (Myr)')
 ax.set_ylabel(r'SFR (M$_{\odot}$ yr$^{-1}$)')
 ax.semilogy()
 
-ax.set_xlim(np.min(times),np.max(times))
+ax.set_xlim(np.min(times),np.min([TMAX,np.max(times)]))
 #ax.legend(loc='best')
 plt.tight_layout()
 plt.minorticks_on()
@@ -69,3 +73,11 @@ else:
     outname = 'sfr_snrx100.png'
 
 fig.savefig(outname)
+
+
+plot_histogram(ax2, times, agbr*10, lw = line_width, color = 'C2', label = 'AGB Rate x 10', ls = '-')
+ax.legend(loc = 'upper right')
+
+fig.savefig('sfr_snrx100_agb.png')
+
+print np.min(agbr), np.max(agbr), np.average(agbr)

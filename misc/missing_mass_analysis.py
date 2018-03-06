@@ -30,10 +30,13 @@ from galaxy_analysis.utilities import utilities as util
 # Step 6: Plot cumulative distribution of SNII remnants error
 
 
-def generate_model_stars(m, z, abund = ['m_tot','m_metal']):
+def generate_model_stars(m, z, abund = ['m_tot','m_metal'], M_o = None):
     """
     Makes a list of star objects from one zone model
     """
+    if M_o is None:
+        M_o = m
+
     all_star = [None]*np.size(m)
 
     if not 'm_tot' in abund:
@@ -53,8 +56,10 @@ def generate_model_stars(m, z, abund = ['m_tot','m_metal']):
         ele[k] = val
 
     for i in np.arange(np.size(m)):
-        s = star.Star(M=m[i],Z=z[i], abundances=ele)
+        s = star.Star(M=m[i],Z=z[i], abundances=ele, M_o = M_o[i])
         s.set_SNII_properties()
+        s.set_SNIa_properties(check_mass = True)
+
         all_star[i] = s
     return all_star
 
@@ -67,7 +72,7 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     elements = util.species_from_fields(ds.field_list)
 
-    all_stars = generate_model_stars(bm,z, abund = elements)
+    all_stars = generate_model_stars(pm,z, abund = elements, M_o = bm)
 
     lifetime = data['dynamical_time'].convert_to_units('Myr')
     birth    = data['creation_time'].convert_to_units('Myr')

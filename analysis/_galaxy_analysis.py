@@ -951,8 +951,9 @@ class Galaxy(object):
         # x is temp dummy variable
         self.time_data['time'], self.time_data['SFR'] = pa.sfrFromParticles(self.ds, self.df)
         x, self.time_data['SFH'] = pa.sfhFromParticles(self.ds, self.df, times=self.time_data['time'])
-        x, self.time_data['SNII_snr'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
-        x, self.time_data['SNIa_snr'] = pa.snr(self.ds, self.df ,times=x, sn_type ='Ia')
+        x, self.time_data['SNII_snr'] = pa.snr(self.ds, self.df, times=x, sn_type ='II')
+        x, self.time_data['SNIa_snr'] = pa.snr(self.ds, self.df, times=x, sn_type ='Ia')
+        x, self.time_data['AGB_rate'] = pa.snr(self.ds, self.df, times=x, sn_type = 'AGB')
 
         self.time_data['time'] = 0.5 * (x[1:] + x[:-1]) # bin centers
 

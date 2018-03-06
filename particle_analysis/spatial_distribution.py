@@ -47,8 +47,8 @@ def radial_profile(ds, data, fields, weight_field = None, bins = None,
     all_profiles = {}
 
     if np.size(mode) == 1:
-        if mode == 'both':
-            mode = ['sum','average']
+        if mode == 'all':
+            mode = ['sum','average','median']
         else:
             mode = [mode]
 

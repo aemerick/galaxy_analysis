@@ -222,6 +222,7 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
         width = 5.0 * yt.units.kpc
     else:
         width = 2.5 * yt.units.kpc
+#    width = 1.0 # 
 
     region = ds.disk(ds.domain_center, [0,0,1], radius = width / 1.5, height = 2.0*yt.units.kpc)
 
@@ -231,7 +232,8 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
                 has_particles = has_particles, width = width)
 
 #    projection_plots(ds, axis = axis, has_particles = has_particles,
-#                     thin = True)
+#                     thin = True, width = width, fields = ['O_Fraction','Fe_Fraction'])
+
     projection_plots(ds, axis = axis, has_particles = has_particles,
                      thin = False, width = width)
 

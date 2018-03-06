@@ -7,6 +7,9 @@ import numpy as np
 
 from scipy.interpolate import interp1d
 
+TMAX = 500.0
+
+
 outflow_field = 'cell_mass'
 work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 #work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
@@ -70,6 +73,23 @@ def obtain_sfr(smooth_sfr = True):
         sfr[i] = dd.io.load(k, '/meta_data/SFR')
 
     if smooth_sfr:
+        print 'WARNING: Smoothing SFR - Assuming 1 Myr even samples in time'
+        # smooth into 100 Myr bins, centered on each
+        # sample point
+        di = 250
+        old_sfr = 1.0 * sfr
+        for i in np.arange(np.size(sfr)):
+            imin = np.max( [0, i - di])
+            imax = np.min( [np.size(sfr), i + di - 1])
+
+            if imin == 0:
+                imax = 100
+            if imax == np.size(sfr):
+                imin = imax - di*2
+
+            sfr[i] = np.average( sfr[imin:imax] )
+
+    if True:
         for i in np.arange(np.size(sfr)):
             if sfr[i] > 0.0:
                 break
@@ -135,7 +155,7 @@ def plot_species_outflow_panel(method = 'fraction'):
     for i in np.arange(4):
         ax[(3,i)].set_xlabel(r'Time (Myr)')
 #        ax[(i,0)].set_ylabel(r'log(X Fractional Outflow per SFR [M$_\odot$ yr$^{-1}$]$^{-1}$)')
-        ax[(i,0)].set_xlim(newx[0]-newx[0], newx[-1]-newx[0])
+        ax[(i,0)].set_xlim(newx[0]-newx[0], np.min([TMAX,newx[-1]-newx[0]]))
 
         if method == 'fraction':
             ax[(0,i)].set_ylim(1.0E-5, 1.0E-1)
@@ -189,7 +209,7 @@ def plot_basic_outflow_and_loading():
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
-    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
     ax.set_ylim(7E-6, 0.01)
 
     plt.tight_layout()
@@ -220,7 +240,7 @@ def plot_basic_outflow_and_loading():
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Mass Loading Factor')
     ax.semilogy()
-    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
     ax.set_ylim(0.1,500)
 
     plt.tight_layout()
@@ -253,7 +273,7 @@ def plot_basic_outflow_and_loading():
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Metal Mass Loading Factor')
     ax.semilogy()
-    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
     ax.set_ylim(0.07, 15)
 
     plt.tight_layout()
@@ -288,13 +308,13 @@ def plot_basic_outflow_and_loading():
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Metal Mass Loading Factor')
     ax.semilogy()
-    ax.set_xlim(0.0, np.max(newx-newx[0]))
+    ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])] ))
     ax.set_ylim(1.0E-6, 1.0)
 
     plt.tight_layout()
     #ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig('metal_mass_outflow.png')
+    fig.savefig('metal_mass_loading_sfr.png')
     plt.close()
 
     return

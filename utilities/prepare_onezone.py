@@ -205,15 +205,16 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     # open up the first file, check which species we are dealing with
     gal    = dd.io.load(all_files[0])
     raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
-    fields = [x for x in raw_fields if ( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x))]
-    fields = [x[1] for x in fields if (not ('_p0_' in x[1])) and (not ('_p1_' in x[1]))]
+    fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) )  ]
+    fields = [x[1] for x in fields if ((not ('_p0_' in x[1])) and (not ('_p1_' in x[1])) and (not x[1] == 'a'))]
+    print fields
     ele    = [x.replace('_Mass','') for x in fields]
     ele    = [x.replace('_total','') for x in ele]
     ele    = [x.replace('_mass','') for x in ele]
     ele    = [x.replace('cell', 'm_tot') for x in ele]
     ele    = [x.replace('metal', 'm_metal') for x in ele]
 
-
+    print ele
 
     centers_rvir = gal['gas_profiles'][mode]['sphere']['centers_rvir']
     centers      = gal['gas_profiles'][mode]['sphere']['centers']
@@ -254,6 +255,9 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
             for name in ele:
                 norm[name][i] = 0.0
 
+
+    if not os.path.exists('./onez_model'):
+        os.makedirs('./onez_model')
 
     f = open('./onez_model/mass_outflow.in', 'w')
     f.write("# This output contains time (Myr) and fractional mass outflow rate (f_x) through a shell centered on %.2f R_vir\n"%(r))
@@ -381,7 +385,7 @@ if __name__=="__main__":
     gal_files = glob.glob('DD????_galaxy_data.h5')
     gal_files = np.sort(gal_files)
 
-    if len(ds_files) > 1:
+    if len(ds_files) >= 1:
         dsname = ds_files[-1]
 
         if check_analysis_output(ds_files[-1], make_analysis = make_analysis):

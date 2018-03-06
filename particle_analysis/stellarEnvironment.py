@@ -79,7 +79,6 @@ def stellar_environment(ds, data, return_type = 'dictionary'):
         if np.size(r[select]) == 0:
             select = r <= np.min(r)
             #print '---', i, pid[i], np.size(r[select]), np.min(r), dR
-        
 
         M      = (data['cell_mass'].to('Msun'))[select]
         V      = (data['cell_volume'].to('cm**(3)'))[select]
@@ -156,7 +155,7 @@ def compute_stats_all_datasets(overwrite = False,
 ####
     if nproc == 1:
         for i, dsname in enumerate(ds_list):
-            print i, dsname
+            #print i, dsname
             groupname = dsname.rsplit('/')[1]
             gal = Galaxy(groupname)
           
