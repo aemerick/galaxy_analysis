@@ -28,19 +28,16 @@ MAX_NUM = 120
 
 
 # function to do this for a single data set
-def stellar_environment(ds, data, return_type = 'dictionary'):
+def stellar_environment(ds, data, dead_only = True, write_to_file = True,
+                        output_file = 'stellar_environment.dat'):
     """
     Goes through dataset and computes properties of local ISM
     conditions for ALL stars. Either writes this to file,
-    using ``return_type == "file"'' or as a dictionary 
+    using ``return_type == "file"'' or as a dictionary
     with kwargs for each particle ID number.
     """
 
-    if return_type == 'file':
-        print "Writing to file not implemented yet"
-        raise ValueError
-
-    # 
+    #
     t_now  = ds.current_time.convert_to_units('Myr').value
     min_dx = ds.length_unit.to('pc') / ( ds.domain_dimensions[0] * 2.0**ds.max_level)
     dR     = (ds.parameters['IndividualStarFeedbackStencilSize'] + 0.5) * min_dx
@@ -53,8 +50,7 @@ def stellar_environment(ds, data, return_type = 'dictionary'):
     t_o      = data['creation_time'].convert_to_units('Myr').value
     lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value # MS star lifetime
     r_cyl    = data['particle_position_cylindrical_radius'].convert_to_units('pc').value
-    z_cyl    = data['particle_position_z'].convert_to_units('pc').value
-    
+    z_cyl    = data['particle_position_z'].convert_to_units('pc').value - ds.domain_center[2].to('pc').value
     age      = t_now - t_o
 
 
@@ -68,7 +64,18 @@ def stellar_environment(ds, data, return_type = 'dictionary'):
 
     # now compute the environment properties for all stars
     prop = {}
-    for i in np.arange(np.size(pid)):
+
+    if dead_only:
+        loop_indexes = np.where(  ( (lifetime-age) > 0) * ( (lifetime-age) <= 1.0) )[0]
+
+    else:
+        loop_indexes = np.arange(np.size(pid)) # all stars
+
+    print np.size(pid), np.size(loop_indexes)
+    for i in loop_indexes:
+
+        #if (dead_only and (lifetime - age > 1.0)): # skip for stars still alive
+        #    continue
 
         ID = int(pid[i])
 
@@ -91,13 +98,27 @@ def stellar_environment(ds, data, return_type = 'dictionary'):
                                  'T_m_avg' : np.sum(n*M)/np.sum(M), 'T_v_avg' : np.sum(V*M)/np.sum(V),
                                  'M_tot' : np.sum(M)}
 
-        prop[ID]['constant_properties'] = {'M_o' : M_o[i], 'lifetime' : lifetime[i],
+        prop[ID]['c_prop'] = {'M_o' : M_o[i], 'lifetime' : lifetime[i],
                                                't_o' : t_o[i]}
 
-        prop[ID]['star_properties'] = {'age' : age[i], 'r_cyl' : r_cyl[i], 'z_cyl' : z_cyl[i],
+        prop[ID]['s_prop'] = {'age' : age[i], 'r_cyl' : r_cyl[i], 'z_cyl' : z_cyl[i],
                                            'M' : M_p[i], 'ptype' : ptype[i]}
-        
-    return prop 
+
+
+#        if write_to_file:
+#            file.write("%i %i"%(ID,ptype[i]))
+#
+#            results = [M_o[i], r_cyl[i], z_cyl[i], t_now, t_o[i], lifetime[i], age[i],
+#                             prop[ID]['env']['n_min'], prop[ID]['env']['n_max'],
+#                             prop[ID]['env']['n_v_avg'], prop[ID]['env']['n_med'], prop[ID]['env']['T_m_avg'], 
+#                             prop[ID]['env']['T_v_avg'], prop[ID]['env']['M_tot']]
+#
+#            for val in results:
+#                file.write(" %4.4E"%(val))
+#
+#            file.write("\n")
+
+    return prop
 
 
 def _parallel_loop(dsname):
@@ -124,7 +145,9 @@ def _parallel_loop(dsname):
     return dictionary
 
 def compute_stats_all_datasets(overwrite = False, 
-                               dir = './', outfile = 'stellar_environment.h5', nproc = 24):
+                               dir = './', outfile = 'stellar_environment.h5',
+                               write_to_text = True, text_file = 'stellar_environment.dat',
+                               nproc = 24):
 
     hdf5_filename = dir + outfile
 
@@ -150,7 +173,29 @@ def compute_stats_all_datasets(overwrite = False,
     ds_list = ds_list[:np.min([np.size(ds_list),MAX_NUM])]
     times   = times[:np.min([np.size(ds_list),MAX_NUM])]
 
-    
+    if write_to_text:
+        if not os.path.exists(text_file):
+            file = open(text_file,'w')
+            file.write("#PID ptype M_o r z t t_o lifetime age n_min n_max n_v_avg n_med T_m_avg T_v_avg M_tot\n")
+        else:
+            file = open(text_file,'a') 
+
+
+    def _write(_file, prop, ID, t_now):
+        _file.write("%i %i"%(ID, prop['s_prop']['ptype']))
+
+        results = [prop['c_prop']['M_o'], 
+                   prop['s_prop']['r_cyl'],
+                   prop['s_prop']['z_cyl'], t_now, prop['c_prop']['t_o'], prop['c_prop']['lifetime'], prop['s_prop']['age'],
+                   prop['env']['n_min'], prop['env']['n_max'],
+                   prop['env']['n_v_avg'], prop['env']['n_med'], prop['env']['T_m_avg'], 
+                   prop['env']['T_v_avg'], prop['env']['M_tot']]
+
+        for val in results:
+            file.write(" %4.4E"%(val))
+
+        file.write("\n")
+        return
 
 ####
     if nproc == 1:
@@ -158,16 +203,21 @@ def compute_stats_all_datasets(overwrite = False,
             #print i, dsname
             groupname = dsname.rsplit('/')[1]
             gal = Galaxy(groupname)
-          
+
             hf[groupname] = {}
             g = hf[groupname]
-  
             g['Time']    = gal.ds.current_time.convert_to_units('Myr').value
             # generalized function to loop through all mask types and compute stats
             data  = stellar_environment(gal.ds, gal.df)
 
             for k in data.keys():
                 g[k] = data[k]
+
+            if write_to_text:
+                for PID in g.keys():
+                    if PID == 'Time':
+                        continue
+                    _write(file, g[PID], PID, g['Time'])
 
             del(gal)
 
@@ -187,6 +237,7 @@ def compute_stats_all_datasets(overwrite = False,
         #   saves you if there is a crash (kinda). This way we do better memory management if
         #   operating on many large datasets.
         #
+
         for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
 
             sub_list = list(sub_list)
@@ -202,7 +253,20 @@ def compute_stats_all_datasets(overwrite = False,
             # gather results and add to output
             for r in results.get():
                 hf[r.keys()[0]] = r[r.keys()[0]]
+
+            if write_to_text:
+                for k in sub_list:
+                    for PID in hf[k].keys():
+                        if PID == 'Time':
+                            continue
+
+                        _write(file, hf[k][PID], PID, hf[k]['Time'])
+
             del(results)
+
+
+    if write_to_text:
+        file.close()
 
     dd.io.save(hdf5_filename, hf)
 
@@ -211,6 +275,6 @@ def compute_stats_all_datasets(overwrite = False,
 
 if __name__ == "__main__":
     # do things here
-    compute_stats_all_datasets(nproc = 24)
+    compute_stats_all_datasets(nproc = 1)
 
 
