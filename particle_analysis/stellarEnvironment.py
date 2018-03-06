@@ -24,6 +24,9 @@ from galaxy_analysis.utilities import utilities as utilities
 #from galaxy_analysis.static_data import ISM
 
 
+MAX_NUM = 120
+
+
 # function to do this for a single data set
 def stellar_environment(ds, data, return_type = 'dictionary'):
     """
@@ -72,10 +75,10 @@ def stellar_environment(ds, data, return_type = 'dictionary'):
         r = np.sqrt(  (x-px[i])**2 + (y-py[i])**2 + (z-pz[i])**2 )
 
         select = r <= dR
-        print i, pid[i], np.size(r[select])
+        #print i, pid[i], np.size(r[select])
         if np.size(r[select]) == 0:
             select = r <= np.min(r)
-            print '---', i, pid[i], np.size(r[select]), np.min(r), dR
+            #print '---', i, pid[i], np.size(r[select]), np.min(r), dR
         
 
         M      = (data['cell_mass'].to('Msun'))[select]
@@ -113,7 +116,7 @@ def _parallel_loop(dsname):
     data  = stellar_environment(gal.ds, gal.df)
 
     for k in data.keys():
-        g[k] = gas_data[k]
+        g[k] = data[k]
 
     del(gal)
 
@@ -122,7 +125,7 @@ def _parallel_loop(dsname):
     return dictionary
 
 def compute_stats_all_datasets(overwrite = False, 
-                               dir = './', outfile = 'stellar_environment.h5', nproc = 1):
+                               dir = './', outfile = 'stellar_environment.h5', nproc = 24):
 
     hdf5_filename = dir + outfile
 
@@ -142,8 +145,14 @@ def compute_stats_all_datasets(overwrite = False,
         del(ds)
 
     times = np.zeros(np.size(ds_list))
-    ds_list = ds_list[start_index:]
-    times   = times[start_index:]
+    ds_list = np.array(ds_list[start_index:])
+    times   = np.array(times[start_index:])
+
+    ds_list = ds_list[:np.min([np.size(ds_list),MAX_NUM])]
+    times   = times[:np.min([np.size(ds_list),MAX_NUM])]
+
+    
+
 ####
     if nproc == 1:
         for i, dsname in enumerate(ds_list):
@@ -159,7 +168,7 @@ def compute_stats_all_datasets(overwrite = False,
             data  = stellar_environment(gal.ds, gal.df)
 
             for k in data.keys():
-                g[k] = gas_data[k]
+                g[k] = data[k]
 
             del(gal)
 
@@ -203,6 +212,6 @@ def compute_stats_all_datasets(overwrite = False,
 
 if __name__ == "__main__":
     # do things here
-    compute_stats_all_datasets(nproc = 1)
+    compute_stats_all_datasets(nproc = 24)
 
 
