@@ -6,15 +6,15 @@ def CDF_distance(cdf1, cdf2):
     """
     Very simple function to return distance between two CDFs.
     """ 
+
     return np.max( np.abs(cdf2 - cdf1))
 
 def compute_cdf(x, y):
     """
     Given x and y data points, compute the CDF
     """
-    
-    
-    
+
+
     return CDF
 
 
@@ -55,7 +55,7 @@ class fit_function():
             # compute the CDF from the data to fit
             if data_cdf is None:
                 data_cdf = compute_cdf(xdata, ydata)
-                        
+
             fit_function = lambda x0 : CDF_distance(self._CDF(xdata, *x0), data_cdf)
             result       = minimize(fit_function, self.p0, *args, **kwargs)
 
@@ -69,35 +69,63 @@ class fit_function():
         return
 
 
+class power_law(fit_function):
 
+    def __init__(self):
+        fit_function.__init__(self, 'powerlaw')
+        return
+
+    def _f(self, x, k, a):
+        fx = 10.0**(k * np.log10(x) + a)
+        return fx
+
+
+
+class gaussian(fit_function):
+    def __init__(self, fix_mean = None):
+        fit_function.__init__(self, 'gaussian')
+        self._mu = fix_mean
+        return
+
+
+    def _CDF(self, x, mu, sigma):
+        if not (self._mu is None):
+            mu = self._mu
+
+        CDF = 0.5 * (1.0 + erf( x / np.sqrt(2.0)))
+        return CDF
+
+    def _f(self, x, mu, sigma):
+        if not (self._mu is None):
+            mu = self.mu
+
+        fx = (1.0 / (np.sqrt(2.0 * np.pi)*sigma) *\
+               np.exp(- (x - sigma)*(x - sigma) / (2.0 * sigma * sigma))
+
+        return fx
+
+    def print_parameters(self):
+        print "mu (mean of data) and sigma (standard deviation of data)"
 
 class lognormal(fit_function):
 
     def __init__(self, fix_mean = None):
         fit_function.__init__(self, 'lognormal')
-        
         self._mu = fix_mean
-        
         return
 
     def _CDF(self, x, mu, sigma):
-        
         if not (self._mu is None):
             mu = self._mu
-        
         CDF = 0.5 * (1.0 + erf( (np.log(x) - mu)/(sigma*np.sqrt(2.0))))
-        
-        
         return CDF
-    
+
     def _f(self, x, mu, sigma):
         """
         Actual Function
         """
-        
         if not (self._mu is None):
             mu = self.mu
-        
         fx  = (1.0 / (x * sigma * np.sqrt(2.0*np.pi)))
         fx *= np.exp( -1.0 * (np.log(x) - mu)**2 / (2.0 * sigma * sigma))
 
