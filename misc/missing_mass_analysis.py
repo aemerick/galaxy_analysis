@@ -14,10 +14,12 @@ import yt
 import numpy as np
 import glob
 from onezone import star
+import os
+import sys
 
 from galaxy_analysis.analysis import Galaxy
 from galaxy_analysis.utilities import utilities as util
-
+import deepdish as dd
 #
 # Step 1: load "final" and "initial" simulations
 # Step 2: Load all massive star particle remnants, final mass, initial mass, etc.
@@ -96,12 +98,28 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     for k in model_wind_ejecta.keys():
         model_wind_ejecta[k][AGB]        = 0.0
         model_sn_ejecta[k][ (pt == 11) ] = 0.0
-
         model_wind_ejecta[k][select] = model_wind_ejecta[k][select]*factor[select]
 
     total_model_ejecta = {}
     for k in model_wind_ejecta.keys():
         total_model_ejecta[k] = np.sum(model_sn_ejecta[k][time_select]) + np.sum(model_wind_ejecta[k][time_select])
+
+
+    # construct the indivdual mode dictionary
+    separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'Total' : {}}
+    for k in model_wind_ejecta.keys():
+        separate_mode_ejecta['SNII'][k] = np.sum(model_sn_ejecta[k][bm > 8.0])
+        separate_mode_ejecta['SNIa'][k] = np.sum(model_sn_ejecta[k][bm < 8.0])
+        separate_mode_ejecta['SWind'][k] = np.sum(model_wind_ejecta[k][bm > 8.0])
+        separate_mode_ejecta['AGB'][k]   = np.sum(model_wind_ejecta[k][bm < 8.0])
+        separate_mode_ejecta['Total'][k] = np.sum( [separate_mode_ejecta[x][k] for x in ['AGB','SWind','SNII','SNIa'] ])
+    for k in separate_mode_ejecta.keys():
+        separate_mode_ejecta[k]['Total Tracked Metals'] = np.sum( [separate_mode_ejecta[k][x] for x in separate_mode_ejecta[k].keys() if (not x in ['m_tot','m_metal','H','He'])] )
+
+    if os.path.exists(str(ds) + '_galaxy_data.h5'):
+        dd_data = dd.io.load(str(ds) + '_galaxy_data.h5')
+        dd_data['gas_meta_data']['masses']['Type'] = separate_mode_ejecta
+        dd.io.save( str(ds) + '_galaxy_data.h5',dd_data)
 
     # now do this for the individual abundances on grid:
     grid_masses = {}
@@ -119,9 +137,9 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     gal = Galaxy(str(ds))
     outflow_masses = gal.boundary_mass_flux
 
-    print total_model_ejecta
-    print grid_masses
-    print outflow_masses
+    #print total_model_ejecta
+    #print grid_masses
+    #print outflow_masses
 
     print grid_masses.keys()
     print "Element Total_on_Grid Total_Outflow Sum_Injected Total_model_mass Percent_error"
@@ -335,11 +353,18 @@ def compute_SNII_error(ds, data, uselog = True):
 
 if __name__=="__main__":
     name_list = np.sort(glob.glob('DD????/DD????'))
-    try:
-        ds = yt.load(name_list[-1])
-    except:
-        print "Could not load ", name_list[-1], " trying the next one"
-        ds = yt.load(name_list[-2])
+
+
+    if np.size(sys.argv) == 1:
+        try:
+            ds = yt.load(name_list[-1])
+        except:
+            print "Could not load ", name_list[-1], " trying the next one"
+            ds = yt.load(name_list[-2])
+    else:
+        name = 'DD%0004i'%( int(sys.argv[1]))
+        ds = yt.load( name + '/' + name)
+
     data = ds.all_data()
 
     if ('enzo','wind_mass_ejected') in ds.field_list or\
