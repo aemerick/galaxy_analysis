@@ -17,7 +17,7 @@ from galaxy_analysis.utilities import utilities
 ###
 ###
 
-def species_bar_graph(name, data, fraction = True, disk_only = False, outname = None,
+def species_bar_graph(name, data, fraction = True, disk_only = False, outname = None, sources = False,
                       display_total = None, show_individual_amounts = False, **kwargs):
    """
    Uses an analysis output to give a bar graph
@@ -34,7 +34,9 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        else:
            s1 = '_total'
 
-       if disk_only:
+       if sources:
+           s2 = '_sources'
+       elif disk_only:
            s2 = '_disk_only'
 
        outname = name + '_species_bar' + s1 + s2 + '.png'
@@ -44,26 +46,36 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        display_total = fraction
 
    # construct the plot
-   exclude = ['Total','HI','HeI','HeII','HII','H2','Metals','Total Tracked Metals']
+   exclude = ['Total','HI','HeI','HeII','HII','H2','Metals', 'H', 'He','Total Tracked Metals']
 
    masses = data['gas_meta_data']['masses']
+   print masses.keys()
    all_fields  = masses['FullBox'].keys()
    species     = [x for x in all_fields if (not (x in exclude))]
    ordered_species = utilities.sort_by_anum(species)
+   ordered_species = ['Total Tracked Metals'] + ordered_species
    N = len(ordered_species)
 
    total  = {}
 
    # total normalizes the data - set to 1 if not plotting fraction
    if fraction:
-       if disk_only: # use disk mass + stars
+       if sources:
+           for species in ordered_species:
+               total[species] = masses['Type']['Total'][species]
+       elif disk_only: # use disk mass + stars
            for species in ordered_species:
                total[species] = masses['Disk'][species] + masses['stars'][species]
        else: # full box, stars, and mass loss in box
            for species in ordered_species:
                total[species] = 0.0
                for k in ['FullBox', 'OutsideBox', 'stars']:
-                   total[species] += masses[k][species]
+
+                   _species = species
+                   if k == 'stars' and species == 'Metals':
+                       masses[k][species] = masses[k]['metals']
+
+                   total[species] += masses[k][_species]
    else: # otherwise set normalization to 1.0
        for species in ordered_species:
            total[species] = 1.0
@@ -74,7 +86,24 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    index  = np.arange(N)
    width  = 0.75
 
-   if not disk_only:
+
+   if sources:
+       fields = ['SNII','SNIa','SWind','AGB']
+       colors = {'SNII': 'C0', 'SNIa' : 'C1' , 'SWind' : 'crimson', 'AGB' : 'C4'}
+       labels = {'SNII' : 'SNII', 'SNIa':'SNIa','SWind' : r'M$_{*} > 8$ M$_{\odot}$ Winds', 'AGB' : 'AGB Winds'}
+       barplot = {}
+       bottom = np.zeros(N)
+       sum    = np.zeros(N)
+
+       for f in ['AGB','SWind','SNIa','SNII']: #['SNII','SNIa','SWind','AGB']:
+           bar_values = np.array( [masses['Type'][f][k]/total[k] for k in ordered_species])
+
+           barplot[f] = ax.bar(index, bar_values, width,
+                               color = colors[f], bottom = bottom, label = labels[f], **kwargs)
+           bottom += bar_values * 1.0
+           sum    = sum + bottom
+
+   elif not disk_only:
        fields = ['Disk','stars','Halo']
 
        colors = {'Disk' : 'purple', 'stars' : 'gold',
@@ -86,6 +115,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        sum     = np.zeros(N)
        # plot!
        for f in ['stars','Disk','Halo']:
+
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
@@ -112,6 +142,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        bottom  = np.zeros(N)
        # plot!
        for f in fields:
+
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
@@ -139,11 +170,17 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    #
    plt.tight_layout()
    ax.set_xticks(index)
+
+   if ordered_species[0] == 'Total Tracked Metals':
+       ordered_species[0] = "All Metals"
    ax.set_xticklabels(ordered_species)
 
    # make legend, reverse label ordering
    handles, labels = ax.get_legend_handles_labels()
-   ax.legend(handles[::-1], labels[::-1], loc='lower left')
+   loc = 'lower left'
+   if sources:
+       loc = 'upper right'
+   ax.legend(handles[::-1], labels[::-1], loc=loc)
 
    if fraction:
        ax.set_ylim(0.0,1.0)
@@ -154,7 +191,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    # turn on minorticks, but keep x axis ticks off
    plt.minorticks_on()
    ax.tick_params(axis='x',which='minor',bottom='off')
-
+   plt.tight_layout()
    fig.savefig(outname)
    plt.close()
 
@@ -168,13 +205,18 @@ if __name__ == "__main__":
             species_bar_graph(name, data,
                               fraction      = fraction,
                               disk_only     = False,
-                              display_total = True,
+                              display_total = True, sources = False,
                               show_individual_amounts = False)
 
             species_bar_graph(name, data,
                               fraction      = fraction,
                               disk_only     = True,
-                              display_total = True,
+                              display_total = True, sources = False,
+                              show_individual_amounts = False)
+
+            species_bar_graph(name, data,
+                              fraction = fraction, disk_only = False,
+                              display_total = False, sources = True,
                               show_individual_amounts = False)
         return
 
@@ -190,6 +232,11 @@ if __name__ == "__main__":
         if len(sys.argv) == 1:
             # assume not parallel
             _plot_both(names[-1], dd.io.load(names[-1] + '_galaxy_data.h5'))
+        elif len(sys.argv) == 2:
+
+            name = 'DD%0004i'%( int(sys.argv[1] ))
+            _plot_both(name, dd.io.load(name + '_galaxy_data.h5'))
+
         elif len(sys.argv) == 3:
 
             i,j = int(sys.argv[1]), int(sys.argv[2])
