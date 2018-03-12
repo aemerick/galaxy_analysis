@@ -177,24 +177,21 @@ class lognormal_powerlaw(general_functions):
         return
 
 #    def _f(self, x, mu, alpha, p_o, N):
-    def _f(self, x, mu, alpha, N, sigma):
+    def _f(self, x, mu, alpha, sigma):
+        N = 1.0
         fx = np.zeros(np.size(x))
         xlog  = np.log(x)
         self.xt    = self.full_mean * np.exp(self.st)
 
+#        sigma = np.sqrt(-0.5*mu) # try this
+
         s     = np.log(x / self.full_mean)  #/ self.full_mean)
         mu    = mu - np.log( self.full_mean)
-#        sigma = np.sqrt(-2.0 * mu)
+
+#        sigma = np.sqrt(-0.5 * mu)
 
         p_o = 1.0/(np.sqrt(2.0*np.pi)*sigma*self.xt) * np.exp(-1.0*(self.st-mu)**2 / (2.0*sigma*sigma) + alpha*self.st)
 
-#        st    = 0.5 * (2.0 * np.abs(alpha) - 1.0) * sigma * sigma
-
-#        p_o   = np.exp(0.5 * (alpha - 1.0)*alpha*sigma*sigma) / (sigma*np.sqrt(2.0*np.pi))
-#        N = ( p_o / (alpha*np.exp(-alpha*st)) + 0.5 * (1.0 + erf( (2.0*st + sigma*sigma)/(2.0**(3.0/2.0)*sigma))))**(-1)
-
-#        self.st = 1.0*st
-#        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma*x) * np.exp(- (s[s<st] - mu)**2 / (2.0*sigma*sigma))
         fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma*x[s<self.st]) * np.exp(-1.0 * (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
         fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
 
@@ -202,8 +199,6 @@ class lognormal_powerlaw(general_functions):
         self.sigma = sigma
         self.p_o   = p_o
 
-#        fx[fx<0] = np.min(fx[fx>0])*1.0E-30
-        #print np.log10(self.xt)
         return fx
 
     def _logf(self, x, *args):
@@ -211,25 +206,6 @@ class lognormal_powerlaw(general_functions):
 
         return fvals
 
-#    def _f_fixed_st(self, x, mu, alpha):
-#        fx = np.zeros(np.size(x))
-#        s     = np.log(x) - mu
-#        sigma = np.sqrt(2.0*self.st / (2.0*np.abs(alpha)-1))                #np.sqrt(-2.0 * mu)
-#
-#        #st    = 0.5 * (2.0 * np.abs(alpha) - 1.0) * sigma * sigma
-#        p_o   = np.exp(0.5 * (alpha - 1.0)*alpha*sigma*sigma) / (sigma*np.sqrt(2.0*np.pi))
-#
-#        N = ( p_o / (alpha*np.exp(-alpha*self.st)) + 0.5 * (1.0 + erf( (2.0*self.st + sigma*sigma)/(2.0**(3.0/2.0)*sigma))))**(-1)
-#
-#        # self.st = st
-#        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma) * np.exp(- (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
-#        fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
-#
-#        self.xt    = np.exp(self.st + mu)
-#        self.N     = N
-#        self.sigma = sigma
-#
-#        return fx
     def fit_function(self, xdata, ydata, method = 'curve_fit', data_cdf = None, *args, **kwargs):
         """
         Fit function to data. By default, this uses the scipy method 'curve_fit', but the 
@@ -240,7 +216,6 @@ class lognormal_powerlaw(general_functions):
         if 'p0' in kwargs.keys():
             self.p0 = kwargs['p0']
 
-        # s_t
         min_error = np.inf
         all_xt = np.logspace( np.log10(xdata[np.argmax(ydata)]), np.log10(np.max(xdata)), np.size(xdata)*2)
         for xt in all_xt:
