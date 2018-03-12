@@ -1,6 +1,7 @@
 from galaxy_analysis.plot.plot_styles import *
 import yt
 import numpy as np
+from copy import copy
 import deepdish as dd
 from scipy.optimize import brentq
 from galaxy_analysis.utilities import utilities
@@ -49,114 +50,43 @@ def fit_multifunction_PDF(bins, y, data):
 
     centers = 0.5 * (bins[1:] + bins[:-1])
 
+    def _error(yfitvals, yvals):
+#        return np.sum( np.abs(yvals-yfitvals)*yvals)/np.sum(yvals)
+        return np.sum( np.abs(yvals[yvals>0] - yfitvals[yvals>0])**2/yvals[yvals>0] )
+#        return np.sum( np.abs(yvals[yvals>0]-yfitvals[yvals>0])   ) / (np.sum(1.0/yvals[yvals>0]))
 
     try:
-        lognormal_alone = fit_PDF(bins, y, data = data, function_to_fit = 'log-normal')
+    #if True:
+        lognormal_alone = fit_PDF(bins*1.0, y*1.0, data = data, function_to_fit = 'log-normal')
         success['lognormal'] = True
-        lognormal_alone['error'] = np.sum(np.abs(lognormal_alone['fit_result'](centers[lognormal_alone['norm_y']>0]) - lognormal_alone['norm_y'][lognormal_alone['norm_y']>0]))
+        lognormal_alone['error'] = _error( lognormal_alone['fit_function']._f(centers, *lognormal_alone['popt']) , lognormal_alone['norm_y'])
         rdict['lognormal']   = lognormal_alone
     except:
         success['lognormal'] = False
 
     try:
-        powerlaw_alone  = fit_PDF(bins, y, data = data, function_to_fit = 'powerlaw')
-        success['powerlaw'] = True
-        powerlaw_alone['error'] = np.sum(np.abs(\
-                                  powerlaw_alone['fit_result']( centers[centers>centers[np.argmax(powerlaw_alone['norm_y'])]] ) -\
-                                  powerlaw_alone['norm_y'][centers>centers[np.argmax(powerlaw_alone['norm_y'])]]))
-
-        rdict['powerlaw'] = powerlaw_alone
-    except:
-        success['powerlaw'] = False
-
-    try:
-        x_power_law  = centers[np.argmax(lognormal_alone['norm_y'])]
-        residual = lognormal_alone['norm_y']*1.0
-        residual[centers < x_power_law]     = 0.0
-        remove_residual = lognormal_alone['norm_y'] - residual
-        powerlaw_fit2 = fit_PDF(bins , y, data = data, function_to_fit = 'powerlaw', remove_residual = remove_residual)
-
-        full_result = np.zeros(np.size(centers))
-        full_result[centers>x_power_law] = powerlaw_fit2['fit_function']._f(centers[centers>x_power_law], *powerlaw_fit2['popt'])
-        residual = lognormal_alone['norm_y'] - full_result
-        residual[ residual < 0] = 0.0
-        
-        remove_residual = lognormal_alone['norm_y'] - residual
-
-        ### Try a double fit
-        lognormal_fit2 = fit_PDF(bins, y, data=data, function_to_fit = 'log-normal', remove_residual = remove_residual)
-
-        def final_function2(x, x_power_law):
-            result = np.zeros(np.size(x))
-
-            result = lognormal_fit2['fit_function']._f(x,*lognormal_fit2['popt'])
-            result[x>x_power_law] += powerlaw_fit2['fit_function']._f(x[x>x_power_law],*powerlaw_fit2['popt'])
-
-            return result
-
-
-        fit_dict = {'popt' : [lognormal_fit2['popt'], powerlaw_fit2['popt']],
-                    'pcov' : [lognormal_fit2['pcov'], powerlaw_fit2['pcov']],
-                    'norm_y' : lognormal_alone['norm_y'], 'norm_y_resid' : powerlaw_fit2['norm_y'],
-                    'fit_x' : lognormal_fit2['fit_x'], 'fit_y' : lognormal_fit2['fit_y'],
-                    'fit_result' : lambda x : final_function2(x, x_power_law)}
-
-        fit_dict['error'] = np.sum(np.abs(fit_dict['fit_result'](centers[fit_dict['norm_y']>0]) - fit_dict['norm_y'][fit_dict['norm_y']>0]))
-
-
-        rdict['lognormal_powerlaw2'] = fit_dict
-        success['lognormal_powerlaw2'] = True
-    except:
-        print "Double function fitting failing ------ try 2"
-        success['lognormal_powerlaw2'] = False
-
-
-    try:
-        ### Try a double fit
-        lognormal_fit = fit_PDF(bins, y, data=data, function_to_fit = 'log-normal', remove_residual = None)
-
-        full_result = lognormal_fit['fit_function']._f(centers, *lognormal_fit['popt'])
-        residual = lognormal_fit['norm_y'] - full_result
-        residual[ residual < 0] = 0.0
-        residual[ centers < centers[np.argmax(full_result)] ] = 0.0
-
-        remove_residual = (full_result - residual)
-
-
-        x_power_law     = centers[np.argmax(residual)-5]
-
-        for i in np.arange(np.size(residual)):
-            if all( residual[i:i+5] > 0 ):
-                x_power_law = centers[i]
-                break
-        if i == np.size(residual) -1:
-            print '-------------------------------------------------'
-        # compute the residual
-        powerlaw_fit  = fit_PDF(bins, y, data=data, function_to_fit = 'powerlaw',
-                                  remove_residual = remove_residual)
-
-        def final_function(x, x_power_law):
-            result = np.zeros(np.size(x))
-
-            result = lognormal_fit['fit_function']._f(x,*lognormal_fit['popt'])
-            result[x>x_power_law] += powerlaw_fit['fit_function']._f(x[x>x_power_law],*powerlaw_fit['popt'])
-
-            return result
-
-
-        fit_dict = {'popt' : [lognormal_fit['popt'], powerlaw_fit['popt']],
-                    'pcov' : [lognormal_fit['pcov'], powerlaw_fit['pcov']],
-                    'norm_y' : lognormal_fit['norm_y'], 'norm_y_resid' : powerlaw_fit['norm_y'],
-                    'fit_x' : lognormal_fit['fit_x'], 'fit_y' : lognormal_fit['fit_y'],
-                    'fit_result' : lambda x : final_function(x, x_power_law)}
-
-        fit_dict['error'] = np.sum(np.abs(fit_dict['fit_result'](centers[fit_dict['norm_y']>0]) - fit_dict['norm_y'][fit_dict['norm_y']>0]))
-
-        rdict['lognormal_powerlaw'] = fit_dict
+#    if True:
+        ln_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'lognormal_powerlaw')
         success['lognormal_powerlaw'] = True
+        ln_pl['error'] = _error(ln_pl['fit_function']._f(centers, *ln_pl['popt']) , ln_pl['norm_y'])
+        rdict['lognormal_powerlaw'] = ln_pl
     except:
-        print "Double function fitting failing"
         success['lognormal_powerlaw'] = False
+
+    powerlaw_alone  = fit_PDF(bins, y, data = data, function_to_fit = 'powerlaw')
+    success['powerlaw'] = True
+    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers[centers>centers[np.argmax(powerlaw_alone['norm_y'])]] , *powerlaw_alone['popt']) ,
+                                         powerlaw_alone['norm_y'][ centers > centers[np.argmax(powerlaw_alone['norm_y'])]]  )
+
+    rdict['powerlaw'] = powerlaw_alone
+
+#    try:
+    truncated_powerlaw  = fit_PDF(bins, y, data = data, function_to_fit = 'truncated_powerlaw')
+    success['truncated_powerlaw'] = True
+    truncated_powerlaw['error'] = _error(truncated_powerlaw['fit_function']._f( centers , *truncated_powerlaw['popt']) ,
+                                         truncated_powerlaw['norm_y'])
+
+    rdict['truncated_powerlaw'] = truncated_powerlaw
 
     if all([not success[k] for k in success.keys()]):
         print "Cannot find a fit"
@@ -164,11 +94,16 @@ def fit_multifunction_PDF(bins, y, data):
 
     min_error = np.inf
     for k in success.keys():
-        if success[k]:
 
+        if success[k]:
+            rdict[k]['name'] = k
             if rdict[k]['error'] < min_error:
                 min_error = rdict[k]['error']
                 min_key   = k
+
+
+#    if 'lognormal_powerlaw' in rdict.keys():
+#        min_key = 'lognormal_powerlaw'
 
     return rdict[min_key]
 
@@ -179,38 +114,49 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
     the name of one of these functions
     """
 
+    centers = 0.5 * (bins[1:] + bins[:-1])
+    binsize = (bins[1:] - bins[:-1])
+
+    norm_y = y / binsize
+    if not (remove_residual is None):
+        norm_y = norm_y - remove_residual
+
     # if data is provided we can do some cool things
     if p0 is None:
         if not (data is None):
             if function_to_fit == 'log-normal' or function_to_fit == 'lognormal_powerlaw':
                 u_guess   = np.log( data['mean'] / (np.sqrt(1.0 + data['std']**2 / (data['mean']**2))))
                 std_guess = np.sqrt( np.log(1.0 + data['std']**2 / data['mean']**2))
-                p0 = [u_guess, std_guess]
 
-                bounds = ( [p0[0] - 20, p0[0] + 20], [-np.inf,np.inf])
-                bounds = ( [p0[0] - 20, 0.0], [p0[0]+20, 10.0])
+                p0 = [u_guess, std_guess]
+                bounds = ( [p0[0]*1.0 - 10, 0.0], [p0[0]*1.0+10, 10.0])
 
 
             if function_to_fit == 'lognormal_powerlaw':
-                p0 = [p0[0],p0[1],2,1]
-                bounds = ( [bounds[0][0], bounds[0][1], 1, 0.0], [bounds[1][0],bounds[1][1],np.inf,np.inf])
+#                p0 = [p0[0],p0[1],2,1]
+#                bounds = ( [bounds[0][0], bounds[0][1], 1, 0.0], [bounds[1][0],bounds[1][1],np.inf,np.inf])
+#                p0 = [u_guess - 2, 2.1, 1.0, 1.0]
+#                bounds = ([u_guess - 20, 1.0, 0.0, 0.0],[ np.min([u_guess+20,0]), 10, np.inf, np.inf])
+                 p0 = [u_guess - 3, 2.0, 1.0, 0.1]
+                 bounds = ( [p0[0] - 5, 0.1, 0.0, 0.0], [u_guess+3, 10.0, 10.0, np.inf])
 
-        if function_to_fit == 'powerlaw':
+#                bounds = (  [p0[0] - np.log(100), 0.0], [p0[0] + np.log(100), 8] )
+#                 p0 = [p0[0], p0[1], 1.0]
+#                 bounds = ( [bounds[0][0],bounds[0][1], 0.00000001,], [bounds[1][0],bounds[1][1], 10.0])
+
+        if function_to_fit == 'powerlaw' or function_to_fit == 'truncated_powerlaw':
             p0     = [2, 1.0E-5]
             bounds = ( [1,np.inf], [0.0, np.inf] )
             bounds = ( [1,0], [np.inf,1.0])
 
+        if function_to_fit == 'truncated_powerlaw':
+            p0      = [p0[0]*1,p0[1]*1, centers[np.argmax(norm_y)-1] ]
+            bounds  = ([bounds[0][0]*1, 1*bounds[0][1], centers[np.argmax(norm_y)-10]], [1*bounds[1][0],1*bounds[1][1],centers[np.argmax(norm_y)+20]])
 
-    centers = 0.5 * (bins[1:] + bins[:-1])
-    binsize = (bins[1:] - bins[:-1])
 
 
     # choose the region to fit over
     #   for all, this will be where there is data
-
-    norm_y = y / binsize
-    if not (remove_residual is None):
-        norm_y = norm_y - remove_residual
 
     selection = (norm_y > 0)
     if function_to_fit == 'log-normal':
@@ -225,10 +171,11 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
 
     # set fitting function
     if isinstance(function_to_fit, str):
-        if function_to_fit == 'lognormal_powerlaw':
-            function_to_fit= functions.by_name[function_to_fit]( centers[np.argmax(norm_y)] )  # initialize function by name
-        else:
-            function_to_fit= functions.by_name[function_to_fit]()
+        function_to_fit= functions.by_name[function_to_fit]()
+
+
+    if function_to_fit.name == 'lognormal_powerlaw':
+        function_to_fit.full_mean = data['mean']
 
     # If we are using KS test to fit, then need to compute the CDF from the data
     if fit_method == 'KS':
@@ -241,10 +188,14 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
                                               bounds = bounds, method = fit_method,
                                               data_cdf = data_cdf)
 
-    fit_dictionary = {'popt' : popt, 'pcov': pcov,
-                      'fit_function' : function_to_fit, 'norm_y' : norm_y,
-                      'fit_x' : x_to_fit, 'fit_y' : y_to_fit, 
-                      'fit_result' : lambda x : function_to_fit._f(x, *popt) }
+    if function_to_fit.name == 'lognormal_powerlaw':
+        print "----", popt
+
+
+    fit_dictionary = {'popt' : copy(popt), 'pcov': copy(pcov),
+                      'fit_function' : function_to_fit, 'norm_y' : norm_y*1.0,
+                      'fit_x' : x_to_fit*1.0, 'fit_y' : y_to_fit*1.0,
+                      'fit_result' : lambda xx : function_to_fit._f(xx, *popt) }
 
     return fit_dictionary
 
@@ -269,7 +220,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
 
         ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
 
-        fit_dict = fit_multifunction_PDF(bins, ds_data['hist'], ds_data)
+        fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
                    #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
 
 
@@ -278,8 +229,10 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
 
         ax[0].plot(np.log10(centers),
                    #np.log10(fit_dict['fit_x']), 
-                   fit_dict['fit_result'](centers)/np.max(fit_dict['norm_y']),
+                   fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
                                       lw = line_width, ls = lss[li], color = colors[ci])
+
+
         plot_histogram(ax[1],np.log10(bins),
                    #np.log10(fit_dict['fit_x']), 
                    fit_dict['norm_y']/np.max(fit_dict['norm_y']) - fit_dict['fit_result'](centers)/np.max(fit_dict['norm_y']),
@@ -287,7 +240,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
 
 
 
-        print e, fit_dict['popt']
+        print e, fit_dict['name'], fit_dict['popt']
         ci = ci + 1
         if ci >= np.size(colors):
             ci = 0
@@ -326,4 +279,5 @@ if __name__ == '__main__':
 
 
 # load_distribution_data(gas_data, "DD0500", "HIM", "O_Fraction", centers = centers)
+
 

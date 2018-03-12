@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit, minimize
 from scipy.special import erf
+from copy import copy
 
 def CDF_distance(cdf1, cdf2):
     """
@@ -18,7 +19,7 @@ def compute_cdf(x, y):
     return CDF
 
 
-class fit_function():
+class general_functions():
 
     def __init__(self, name, function = None):
         self.name  = name
@@ -48,7 +49,10 @@ class fit_function():
                 self.popt, self.pcov = curve_fit(self._logf, xdata, np.log10(ydata),
                                                  *args, **kwargs)
 
+                #print self.name, self.popt, self._logf(xdata,*self.popt), np.log10(ydata)
+
             else:
+
                 self.popt, self.pcov = curve_fit(self._f, xdata, ydata,
                                                          *args, **kwargs)
         elif method == 'KS':
@@ -63,23 +67,24 @@ class fit_function():
             if data_cdf is None:
                 data_cdf = compute_cdf(xdata, ydata)
 
-            fit_function = lambda x0 : CDF_distance(self._CDF(xdata, *x0), data_cdf)
-            result       = minimize(fit_function, self.p0, *args, **kwargs)
+            func = lambda x0 : CDF_distance(self._CDF(xdata, *x0), data_cdf)
+            result       = minimize(func, self.p0, *args, **kwargs)
 
             self.popt = result.x
             self.pcov = None
 
+
         return self.popt, self.pcov
 
-    def assign_function(self, function):
-        self._f = function
-        return
+#    def assign_function(self, function):
+#        self._f = function
+#        return
 
 
-class power_law(fit_function):
+class power_law(general_functions):
 
     def __init__(self):
-        fit_function.__init__(self, 'powerlaw')
+        general_functions.__init__(self,'powerlaw')
         self.fit_in_logspace = True
 
         return
@@ -101,10 +106,39 @@ class power_law(fit_function):
             CDF = CDF / np.max(CDF)
         return CDF
 
+class truncated_powerlaw(general_functions):
 
-class gaussian(fit_function):
+    def __init__(self):
+        general_functions.__init__(self, 'truncated_powerlaw')
+        self.fit_in_logspace = True
+        return
+
+    def _f(self, x, k, a, x_t):
+        fx = np.zeros(np.size(x))
+
+        fx[ x < x_t] = 0.0
+        fx[ x > x_t] = 10.0**(self._logf(x[x>x_t], k, a, x_t))
+
+        return fx
+
+    def _logf(self, x, k, a, x_t):
+        fx = np.zeros(np.size(x))
+
+        fx[x < x_t] = -99999
+        fx[x > x_t] = -1.0 * k * np.log10(x[x>x_t]) + np.log10(a)
+        return fx
+
+    def _CDF(self, x, k, a, x_t, norm = False):
+
+        CDF = np.zeros(np.size(x))
+        CDF[x < x_t] = 0.0
+        CDF[x > x_t] = power_law._CDF(x[x > x_t], k, a)
+
+        return CDF
+
+class gaussian(general_functions):
     def __init__(self, fix_mean = None):
-        fit_function.__init__(self, 'gaussian')
+        general_functions.__init__(self, 'gaussian')
         self._mu = fix_mean
         return
 
@@ -128,70 +162,123 @@ class gaussian(fit_function):
     def print_parameters(self):
         print "mu (mean of data) and sigma (standard deviation of data)"
 
-class lognormal_powerlaw(fit_function):
+class lognormal_powerlaw(general_functions):
+    """
+    Following Chen, Burkhart, Goodman, and Collins 2018
+    """
 
-    def __init__(self, mean, fix_mean = None, lognormal_region = None,
-                       powerlaw_region = None):
+    def __init__(self):
         """
         Fit a lognormal + power law tail PDF
         """
-        if not (fix_mean is None):
-            if fix_mean != mean:
-                print "fix_mean and mean must be the same value of both are provided"
-                raise ValueError
 
-
-        fit_function.__init__(self, 'lognormal_powerlaw')
-        self._mu = fix_mean
-        self.lognormal_region = lognormal_region
-        self.powerlaw_region  = powerlaw_region
-
-        self.lognormal = lognormal(fix_mean = fix_mean)
-        self.powerlaw  = power_law()
-
-        if (self.lognormal_region is None):
-            # assign lognormal region to be +/- 1 dex around mean
-            self.lognormal_region = 10.0**(np.array([np.log10(mean) - 0.5, np.log10(mean) + 0.5]))
-
-        if (self.powerlaw_region is None):
-            self.powerlaw_region  = np.array([np.log10(mean), np.inf])
-
+        general_functions.__init__(self,'lognormal_powerlaw')
+        self.fit_in_logspace = True
         return
 
-    def _f(self, x, mu, sigma, k, A):
-
-        lognorm_select = (x >= self.lognormal_region[0]) * (x < self.lognormal_region[1])
-        powerlaw_select = (x >= self.powerlaw_region[0]) * (x < self.powerlaw_region[1])
-
-
+#    def _f(self, x, mu, alpha, p_o, N):
+    def _f(self, x, mu, alpha, N, sigma):
         fx = np.zeros(np.size(x))
+        xlog  = np.log(x)
+        self.xt    = self.full_mean * np.exp(self.st)
 
-        fx[lognorm_select]   = self.lognormal._f( x[lognorm_select], mu, sigma)
-        fx[powerlaw_select]  = fx[powerlaw_select] + self.powerlaw._f( x[powerlaw_select], k, A)
+        s     = np.log(x / self.full_mean)  #/ self.full_mean)
+        mu    = mu - np.log( self.full_mean)
+#        sigma = np.sqrt(-2.0 * mu)
 
+        p_o = 1.0/(np.sqrt(2.0*np.pi)*sigma*self.xt) * np.exp(-1.0*(self.st-mu)**2 / (2.0*sigma*sigma) + alpha*self.st)
+
+#        st    = 0.5 * (2.0 * np.abs(alpha) - 1.0) * sigma * sigma
+
+#        p_o   = np.exp(0.5 * (alpha - 1.0)*alpha*sigma*sigma) / (sigma*np.sqrt(2.0*np.pi))
+#        N = ( p_o / (alpha*np.exp(-alpha*st)) + 0.5 * (1.0 + erf( (2.0*st + sigma*sigma)/(2.0**(3.0/2.0)*sigma))))**(-1)
+
+#        self.st = 1.0*st
+#        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma*x) * np.exp(- (s[s<st] - mu)**2 / (2.0*sigma*sigma))
+        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma*x[s<self.st]) * np.exp(-1.0 * (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
+        fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
+
+        self.N     = N
+        self.sigma = sigma
+        self.p_o   = p_o
+
+#        fx[fx<0] = np.min(fx[fx>0])*1.0E-30
+        #print np.log10(self.xt)
         return fx
 
-    def _CDF(self, x, mu, sigma, k, A):
-        lognorm_select  = (x >= self.lognormal_region[0]) * (x < self.lognormal_region[1])
-        powerlaw_select = (x >= self.powerlaw_region[0])  * (x < self.powerlaw_region[1])
+    def _logf(self, x, *args):
+        fvals = np.log10(self._f(x, *args))
 
-        CDF_lognorm  = self.lognormal._CDF(x[lognormal_select], mu, sigma)
+        return fvals
 
-        CDF_powerlaw = self.powerlaw._CDF(x[powerlaw_select], k, A)
-        PL_norm      = CDF_lognorm[-1] / CDF_powerlaw[0]
+#    def _f_fixed_st(self, x, mu, alpha):
+#        fx = np.zeros(np.size(x))
+#        s     = np.log(x) - mu
+#        sigma = np.sqrt(2.0*self.st / (2.0*np.abs(alpha)-1))                #np.sqrt(-2.0 * mu)
+#
+#        #st    = 0.5 * (2.0 * np.abs(alpha) - 1.0) * sigma * sigma
+#        p_o   = np.exp(0.5 * (alpha - 1.0)*alpha*sigma*sigma) / (sigma*np.sqrt(2.0*np.pi))
+#
+#        N = ( p_o / (alpha*np.exp(-alpha*self.st)) + 0.5 * (1.0 + erf( (2.0*self.st + sigma*sigma)/(2.0**(3.0/2.0)*sigma))))**(-1)
+#
+#        # self.st = st
+#        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma) * np.exp(- (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
+#        fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
+#
+#        self.xt    = np.exp(self.st + mu)
+#        self.N     = N
+#        self.sigma = sigma
+#
+#        return fx
+    def fit_function(self, xdata, ydata, method = 'curve_fit', data_cdf = None, *args, **kwargs):
+        """
+        Fit function to data. By default, this uses the scipy method 'curve_fit', but the 
+        'KS' can be provided as method to minimize the distance between the CDFs of the two 
+        functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
+        possibly be better to provide the CDF computed separately, using `data_cdf' argument.
+        """
+        if 'p0' in kwargs.keys():
+            self.p0 = kwargs['p0']
 
-        CDF = np.zeros(np.size(x))
-        CDF[lognorm_select] = CDF_lognorm
+        # s_t
+        min_error = np.inf
+        all_xt = np.logspace( np.log10(xdata[np.argmax(ydata)]), np.log10(np.max(xdata)), np.size(xdata)*2)
+        for xt in all_xt:
 
-        CDF[powerlaw_select] = PL_norm * CDF_powerlaw
+            self.st = np.log( xt / self.full_mean)
+            try:
+                if self.fit_in_logspace:
+                    self.popt, self.pcov = curve_fit(self._logf, xdata, np.log10(ydata),
+                                                 *args, **kwargs)
 
-        return CDF
+                    #print self.name, self.popt, self._logf(xdata,*self.popt), np.log10(ydata)
+                else:
+                    self.popt, self.pcov = curve_fit(self._f, xdata, ydata,
+                                                         *args, **kwargs)
+            except:
+                continue
 
-class lognormal(fit_function):
+            y_fit = self._f(xdata, *self.popt)
+            error = np.sum(  (y_fit - ydata)**2 / ydata )
+
+            if error < min_error:
+                optimal_st    = 1.0*self.st
+                optimal_popt  = copy(self.popt)
+                optimal_pcov  = copy(self.pcov)
+                min_error  = error
+
+        self.popt = optimal_popt
+        self.pcov = optimal_pcov
+        self.st   = optimal_st
+
+        return self.popt, self.pcov
+
+class lognormal(general_functions):
 
     def __init__(self, fix_mean = None):
-        fit_function.__init__(self, 'lognormal')
+        general_functions.__init__(self, 'lognormal')
         self._mu = fix_mean
+        self.fit_in_logspace = True
         return
 
     def _CDF(self, x, mu, sigma):
@@ -211,11 +298,16 @@ class lognormal(fit_function):
 
         return fx
 
+    def _logf(self, x, *args):
+        return np.log10( self._f(x, *args))
+
     def print_parameters(self):
         print "mu (mean of logged data) and sigma (standard deviaion of logged data)"
 
 
 by_name = {'log-normal' : lognormal,
            'powerlaw'   : power_law,
+           'truncated_powerlaw' : truncated_powerlaw,
            'gaussian'   : gaussian,
            'lognormal_powerlaw' : lognormal_powerlaw}
+
