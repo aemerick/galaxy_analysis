@@ -51,46 +51,38 @@ def fit_multifunction_PDF(bins, y, data):
     centers = 0.5 * (bins[1:] + bins[:-1])
 
     def _error(yfitvals, yvals):
-#        return np.sum( np.abs(yvals-yfitvals)*yvals)/np.sum(yvals)
         return np.sum( np.abs(yvals[yvals>0] - yfitvals[yvals>0])**2/yvals[yvals>0] )
-#        return np.sum( np.abs(yvals[yvals>0]-yfitvals[yvals>0])   ) / (np.sum(1.0/yvals[yvals>0]))
 
-    try:
-    #if True:
-        lognormal_alone = fit_PDF(bins*1.0, y*1.0, data = data, function_to_fit = 'log-normal')
-        success['lognormal'] = True
-        lognormal_alone['error'] = _error( lognormal_alone['fit_function']._f(centers, *lognormal_alone['popt']) , lognormal_alone['norm_y'])
-        rdict['lognormal']   = lognormal_alone
-    except:
-        success['lognormal'] = False
+    # lognormal
+    lognormal_alone = fit_PDF(bins*1.0, y*1.0, data = data, function_to_fit = 'log-normal')
+    success['lognormal'] = True
+    lognormal_alone['error'] = _error( lognormal_alone['fit_function']._f(centers, *lognormal_alone['popt']) , lognormal_alone['norm_y'])
+    rdict['lognormal']   = lognormal_alone
 
-    try:
-#    if True:
-        ln_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'lognormal_powerlaw')
-        success['lognormal_powerlaw'] = True
-        ln_pl['error'] = _error(ln_pl['fit_function']._f(centers, *ln_pl['popt']) , ln_pl['norm_y'])
-        rdict['lognormal_powerlaw'] = ln_pl
-    except:
-        success['lognormal_powerlaw'] = False
+    # lognormal powerlaw
+    ln_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'lognormal_powerlaw')
+    success['lognormal_powerlaw'] = True
+    ln_pl['error'] = _error(ln_pl['fit_function']._f(centers, *ln_pl['popt']) , ln_pl['norm_y'])
+    rdict['lognormal_powerlaw'] = ln_pl
 
+    # powerlaw
     powerlaw_alone  = fit_PDF(bins, y, data = data, function_to_fit = 'powerlaw')
     success['powerlaw'] = True
-    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers[centers>centers[np.argmax(powerlaw_alone['norm_y'])]] , *powerlaw_alone['popt']) ,
-                                         powerlaw_alone['norm_y'][ centers > centers[np.argmax(powerlaw_alone['norm_y'])]]  )
-
+#    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers[centers>centers[np.argmax(powerlaw_alone['norm_y'])]] , *powerlaw_alone['popt']) ,
+#                                         powerlaw_alone['norm_y'][ centers > centers[np.argmax(powerlaw_alone['norm_y'])]]  )
+    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers, *powerlaw_alone['popt']), powerlaw_alone['norm_y'])
     rdict['powerlaw'] = powerlaw_alone
 
-#    try:
+    # truncated powerlaw
     truncated_powerlaw  = fit_PDF(bins, y, data = data, function_to_fit = 'truncated_powerlaw')
     success['truncated_powerlaw'] = True
     truncated_powerlaw['error'] = _error(truncated_powerlaw['fit_function']._f( centers , *truncated_powerlaw['popt']) ,
                                          truncated_powerlaw['norm_y'])
-
     rdict['truncated_powerlaw'] = truncated_powerlaw
 
-    if all([not success[k] for k in success.keys()]):
-        print "Cannot find a fit"
-        raise ValueError
+#    if all([not success[k] for k in success.keys()]):
+#        print "Cannot find a fit"
+#        raise ValueError
 
     min_error = np.inf
     for k in success.keys():
@@ -100,10 +92,6 @@ def fit_multifunction_PDF(bins, y, data):
             if rdict[k]['error'] < min_error:
                 min_error = rdict[k]['error']
                 min_key   = k
-
-
-#    if 'lognormal_powerlaw' in rdict.keys():
-#        min_key = 'lognormal_powerlaw'
 
     return rdict[min_key]
 
@@ -133,16 +121,8 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
 
 
             if function_to_fit == 'lognormal_powerlaw':
-#                p0 = [p0[0],p0[1],2,1]
-#                bounds = ( [bounds[0][0], bounds[0][1], 1, 0.0], [bounds[1][0],bounds[1][1],np.inf,np.inf])
-#                p0 = [u_guess - 2, 2.1, 1.0, 1.0]
-#                bounds = ([u_guess - 20, 1.0, 0.0, 0.0],[ np.min([u_guess+20,0]), 10, np.inf, np.inf])
-                 p0 = [u_guess - 3, 2.0, 1.0, 0.1]
-                 bounds = ( [p0[0] - 5, 0.1, 0.0, 0.0], [u_guess+3, 10.0, 10.0, np.inf])
-
-#                bounds = (  [p0[0] - np.log(100), 0.0], [p0[0] + np.log(100), 8] )
-#                 p0 = [p0[0], p0[1], 1.0]
-#                 bounds = ( [bounds[0][0],bounds[0][1], 0.00000001,], [bounds[1][0],bounds[1][1], 10.0])
+                 p0 = [u_guess - 3, 2.0, np.sqrt(-0.5 * (u_guess - 3 - np.log(data['mean'])))  ]
+                 bounds = ( [p0[0] - 5, 0.1, 0.01], [u_guess+3, 10.0, 8.0])
 
         if function_to_fit == 'powerlaw' or function_to_fit == 'truncated_powerlaw':
             p0     = [2, 1.0E-5]
@@ -152,8 +132,6 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
         if function_to_fit == 'truncated_powerlaw':
             p0      = [p0[0]*1,p0[1]*1, centers[np.argmax(norm_y)-1] ]
             bounds  = ([bounds[0][0]*1, 1*bounds[0][1], centers[np.argmax(norm_y)-10]], [1*bounds[1][0],1*bounds[1][1],centers[np.argmax(norm_y)+20]])
-
-
 
     # choose the region to fit over
     #   for all, this will be where there is data
@@ -188,10 +166,6 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
                                               bounds = bounds, method = fit_method,
                                               data_cdf = data_cdf)
 
-    if function_to_fit.name == 'lognormal_powerlaw':
-        print "----", popt
-
-
     fit_dictionary = {'popt' : copy(popt), 'pcov': copy(pcov),
                       'fit_function' : function_to_fit, 'norm_y' : norm_y*1.0,
                       'fit_x' : x_to_fit*1.0, 'fit_y' : y_to_fit*1.0,
@@ -207,12 +181,23 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     if elements is None:
         elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']
 
+    elements = ['Ba', 'Sr', 'Fe', 'Mn', 'Mg', 'O', 'N']
+
     fig, ax = plt.subplots(2)
     fig.set_size_inches(24,16)
 
     bins    = data[dsname][phase]['mass_fraction']['bins']
     centers = 0.5 * (bins[1:]+ bins[:-1])
 
+
+#    sort   = np.argsort(ymax_order)
+#    sort_e = np.array(elements)[sort]
+
+    label_pos = np.empty((np.size(elements),))
+    label_pos[::2] = 1
+    label_pos[1::2] = -1
+
+#    label_pos = label_pos[sort]
 
     ci = li = 0
     for i, e in enumerate(elements):
@@ -233,14 +218,28 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
                                       lw = line_width, ls = lss[li], color = colors[ci])
 
 
-        plot_histogram(ax[1],np.log10(bins),
-                   #np.log10(fit_dict['fit_x']), 
-                   fit_dict['norm_y']/np.max(fit_dict['norm_y']) - fit_dict['fit_result'](centers)/np.max(fit_dict['norm_y']),
-                                      lw = line_width, ls = lss[li], color = colors[ci])
+        select = fit_dict['norm_y'] > 0
+        chisqr = (fit_dict['fit_result'](centers[select]) - fit_dict['norm_y'][select])**2 / fit_dict['norm_y'][select]
+        error  = np.abs(fit_dict['fit_result'](centers[select]) - fit_dict['norm_y'][select]) / fit_dict['norm_y'][select]
+
+        ax[1].plot(np.log10(centers[select]), error, lw = line_width, ls = lss[li], color = colors[ci])
 
 
+####
+        xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
+        xa    = np.log10(centers[np.argmax(fit_dict['norm_y'])])
+        ya    = 1.0
+        pos = label_pos[i]
+        if pos > 0:
+            xtext = xtext + 0.05
+            ytext = 2.0
+        xy = (xtext, ytext)
+        xya = (xa,ya)
+        ax[0].annotate(e, xy = xya, xytext=xy, color = colors[ci],
+                       arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
+####
 
-        print e, fit_dict['name'], fit_dict['popt']
+        print e, fit_dict['name'], fit_dict['popt'], np.sqrt(-0.5 * fit_dict['popt'][0]), np.sum(chisqr) / (1.0*np.size(fit_dict['norm_y'][select]))
         ci = ci + 1
         if ci >= np.size(colors):
             ci = 0
@@ -250,6 +249,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
         ax[i].set_xlim(-14, -1.5)
         ax[i].set_ylim(1.0E-5, 9.0)
         ax[i].semilogy()
+    ax[1].set_ylim(0.01, 10.0)
 
     ax[0].set_ylabel('Peak Normalized PDF from Data')
     ax[1].set_ylabel('Peak Normalized PDF from Fit')
@@ -264,15 +264,113 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     return
 
 
-if __name__ == '__main__':
+def plot_phase_panel(data, dsname, elements = None, **kwargs):
 
-    data = {"DD0400" : dd.io.load('gas_abundances_5Myr.h5', "/DD0400") }
-    plot_all_elements(data, 'DD0400', 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-    plot_all_elements(data, 'DD0400', 'CNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-    plot_all_elements(data, 'DD0400', 'WNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-    plot_all_elements(data, 'DD0400', 'WIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-    plot_all_elements(data, 'DD0400', 'HIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-    plot_all_elements(data, 'DD0400', 'Disk', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+    phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
+
+    if elements is None:
+        elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']
+
+    elements = ['Ba', 'Sr', 'Fe', 'Mn', 'Mg', 'O', 'N']
+    #elements = ['Mg','O']
+    fig, ax = plt.subplots(3,2)
+    fig.set_size_inches(36,6*3)
+
+    bins    = data[dsname][phases[0]]['mass_fraction']['bins']
+    centers = 0.5 * (bins[1:]+ bins[:-1])
+
+
+#    sort   = np.argsort(ymax_order)
+#    sort_e = np.array(elements)[sort]
+
+    label_pos = np.empty((np.size(elements),))
+    label_pos[::2] = 1
+    label_pos[1::2] = -1
+
+#    label_pos = label_pos[sort]
+
+    ax_indexes = [(0,0),(0,1), (1,0), (1,1), (2,0), (2,1)]
+    for axi, phase in enumerate(phases):
+        ci = li = 0
+
+        axi = ax_indexes[axi]
+        for i, e in enumerate(elements):
+            field = e + '_Fraction'
+
+            ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
+
+            fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
+                   #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
+
+
+            plot_histogram(ax[axi], np.log10(bins), fit_dict['norm_y']/np.max(fit_dict['norm_y']),
+                                        color = colors[ci], ls = lss[li], lw = line_width)
+
+            ax[axi].plot(np.log10(centers),
+                       #np.log10(fit_dict['fit_x']), 
+                       fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
+                                          lw = line_width, ls = lss[li], color = colors[ci])
+
+####
+            xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
+            xa    = np.log10(centers[np.argmax(fit_dict['norm_y'])])
+            ya    = 1.0
+            pos = label_pos[i]
+            if pos > 0:
+                xtext = xtext + 0.05
+                ytext = 2.0
+            xy = (xtext, ytext)
+            xya = (xa,ya)
+            ax[axi].annotate(e, xy = xya, xytext=xy, color = colors[ci],
+                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
+####
+
+            print phase, e, fit_dict['name'], fit_dict['popt']
+            ci = ci + 1
+            if ci >= np.size(colors):
+                ci = 0
+                li = li + 1
+
+    for i, axi in enumerate(ax_indexes):
+        ax[axi].set_xlim(-14, -1.5)
+        ax[axi].set_ylim(1.0E-5, 9.0)
+        ax[axi].semilogy()
+        xy = (-3.0,1.0)
+        ax[axi].annotate(phases[i], xy = xy, xytext=xy)
+
+    for i in [0,1,2]:
+        ax[(i,0)].set_ylabel('Peak Normalized PDF')       
+        plt.setp( ax[(i,1)].get_yticklabels(), visible = False)
+    #ax[1].set_ylim(0.01, 10.0)
+    for i in [0,1]:
+        ax[(2,i)].set_xlabel('log(Z)')         
+
+    #ax[1].set_ylabel('Peak Normalized PDF')
+
+    fig.subplots_adjust(hspace = 0, wspace = 0)
+   # plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible = False)
+    plt.minorticks_on()
+
+    fig.savefig(dsname + '_multiphase_all_elements_fit.png')
+    plt.close()
+
+    return
+
+
+if __name__ == '__main__':
+    dsname = "DD0400"
+
+    data = {dsname : dd.io.load('gas_abundances_5Myr.h5', "/" + dsname) }
+
+    plot_phase_panel(data, dsname)
+
+    if False:
+        plot_all_elements(data, dsname, 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+        plot_all_elements(data, dsname, 'CNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+        plot_all_elements(data, dsname, 'WNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+        plot_all_elements(data, dsname, 'WIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+        plot_all_elements(data, dsname, 'HIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+        plot_all_elements(data, dsname, 'Disk', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
 
 
 
