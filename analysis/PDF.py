@@ -2,6 +2,7 @@ from galaxy_analysis.plot.plot_styles import *
 import yt
 import numpy as np
 from copy import copy
+import sys
 import deepdish as dd
 from scipy.optimize import brentq
 from galaxy_analysis.utilities import utilities
@@ -54,10 +55,13 @@ def fit_multifunction_PDF(bins, y, data):
         return np.sum( np.abs(yvals[yvals>0] - yfitvals[yvals>0])**2/yvals[yvals>0] )
 
     # lognormal
-    lognormal_alone = fit_PDF(bins*1.0, y*1.0, data = data, function_to_fit = 'log-normal')
-    success['lognormal'] = True
-    lognormal_alone['error'] = _error( lognormal_alone['fit_function']._f(centers, *lognormal_alone['popt']) , lognormal_alone['norm_y'])
-    rdict['lognormal']   = lognormal_alone
+    try:
+        lognormal_alone = fit_PDF(bins*1.0, y*1.0, data = data, function_to_fit = 'log-normal')
+        success['lognormal'] = True
+        lognormal_alone['error'] = _error( lognormal_alone['fit_function']._f(centers, *lognormal_alone['popt']) , lognormal_alone['norm_y'])
+        rdict['lognormal']   = lognormal_alone
+    except RuntimeError:
+        success['lognormal'] = False
 
     # lognormal powerlaw
     ln_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'lognormal_powerlaw')
@@ -65,20 +69,31 @@ def fit_multifunction_PDF(bins, y, data):
     ln_pl['error'] = _error(ln_pl['fit_function']._f(centers, *ln_pl['popt']) , ln_pl['norm_y'])
     rdict['lognormal_powerlaw'] = ln_pl
 
+    if False: #try:
+        gau_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'gaussian_powerlaw')
+        success['gaussian_powerlaw'] = True
+        gau_pl['error'] = _error(gau_pl['fit_function']._f(centers, *gau_pl['popt']), gau_pl['norm_y'])
+        rdict['gaussian_powerlaw'] = gau_pl	
+    #except RuntimeError:
+    #    success['gaussian_powerlaw'] = False
+
     # powerlaw
-    powerlaw_alone  = fit_PDF(bins, y, data = data, function_to_fit = 'powerlaw')
-    success['powerlaw'] = True
+    try:
+        powerlaw_alone  = fit_PDF(bins, y, data = data, function_to_fit = 'powerlaw')
+        success['powerlaw'] = True
 #    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers[centers>centers[np.argmax(powerlaw_alone['norm_y'])]] , *powerlaw_alone['popt']) ,
 #                                         powerlaw_alone['norm_y'][ centers > centers[np.argmax(powerlaw_alone['norm_y'])]]  )
-    powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers, *powerlaw_alone['popt']), powerlaw_alone['norm_y'])
-    rdict['powerlaw'] = powerlaw_alone
+        powerlaw_alone['error'] = _error(powerlaw_alone['fit_function']._f( centers, *powerlaw_alone['popt']), powerlaw_alone['norm_y'])
+        rdict['powerlaw'] = powerlaw_alone
+    except RuntimeError:
+        success['powerlaw'] = False
 
     # truncated powerlaw
-    truncated_powerlaw  = fit_PDF(bins, y, data = data, function_to_fit = 'truncated_powerlaw')
-    success['truncated_powerlaw'] = True
-    truncated_powerlaw['error'] = _error(truncated_powerlaw['fit_function']._f( centers , *truncated_powerlaw['popt']) ,
-                                         truncated_powerlaw['norm_y'])
-    rdict['truncated_powerlaw'] = truncated_powerlaw
+    #truncated_powerlaw  = fit_PDF(bins, y, data = data, function_to_fit = 'truncated_powerlaw')
+    #success['truncated_powerlaw'] = True
+    #truncated_powerlaw['error'] = _error(truncated_powerlaw['fit_function']._f( centers , *truncated_powerlaw['popt']) ,
+    #                                     truncated_powerlaw['norm_y'])
+    #rdict['truncated_powerlaw'] = truncated_powerlaw
 
 #    if all([not success[k] for k in success.keys()]):
 #        print "Cannot find a fit"
@@ -117,31 +132,34 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
                 std_guess = np.sqrt( np.log(1.0 + data['std']**2 / data['mean']**2))
 
                 p0 = [u_guess, std_guess]
-                bounds = ( [p0[0]*1.0 - 10, 0.0], [p0[0]*1.0+10, 10.0])
+                bounds = ( [p0[0]*1.0 - 10, 0.0], [p0[0]*1.0+10, 30.0])
 
 
             if function_to_fit == 'lognormal_powerlaw':
                  p0 = [u_guess - 3, 2.0, np.sqrt(-0.5 * (u_guess - 3 - np.log(data['mean'])))  ]
-                 bounds = ( [p0[0] - 5, 0.1, 0.01], [u_guess+3, 10.0, 8.0])
+                 bounds = ( [p0[0] - 5, 1.0, 0.01], [u_guess+3, 20.0, 10.0])
 
         if function_to_fit == 'powerlaw' or function_to_fit == 'truncated_powerlaw':
             p0     = [2, 1.0E-5]
-            bounds = ( [1,np.inf], [0.0, np.inf] )
-            bounds = ( [1,0], [np.inf,1.0])
+            bounds = ( [1.0,0], [np.inf,1.0])
 
         if function_to_fit == 'truncated_powerlaw':
-            p0      = [p0[0]*1,p0[1]*1, centers[np.argmax(norm_y)-1] ]
-            bounds  = ([bounds[0][0]*1, 1*bounds[0][1], centers[np.argmax(norm_y)-10]], [1*bounds[1][0],1*bounds[1][1],centers[np.argmax(norm_y)+20]])
+            p0      = [p0[0]*1,p0[1]*1, centers[np.max([np.argmax(norm_y)-1,0])] ]
+            bounds  = ([bounds[0][0]*1, 1*bounds[0][1], centers[np.max([np.argmax(norm_y)-10,0])]],
+                                                        [1*bounds[1][0],1*bounds[1][1],centers[np.min([np.argmax(norm_y)+20,np.size(centers)-1])]])
+        if function_to_fit == 'gaussian_powerlaw':
+            p0     = [data['mean'], 2.0, data['std']]
+            bounds = [ (p0[0]/100.0, 0.01, p0[2] / 1000.0), (p0[0]*100.0, 10.0, p0[2]*100.0)]
 
     # choose the region to fit over
     #   for all, this will be where there is data
 
     selection = (norm_y > 0)
-    if function_to_fit == 'log-normal':
-        selection = selection * (centers > 10.0**(np.log10(centers[np.argmax(norm_y)]) - 1.0)  )*\
-                                (centers < 10.0**(np.log10(centers[np.argmax(norm_y)]) + 1.0)  )
-    elif function_to_fit == 'powerlaw':
-        selection = selection * ( centers > centers[np.argmax(norm_y)] )  # Fit everything to the right of the peak
+#    if function_to_fit == 'log-normal':
+#        selection = selection * (centers > 10.0**(np.log10(centers[np.argmax(norm_y)]) - 1.0)  )*\
+#                                (centers < 10.0**(np.log10(centers[np.argmax(norm_y)]) + 1.0)  )
+#    elif function_to_fit == 'powerlaw':
+#        selection = selection * ( centers > centers[np.argmax(norm_y)] )  # Fit everything to the right of the peak
 
 
     x_to_fit = centers[selection]
@@ -152,7 +170,7 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
         function_to_fit= functions.by_name[function_to_fit]()
 
 
-    if function_to_fit.name == 'lognormal_powerlaw':
+    if function_to_fit.name == 'lognormal_powerlaw' or function_to_fit.name == 'gaussian_powerlaw':
         function_to_fit.full_mean = data['mean']
 
     # If we are using KS test to fit, then need to compute the CDF from the data
@@ -173,7 +191,7 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
 
     return fit_dictionary
 
-colors = ['C' + str(i) for i in np.arange(9)]
+colors = ['C' + str(i) for i in [0,1,2,4,5,6,7,8,9]]
 lss     = ['-','--']
 
 def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
@@ -309,7 +327,7 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
             ax[axi].plot(np.log10(centers),
                        #np.log10(fit_dict['fit_x']), 
                        fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
-                                          lw = line_width, ls = lss[li], color = colors[ci])
+                                          lw = line_width, ls = '--', color = colors[ci])
 
 ####
             xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
@@ -325,7 +343,11 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
                            arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-            print phase, e, fit_dict['name'], fit_dict['popt']
+            if fit_dict['name'] == 'lognormal_powerlaw':
+                N = fit_dict['fit_function'].N
+            else:
+                N = 0
+            print phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N)
             ci = ci + 1
             if ci >= np.size(colors):
                 ci = 0
@@ -358,24 +380,44 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
 
 
 if __name__ == '__main__':
-    dsname = "DD0400"
+    """
+    Runs the analysis and plots a full panel of all phases and
+    the full disk for selected elements. Additional arguments
+    to run are:
+       1) ds_number
+       2) ds_number_start ds_number_end  (assume go up by 1)
+       3) ds_number_start ds_number_end di
 
-    data = {dsname : dd.io.load('gas_abundances_5Myr.h5', "/" + dsname) }
-
-    plot_phase_panel(data, dsname)
-
-    if False:
-        plot_all_elements(data, dsname, 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-        plot_all_elements(data, dsname, 'CNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-        plot_all_elements(data, dsname, 'WNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-        plot_all_elements(data, dsname, 'WIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-        plot_all_elements(data, dsname, 'HIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-        plot_all_elements(data, dsname, 'Disk', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+    e.x. To run starting with DD0400 to DD0500 going up by 5:
+        $python ./PDF.py 400 500 5
+    """
 
 
+    if len(sys.argv) == 1:
+        all_ds = ["DD0400"]
+    elif len(sys.argv) == 2:
+        all_ds = ["DD%0004i"%(sys.argv[1])]
+    elif len(sys.argv) == 3 or len(sys.argv) == 4:
 
+        if len(sys.argv) == 4:
+            di = sys.argv[3]
+        else:
+            di = 1
 
+        all_ds = ["DD%0004i"%(x) for x in np.arange(sys.argv[1], sys.argv[2]+di/2.0, di)]
 
-# load_distribution_data(gas_data, "DD0500", "HIM", "O_Fraction", centers = centers)
+    for dsname in all_ds:
+        print "Beginning on " + dsname
+        data = {dsname : dd.io.load('gas_abundances_5Myr.h5', "/" + dsname) }
+
+        plot_phase_panel(data, dsname)
+
+        if False:
+            plot_all_elements(data, dsname, 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+            plot_all_elements(data, dsname, 'CNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+            plot_all_elements(data, dsname, 'WNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+            plot_all_elements(data, dsname, 'WIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+            plot_all_elements(data, dsname, 'HIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
+            plot_all_elements(data, dsname, 'Disk', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
 
 
