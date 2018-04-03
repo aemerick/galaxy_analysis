@@ -528,7 +528,7 @@ def ratios_list(species):
 #        species = species + ['alpha']
 
 
-    denominators = sort_by_anum(['H', 'Mg', 'Fe', 'Na', 'Ni', 'O', 'C', 'Ba'])
+    denominators = sort_by_anum(['H', 'Mg', 'Fe', 'Na', 'Ni','N', 'O', 'C', 'Ba'])
     # denominators = denominators + ['alpha']
 
     ratios = []
