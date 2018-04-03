@@ -162,6 +162,95 @@ class gaussian(general_functions):
     def print_parameters(self):
         print "mu (mean of data) and sigma (standard deviation of data)"
 
+class gaussian_powerlaw(general_functions):
+    def __init__(self):
+        """
+        Fit a gaussian + power law PDF
+        """
+        general_functions.__init__(self, 'gaussian_powerlaw')
+        self.fit_in_logspace = True
+        return
+
+    def _f(self, x, mu, alpha, sigma):
+        N  = 1.0
+        fx = np.zeros(np.size(x))
+
+        xlog     = np.log(x)
+        self.xt  = self.st + self.full_mean
+
+        s     = x  - self.full_mean
+        mu    = mu - self.full_mean
+
+        p_o = 1.0/(np.sqrt(2.0*np.pi)*sigma) * np.exp(-1.0*(self.st - mu)**2 / (2.0*sigma*sigma) + alpha*self.st)
+
+
+#        N = 2.0 * (1.0 + erf( (2.0*self.st + sigma*sigma) / (2.0**(3.0/2.0)*sigma)) - (2.0*p_o*self.xt**(-alpha))/(-alpha))**(-1)
+        fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma) * np.exp(-1.0 * (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
+        fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
+
+        self.N     = N
+        self.sigma = sigma
+        self.p_o   = p_o
+
+        return fx
+
+    def _logf(self, x, *args):
+        fvals = np.log10(self._f(x, *args))
+
+        return fvals
+
+    def fit_function(self, xdata, ydata, method = 'curve_fit', data_cdf = None, *args, **kwargs):
+        """
+        Fit function to data. By default, this uses the scipy method 'curve_fit', but the 
+        'KS' can be provided as method to minimize the distance between the CDFs of the two 
+        functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
+        possibly be better to provide the CDF computed separately, using `data_cdf' argument.
+        """
+        if 'p0' in kwargs.keys():
+            self.p0 = kwargs['p0']
+
+        min_error = np.inf
+        all_xt = np.logspace( np.log10(xdata[np.argmax(ydata)]), np.log10(np.max(xdata)), np.size(xdata)*2)
+        none_successful = True
+        for xt in all_xt:
+
+            self.st = xt - self.full_mean
+            try:
+                if self.fit_in_logspace:
+                    self.popt, self.pcov = curve_fit(self._logf, xdata, np.log10(ydata),
+                                                 *args, **kwargs)
+
+                    #print self.name, self.popt, self._logf(xdata,*self.popt), np.log10(ydata)
+                else:
+                    self.popt, self.pcov = curve_fit(self._f, xdata, ydata,
+                                                         *args, **kwargs)
+
+                none_successful = False
+            except:
+                continue
+
+            y_fit = self._f(xdata, *self.popt)
+            error = np.sum(  (y_fit - ydata)**2 / ydata )
+
+            if error < min_error:
+                optimal_st    = 1.0*self.st
+                optimal_popt  = copy(self.popt)
+                optimal_pcov  = copy(self.pcov)
+                min_error  = error
+
+        if none_successful:
+            self.popt = None ; self.pcov = None; self.st = None
+            print "No fit found for the " + self.name
+            raise RuntimeError
+        else:
+            self.popt = optimal_popt
+            self.pcov = optimal_pcov
+            self.st   = optimal_st
+
+        return self.popt, self.pcov
+
+
+
 class lognormal_powerlaw(general_functions):
     """
     Following Chen, Burkhart, Goodman, and Collins 2018
@@ -191,6 +280,11 @@ class lognormal_powerlaw(general_functions):
 #        sigma = np.sqrt(-0.5 * mu)
 
         p_o = 1.0/(np.sqrt(2.0*np.pi)*sigma*self.xt) * np.exp(-1.0*(self.st-mu)**2 / (2.0*sigma*sigma) + alpha*self.st)
+
+
+#        N = 2.0 * (1.0 + erf( (2.0*self.st + sigma*sigma) / (2.0**(3.0/2.0)*sigma)) - (2.0*p_o*self.xt**(-alpha))/(-alpha))**(-1)
+
+        # N = (0.5 * ( 1.0 + erf( (self.st - mu)/(np.sqrt(2)*sigma))) + (self.xt*p_o/(-1.0+alpha)) * (self.xt/self.full_mean)**(-alpha+1.0))**(-1)
 
         fx[ s < self.st] = N / (np.sqrt(2.0*np.pi)*sigma*x[s<self.st]) * np.exp(-1.0 * (s[s<self.st] - mu)**2 / (2.0*sigma*sigma))
         fx[ s > self.st] = N * p_o * np.exp(-alpha * s[s>self.st])
@@ -284,5 +378,6 @@ by_name = {'log-normal' : lognormal,
            'powerlaw'   : power_law,
            'truncated_powerlaw' : truncated_powerlaw,
            'gaussian'   : gaussian,
-           'lognormal_powerlaw' : lognormal_powerlaw}
+           'lognormal_powerlaw' : lognormal_powerlaw,
+           'gaussian_powerlaw' : gaussian_powerlaw}
 
