@@ -396,19 +396,32 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         all_ds = ["DD0400"]
     elif len(sys.argv) == 2:
-        all_ds = ["DD%0004i"%(sys.argv[1])]
+        all_ds = ["DD%0004i"%(int(sys.argv[1]))]
     elif len(sys.argv) == 3 or len(sys.argv) == 4:
 
         if len(sys.argv) == 4:
-            di = sys.argv[3]
+            di = int(sys.argv[3])
         else:
             di = 1
 
-        all_ds = ["DD%0004i"%(x) for x in np.arange(sys.argv[1], sys.argv[2]+di/2.0, di)]
+        all_ds = ["DD%0004i"%(x) for x in np.arange( int(sys.argv[1]),
+                                                     int(sys.argv[2])+di/2.0, di)]
+
+    individual_fail = False
+    gas_file = 'gas_abundances.h5'
+    try:
+        data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
+    except:
+        individual_fail = True
+        all_data = dd.io.load(gas_file)
 
     for dsname in all_ds:
         print "Beginning on " + dsname
-        data = {dsname : dd.io.load('gas_abundances_5Myr.h5', "/" + dsname) }
+
+        if individual_fail:
+            data = {dsname : all_data[dsname]}
+        else:
+            data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
         plot_phase_panel(data, dsname)
 
