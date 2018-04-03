@@ -356,12 +356,108 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
 
     return
 
+def plot_abundances_panel(data, dsname, elements = None, denominator = 'H', **kwargs):
+    
+    
+    phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
+
+    if elements is None:
+        elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']
+
+    elements = ['Ba', 'Sr', 'Fe', 'Mn', 'Mg', 'O', 'N']
+    #elements = ['Mg','O']
+    fig, ax = plt.subplots(3,2)
+    fig.set_size_inches(36,6*3)
+
+    bins    = data[dsname][phases[0]]['mass_fraction']['abins']
+    centers = 0.5 * (bins[1:]+ bins[:-1])
+
+
+#    sort   = np.argsort(ymax_order)
+#    sort_e = np.array(elements)[sort]
+
+    label_pos = np.empty((np.size(elements),))
+    label_pos[::2] = 1
+    label_pos[1::2] = -1
+
+#    label_pos = label_pos[sort]
+
+    ax_indexes = [(0,0),(0,1), (1,0), (1,1), (2,0), (2,1)]
+    for axi, phase in enumerate(phases):
+        ci = li = 0
+
+        axi = ax_indexes[axi]
+        for i, e in enumerate(elements):
+            field = e + '_over_' + denominator
+
+            ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
+
+            fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
+                   #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
+
+
+            plot_histogram(ax[axi], np.log10(bins), fit_dict['norm_y']/np.max(fit_dict['norm_y']),
+                                        color = colors[ci], ls = lss[li], lw = line_width)
+
+            ax[axi].plot(np.log10(centers),
+                       #np.log10(fit_dict['fit_x']), 
+                       fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
+                                          lw = line_width, ls = lss[li], color = colors[ci])
+
+####
+            xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
+            xa    = np.log10(centers[np.argmax(fit_dict['norm_y'])])
+            ya    = 1.0
+            pos = label_pos[i]
+            if pos > 0:
+                xtext = xtext + 0.05
+                ytext = 2.0
+            xy = (xtext, ytext)
+            xya = (xa,ya)
+            ax[axi].annotate(e, xy = xya, xytext=xy, color = colors[ci],
+                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
+####
+
+            print phase, e, fit_dict['name'], fit_dict['popt']
+            ci = ci + 1
+            if ci >= np.size(colors):
+                ci = 0
+                li = li + 1
+
+    for i, axi in enumerate(ax_indexes):
+        ax[axi].set_xlim(-14, -1.5)
+        ax[axi].set_ylim(1.0E-5, 9.0)
+        ax[axi].semilogy()
+        xy = (-3.0,1.0)
+        ax[axi].annotate(phases[i], xy = xy, xytext=xy)
+
+    for i in [0,1,2]:
+        ax[(i,0)].set_ylabel('Peak Normalized PDF')       
+        plt.setp( ax[(i,1)].get_yticklabels(), visible = False)
+    #ax[1].set_ylim(0.01, 10.0)
+    for i in [0,1]:
+        ax[(2,i)].set_xlabel('[X/' + denominator + ']')         
+
+    #ax[1].set_ylabel('Peak Normalized PDF')
+
+    fig.subplots_adjust(hspace = 0, wspace = 0)
+   # plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible = False)
+    plt.minorticks_on()
+
+    fig.savefig(dsname + '_multiphase_elements_over_' + denominator + '.png')
+    plt.close()
+
+    return
+
+
 
 if __name__ == '__main__':
     dsname = "DD0400"
 
     data = {dsname : dd.io.load('gas_abundances_5Myr.h5', "/" + dsname) }
 
+    plot_abundances_panel(data, dsname)
+    
     plot_phase_panel(data, dsname)
 
     if False:
