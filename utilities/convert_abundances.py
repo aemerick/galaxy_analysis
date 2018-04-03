@@ -62,3 +62,18 @@ def abundance_ratio(x1, x2, input_type = 'abundance'):
 
     return aratio
 
+def renormalize(aratio, e1, e2, to_solar = False):
+    """
+    Takes an abundance ratio (aratio) between elements e1 and e2, and reconverts
+    the ratio to just straight abundance, instead of normalized to solar.
+    """
+
+    x1_solar = SOLAR_ABUNDANCE[e1]
+    x2_solar = SOLAR_ABUNDANCE[e2]
+    
+    conversion = x1_solar - x2_solar
+    
+    if to_solar:
+        conversion *= -1
+        
+    return aratio + conversion
