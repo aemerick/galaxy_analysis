@@ -1,4 +1,4 @@
-SKIP_ABUNDANCES = True
+SKIP_ABUNDANCES = False
 
 import yt
 import numpy as np
@@ -315,7 +315,7 @@ def _parallel_loop(dsname, fraction_fields):
 #
     # limit ourselves to Fe and H demoninators for now to speed up computation
     abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                              select_denom = ['Fe','H'])
+                                                              select_denom = ['Fe','H','Ba','Mg','O','N'])
     species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
     metal_species = utilities.species_from_fields(gal.ds.field_list)
 
