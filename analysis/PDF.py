@@ -15,6 +15,119 @@ from scipy import integrate
 from scipy.stats import distributions  # may not need
 from scipy import stats
 
+def gather_time_series(datafile, dsarray, phase, field, centers = None):
+
+    if 'over' in field:
+        cname = 'abins'
+    else:
+        cname = 'bins'
+
+    i = 0
+    ldata = {dsarray[0]: dd.io.load(datafile, "/" + dsarray[0])}
+    data  = load_distribution_data(ldata, dsarray[0], phase, field, centers = cname)
+    time_series = {}
+    for k in data.keys():
+        if k == 'hist':
+            continue
+        time_series[k] = np.zeros(np.size(dsarray))
+
+    for dsname in dsarray:
+        ldata = {dsname : dd.io.load(gas_file, "/" + dsname)}
+
+        data  = load_distribution_data(ldata, dsname, phase, field, centers = cname)
+
+        for k in data.keys():
+            if k == 'hist':
+                continue
+            time_series[k][i] = data[k]
+
+        i = i + 1
+
+    return time_series
+
+
+def plot_time_evolution(datafile, dsarray, denominator = None):
+    """
+    Make a panel plot showing the evolution of:
+        Median abundance           : top row
+        log(median) - log(average) : middle row
+        q90 - q10                  : bottom row
+    For the following elements as columns (7):
+        Ba, Sr, Fe, Mn, Mg, O, N
+
+    Either as mass fractions (denominator = None) or as abundance
+    ratios (e.g. denominator = "Fe")
+    """
+
+    all_phases = ['Molecular','CNM','WNM','WIM','HIM']
+    elements   = ['Ba','Sr','Fe','Mn','Mg','N','O']
+
+    all_time_data = {}
+    for e in elements:
+        all_time_data[e] = {}
+
+
+        if denominator is None:
+            field = e + '_Fraction'
+        elif e == denominator:
+            continue # skip
+        else:
+            field = e + '_over_' + denominator
+
+        for phase in all_phases:
+            all_time_data[e][phase] =\
+              gather_time_series(datafile, dsarray, phase, field)
+
+
+    nrow = 3
+    ncol = 7
+
+    fig, ax = plt.subplots(nrow,ncol)
+    fig.set_size_inches(nrow*6,ncol*6)
+
+    axi = 0
+    axj = 0
+
+    times = np.arange(0, np.size(dsarray), 1) * 5
+
+    color = {'Molecular' : 'C1', 'CNM' : 'C0', 'WNM' : 'C2', 'WIM':'C4','HIM' : 'C3'}
+
+    for e in elements:
+
+
+        for phase in all_phases:
+
+            median = all_time_data[e][phase]['median']
+            mean   = all_time_data[e][phase]['mean']
+            d9d1   = all_time_data[e][phase]['q90_q10_range']
+
+            ax[(0,axj)].plot(times, median, lw = 3, color = color[phase], ls = '-')
+            ax[(1,axj)].plot(times, median - mean, lw = 3, color = color[phase], ls = '-')
+            ax[(2,axj)].plot(times, d9d1, lw = 3, color = color[phase], ls = '-')
+
+            if not (denominator is None):
+                ax[(0,axj)].set_ylim(-8,0)
+                ax[(1,axj)].set_ylim(0, 1)
+                ax[(2,axj)].set_ylim(0, 3)
+
+        for i in [0,1,2]:
+            ax[(i,axj)].set_xlim(0, 500.0)
+
+        axj = axj + 1
+
+    ax[(0,0)].set_ylabel('Median (dex)')
+    ax[(1,0)].set_ylabel('Med - Mean (dex)')
+    ax[(2,0)].set_ylabel('d9 - d1 (dex)')
+
+    fig.subplots_adjust(hspace = 0)
+    fig.savefig('time_evolution.png')
+
+    plt.close()
+    
+    return
+
+
+
 def load_distribution_data(ldata, dsname, phase, field, centers = None):
     """
     Extracts some information from the dataset
@@ -28,15 +141,34 @@ def load_distribution_data(ldata, dsname, phase, field, centers = None):
     q10    = ldata[dsname][phase]['mass_fraction'][field]['decile_1']
     q90    = ldata[dsname][phase]['mass_fraction'][field]['decile_9']
 
+    if not (centers is None):
+
+        if not (np.size(centers) == np.size(y)):
+            if centers == 'bins':
+                bins = ldata[dsname][phase]['mass_fraction'][centers]
+            elif centers == 'abins':
+                bins = ldata[dsname][phase]['mass_fraction'][centers]
+
+            centers = 0.5 * (bins[1:] + bins[:-1])
+
     if rdata['Q3'] is None or rdata['Q1'] is None:
         rdata['iqr']           = None
         rdata['q90_q10_range'] = None
     else:
-        rdata['iqr']    = np.log10(q3) - np.log10(q1) # ldata[dsname][phase]['mass_fraction'][field]['inner_quartile_range']
-        rdata['q90_q10_range'] = np.log10(q90) - np.log10(q10)
+
+        if (q1 > 0 and q3 > 0 and q10 > 0 and q90 > 0) and (not 'over' in field):
+            # safe to assume these are not logged data if all positive
+            rdata['iqr']    = np.log10(q3) - np.log10(q1) # ldata[dsname][phase]['mass_fraction'][field]['inner_quartile_range']
+            rdata['q90_q10_range'] = np.log10(q90) - np.log10(q10)
+        else:
+            rdata['iqr'] = q3 - q1
+            rdata['q90_q10_range'] = q90 - q10
 
     rdata['label']  = ldata[dsname]['general']['Time']
-    rdata['median'] = np.log10(np.interp(0.5, np.cumsum(y)/(1.0*np.sum(y)), centers))
+    rdata['median'] = np.interp(0.5, np.cumsum(y)/(1.0*np.sum(y)), centers)
+    if not 'over' in field:
+        rdata['median'] = np.log10(rdata['median'])
+
 
     return rdata
 
@@ -378,7 +510,7 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
 
     return
 
-def plot_abundances_panel(data, dsname, elements = None, denominator = 'H', **kwargs):
+def plot_phase_abundance_panel(data, dsname, elements = None, denominator = 'H', **kwargs):
     
     
     phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
@@ -410,25 +542,34 @@ def plot_abundances_panel(data, dsname, elements = None, denominator = 'H', **kw
 
         axi = ax_indexes[axi]
         for i, e in enumerate(elements):
+            if e == denominator:
+                continue
             field = e + '_over_' + denominator
 
             ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
 
-            fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
+            #fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
                    #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
 
+            yplot = np.cumsum(ds_data['hist'])  / (1.0*np.sum(ds_data['hist']))
+            binsize = (10**(bins[1:]) - 10**(bins[:-1]))
+            yplot = ds_data['hist'] / binsize
 
-            plot_histogram(ax[axi], np.log10(bins), fit_dict['norm_y']/np.max(fit_dict['norm_y']),
-                                        color = colors[ci], ls = lss[li], lw = line_width)
+#            select = yplot > 0
+#            xplot = bins[select]
+#            yplot = yplot[select]
 
-            ax[axi].plot(np.log10(centers),
+            plot_histogram(ax[axi], bins, yplot / np.max(yplot), #fit_dict['norm_y']/np.max(fit_dict['norm_y']),
+                                        color = colors[ci], ls = lss[li], lw = line_width, label = e)
+
+            #ax[axi].plot(np.log10(centers),
                        #np.log10(fit_dict['fit_x']), 
-                       fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
-                                          lw = line_width, ls = lss[li], color = colors[ci])
+            #           fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
+            #                              lw = line_width, ls = lss[li], color = colors[ci])
 
 ####
-            xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
-            xa    = np.log10(centers[np.argmax(fit_dict['norm_y'])])
+            xtext = np.log10(centers[np.argmax(ds_data['hist'])]) - 0.1 - 0.05
+            xa    = np.log10(centers[np.argmax(ds_data['hist'])])
             ya    = 1.0
             pos = label_pos[i]
             if pos > 0:
@@ -436,23 +577,28 @@ def plot_abundances_panel(data, dsname, elements = None, denominator = 'H', **kw
                 ytext = 2.0
             xy = (xtext, ytext)
             xya = (xa,ya)
-            ax[axi].annotate(e, xy = xya, xytext=xy, color = colors[ci],
-                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
+#            ax[axi].annotate(e, xy = xya, xytext=xy, color = colors[ci],
+#                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-            print phase, e, fit_dict['name'], fit_dict['popt']
+            print phase, e, # fit_dict['name'], fit_dict['popt']
             ci = ci + 1
             if ci >= np.size(colors):
                 ci = 0
                 li = li + 1
 
     for i, axi in enumerate(ax_indexes):
-        ax[axi].set_xlim(-14, -1.5)
-        ax[axi].set_ylim(1.0E-5, 9.0)
+
+        if denominator == 'H':
+            ax[axi].set_xlim(-8,0)
+        else:
+            ax[axi].set_xlim(-3,3)
+        ax[axi].set_ylim(1.0E-5, 5.0)
         ax[axi].semilogy()
         xy = (-3.0,1.0)
         ax[axi].annotate(phases[i], xy = xy, xytext=xy)
 
+    ax[(0,0)].legend(loc = 'upper right')
     for i in [0,1,2]:
         ax[(i,0)].set_ylabel('Peak Normalized PDF')       
         plt.setp( ax[(i,1)].get_yticklabels(), visible = False)
@@ -502,7 +648,7 @@ if __name__ == '__main__':
                                                      int(sys.argv[2])+di/2.0, di)]
 
     individual_fail = False
-    gas_file = 'gas_abundances.h5'
+    gas_file = 'gas_abundances_ratios.h5'
     try:
         data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
     except:
@@ -517,7 +663,17 @@ if __name__ == '__main__':
         else:
             data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
-        plot_phase_panel(data, dsname)
+#        plot_phase_panel(data, dsname)
+
+#        dsarray = ["DD%0004i"%(x) for x in [100,500]] #np.arange(50, 555, 250)]
+#        plot_time_evolution(gas_file, dsarray, denominator = None)
+
+
+        if True:
+             plot_phase_abundance_panel(data, dsname, denominator = 'Fe')
+#            plot_phase_abundance_panel(data, dsname, denominator = 'Mg')
+#            plot_phase_abundance_panel(data, dsname, denominator = 'O')
+
 
         if False:
             plot_all_elements(data, dsname, 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')

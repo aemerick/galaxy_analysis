@@ -277,7 +277,7 @@ def plot_basic_outflow_and_loading():
     ax.set_ylim(0.07, 15)
 
     plt.tight_layout()
-    #ax.legend(loc='best')
+    ax.legend(loc='upper right')
     plt.minorticks_on()
     fig.savefig('metal_mass_loading.png')
     plt.close()
@@ -312,7 +312,7 @@ def plot_basic_outflow_and_loading():
     ax.set_ylim(1.0E-6, 1.0)
 
     plt.tight_layout()
-    #ax.legend(loc='best')
+    ax.legend(loc='best')
     plt.minorticks_on()
     fig.savefig('metal_mass_loading_sfr.png')
     plt.close()
