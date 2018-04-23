@@ -23,8 +23,8 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
         cname = 'bins'
 
     i = 0
-    ldata = {dsarray[0]: dd.io.load(datafile, "/" + dsarray[0])}
-    data  = load_distribution_data(ldata, dsarray[0], phase, field, centers = cname)
+#    ldata = {dsarray[0]: dd.io.load(datafile, "/" + dsarray[0])}
+    data  = load_distribution_data(datafile, dsarray[0], phase, field, centers = cname)
     time_series = {}
     for k in data.keys():
         if k == 'hist':
@@ -32,9 +32,9 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
         time_series[k] = np.zeros(np.size(dsarray))
 
     for dsname in dsarray:
-        ldata = {dsname : dd.io.load(gas_file, "/" + dsname)}
+#        ldata = {dsname : dd.io.load(gas_file, "/" + dsname)}
 
-        data  = load_distribution_data(ldata, dsname, phase, field, centers = cname)
+        data  = load_distribution_data(datafile, dsname, phase, field, centers = cname)
 
         for k in data.keys():
             if k == 'hist':
@@ -59,8 +59,8 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     ratios (e.g. denominator = "Fe")
     """
 
-    all_phases = ['Molecular','CNM','WNM','WIM','HIM']
-    elements   = ['Ba','Sr','Fe','Mn','Mg','N','O']
+    all_phases = ['Molecular','CNM','WNM','WIM']
+    elements   = ['Ba','Sr','Fe','Mn','Ni','Mg','N','O']
 
     all_time_data = {}
     for e in elements:
@@ -80,10 +80,10 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
 
 
     nrow = 3
-    ncol = 7
+    ncol = 8
 
     fig, ax = plt.subplots(nrow,ncol)
-    fig.set_size_inches(nrow*6,ncol*6)
+    fig.set_size_inches(ncol*6,nrow*6)
 
     axi = 0
     axj = 0
@@ -94,24 +94,31 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
 
     for e in elements:
 
+        if not (e == denominator):
+            for phase in all_phases:
 
-        for phase in all_phases:
+                median = all_time_data[e][phase]['median']
+                mean   = all_time_data[e][phase]['mean']
+                d9d1   = all_time_data[e][phase]['q90_q10_range']
 
-            median = all_time_data[e][phase]['median']
-            mean   = all_time_data[e][phase]['mean']
-            d9d1   = all_time_data[e][phase]['q90_q10_range']
+                ax[(0,axj)].plot(times, median, lw = 3, color = color[phase], ls = '-')
+                ax[(1,axj)].plot(times, median - mean, lw = 3, color = color[phase], ls = '-')
+                ax[(2,axj)].plot(times, d9d1, lw = 3, color = color[phase], ls = '-')
 
-            ax[(0,axj)].plot(times, median, lw = 3, color = color[phase], ls = '-')
-            ax[(1,axj)].plot(times, median - mean, lw = 3, color = color[phase], ls = '-')
-            ax[(2,axj)].plot(times, d9d1, lw = 3, color = color[phase], ls = '-')
-
-            if not (denominator is None):
-                ax[(0,axj)].set_ylim(-8,0)
+        if not (denominator is None):
+            if denominator == 'H':
+                ax[(0,axj)].set_ylim(-8, 0)
                 ax[(1,axj)].set_ylim(0, 1)
                 ax[(2,axj)].set_ylim(0, 3)
+            else:
+                ax[(0,axj)].set_ylim(-4, 2)
+                ax[(1,axj)].set_ylim(-0.2, 0.2)
+                ax[(2,axj)].set_ylim(0, 2)
 
         for i in [0,1,2]:
             ax[(i,axj)].set_xlim(0, 500.0)
+            xy = (0.9,0.1)
+            ax[(i,axj)].annotate(e, xy,xy, textcoords='axes fraction')
 
         axj = axj + 1
 
@@ -120,7 +127,13 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     ax[(2,0)].set_ylabel('d9 - d1 (dex)')
 
     fig.subplots_adjust(hspace = 0)
-    fig.savefig('time_evolution.png')
+    outname = 'time_evolution_'
+    if denominator is None:
+        outname += 'fraction'
+    else:
+        outname += denominator
+
+    fig.savefig(outname + '.png')
 
     plt.close()
     
@@ -657,12 +670,22 @@ if __name__ == '__main__':
                                                      int(sys.argv[2])+di/2.0, di)]
 
     individual_fail = False
-    gas_file = 'gas_abundances_H2SH.h5'
+    gas_file = './../abundances/gas_abundances_ratios.h5'
 #    try:
 #        data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
 #    except:
 #        individual_fail = True
 #        all_data = dd.io.load(gas_file)
+
+
+    dsarray = ["DD%0004i"%(x) for x in np.arange(50, 555,5)] #np.arange(50, 555, 250)]
+#    plot_time_evolution(gas_file, dsarray, denominator = None)
+    plot_time_evolution(gas_file, dsarray, denominator = 'O')
+    plot_time_evolution(gas_file, dsarray, denominator = 'Fe')
+    plot_time_evolution(gas_file, dsarray, denominator = 'N')
+
+
+
 
     for dsname in all_ds:
         print "Beginning on " + dsname
@@ -672,10 +695,7 @@ if __name__ == '__main__':
 #        else:
 #            data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
-        plot_phase_panel(gas_file, dsname, plot_fit = False)
-
-#        dsarray = ["DD%0004i"%(x) for x in [100,500]] #np.arange(50, 555, 250)]
-#        plot_time_evolution(gas_file, dsarray, denominator = None)
+#        plot_phase_panel(gas_file, dsname, plot_fit = False)
 
 
 #        if True:
