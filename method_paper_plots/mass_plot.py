@@ -5,11 +5,20 @@ import deepdish as dd
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
+import sys
+
 
 TMAX = 500.0
 
-wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
-work_dir = wdir + 'final_sndriving/'
+if len(sys.argv) > 1:
+
+    wdir = ''
+    work_dir = sys.argv[1]
+
+else:
+    wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
+    work_dir = wdir + 'final_sndriving/'
+
 ###work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                  tmin=0.0,tmax=650.0)
@@ -142,7 +151,7 @@ def plot_mass_evolution(t_f = None, image_num = 0):
 if __name__ == "__main__":
 
 
-    plot_resolution_study()
+    #plot_resolution_study()
 ####
     plot_mass_evolution()
 

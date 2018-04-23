@@ -5,15 +5,17 @@ import deepdish as dd
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
+import sys
+
 
 separate_axis = False
 
 TMAX = 500.0
 
-
-filepath = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving'
-
-work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
+if len(sys.argv) > 1:
+    work_dir = sys.argv[1]
+else:
+    work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 #work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 
 data_list = np.sort(glob.glob(work_dir + 'DD*_galaxy*.h5'))
