@@ -414,7 +414,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     return
 
 
-def plot_phase_panel(data, dsname, elements = None, **kwargs):
+def plot_phase_panel(data, dsname, elements = None, plot_fit = True, **kwargs):
 
     phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
 
@@ -449,21 +449,26 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
 
             ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
 
-            fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
+            if plot_fit:
+                fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
                    #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
 
 
-            plot_histogram(ax[axi], np.log10(bins), fit_dict['norm_y']/np.max(fit_dict['norm_y']),
-                                        color = colors[ci], ls = lss[li], lw = line_width)
+                y = fit_dict['norm_y'] / np.max(fit_dict['norm_y'])
+                plot_histogram(ax[axi], np.log10(bins), y,
+                                            color = colors[ci], ls = lss[li], lw = line_width)
 
-            ax[axi].plot(np.log10(centers),
-                       #np.log10(fit_dict['fit_x']), 
-                       fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
-                                          lw = line_width, ls = '--', color = colors[ci])
-
+                ax[axi].plot(np.log10(centers),
+                           #np.log10(fit_dict['fit_x']), 
+                           fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
+                                              lw = line_width, ls = '--', color = colors[ci])
+            else:
+                y = ds_data['hist'] / (bins[1:] - bins[:-1])
+                plot_histogram(ax[axi], np.log10(bins), y / np.max(y), color = colors[ci],
+                                       lw = line_width, ls = '--')
 ####
-            xtext = np.log10(centers[np.argmax(fit_dict['norm_y'])]) - 0.1 - 0.05
-            xa    = np.log10(centers[np.argmax(fit_dict['norm_y'])])
+            xtext = np.log10(centers[np.argmax(y) ]) - 0.1 - 0.05
+            xa    = np.log10(centers[np.argmax(y)])
             ya    = 1.0
             pos = label_pos[i]
             if pos > 0:
@@ -475,18 +480,20 @@ def plot_phase_panel(data, dsname, elements = None, **kwargs):
                            arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-            if fit_dict['name'] == 'lognormal_powerlaw':
-                N = fit_dict['fit_function'].N
-            else:
-                N = 0
-            print phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N)
+            if plot_fit:
+                if fit_dict['name'] == 'lognormal_powerlaw':
+                    N = fit_dict['fit_function'].N
+                else:
+                    N = 0
+                print phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N)
+
             ci = ci + 1
             if ci >= np.size(colors):
                 ci = 0
                 li = li + 1
 
     for i, axi in enumerate(ax_indexes):
-        ax[axi].set_xlim(-14, -1.5)
+        ax[axi].set_xlim(-25, -1.5)
         ax[axi].set_ylim(1.0E-5, 9.0)
         ax[axi].semilogy()
         xy = (-3.0,1.0)
@@ -648,7 +655,7 @@ if __name__ == '__main__':
                                                      int(sys.argv[2])+di/2.0, di)]
 
     individual_fail = False
-    gas_file = 'gas_abundances_ratios.h5'
+    gas_file = 'gas_abundances_H2SH.h5'
     try:
         data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
     except:
@@ -663,18 +670,18 @@ if __name__ == '__main__':
         else:
             data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
-#        plot_phase_panel(data, dsname)
+        plot_phase_panel(data, dsname, plot_fit = False)
 
 #        dsarray = ["DD%0004i"%(x) for x in [100,500]] #np.arange(50, 555, 250)]
 #        plot_time_evolution(gas_file, dsarray, denominator = None)
 
 
-        if True:
-             plot_phase_abundance_panel(data, dsname, denominator = 'Fe')
+#        if True:
+#             plot_phase_abundance_panel(data, dsname, denominator = 'Fe')
 #            plot_phase_abundance_panel(data, dsname, denominator = 'Mg')
 #            plot_phase_abundance_panel(data, dsname, denominator = 'O')
-
-
+#
+#
         if False:
             plot_all_elements(data, dsname, 'Molecular', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
             plot_all_elements(data, dsname, 'CNM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
