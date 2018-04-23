@@ -128,26 +128,28 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
 
 
 
-def load_distribution_data(ldata, dsname, phase, field, centers = None):
+def load_distribution_data(file_name, dsname, phase, field, centers = None):
     """
     Extracts some information from the dataset
     """
-    rdata  = ldata[dsname][phase]['mass_fraction'][field]
-    y      = ldata[dsname][phase]['mass_fraction'][field]['hist']
-    mean   = ldata[dsname][phase]['mass_fraction'][field]['mean']
-    std    = ldata[dsname][phase]['mass_fraction'][field]['std']
-    q1     = ldata[dsname][phase]['mass_fraction'][field]['Q1']
-    q3     = ldata[dsname][phase]['mass_fraction'][field]['Q3']
-    q10    = ldata[dsname][phase]['mass_fraction'][field]['decile_1']
-    q90    = ldata[dsname][phase]['mass_fraction'][field]['decile_9']
+
+    # load the data from file
+    ldata = dd.io.load(file_name, '/' + '/'.join([dsname,phase,'mass_fraction',field]))
+
+    rdata  = ldata
+    y      = ldata['hist']
+    mean   = ldata['mean']
+    std    = ldata['std']
+    q1     = ldata['Q1']
+    q3     = ldata['Q3']
+    q10    = ldata['decile_1']
+    q90    = ldata['decile_9']
 
     if not (centers is None):
 
         if not (np.size(centers) == np.size(y)):
-            if centers == 'bins':
-                bins = ldata[dsname][phase]['mass_fraction'][centers]
-            elif centers == 'abins':
-                bins = ldata[dsname][phase]['mass_fraction'][centers]
+            if centers == 'bins' or centers == 'abins':
+                bins = dd.io.load(file_name, '/' + '/'.join([dsname,phase,'mass_fraction',centers]))
 
             centers = 0.5 * (bins[1:] + bins[:-1])
 
@@ -158,13 +160,13 @@ def load_distribution_data(ldata, dsname, phase, field, centers = None):
 
         if (q1 > 0 and q3 > 0 and q10 > 0 and q90 > 0) and (not 'over' in field):
             # safe to assume these are not logged data if all positive
-            rdata['iqr']    = np.log10(q3) - np.log10(q1) # ldata[dsname][phase]['mass_fraction'][field]['inner_quartile_range']
+            rdata['iqr']    = np.log10(q3) - np.log10(q1) # ldata['inner_quartile_range']
             rdata['q90_q10_range'] = np.log10(q90) - np.log10(q10)
         else:
             rdata['iqr'] = q3 - q1
             rdata['q90_q10_range'] = q90 - q10
 
-    rdata['label']  = ldata[dsname]['general']['Time']
+    rdata['label']  = dd.io.load(file_name, '/' + '/'.join([dsname,'general','Time']))
     rdata['median'] = np.interp(0.5, np.cumsum(y)/(1.0*np.sum(y)), centers)
     if not 'over' in field:
         rdata['median'] = np.log10(rdata['median'])
@@ -326,7 +328,7 @@ def fit_PDF(bins, y, data = None, function_to_fit = None, p0 = None, bounds = No
 colors = ['C' + str(i) for i in [0,1,2,4,5,6,7,8,9]]
 lss     = ['-','--']
 
-def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
+def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
 
     if elements is None:
         elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']
@@ -336,7 +338,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     fig, ax = plt.subplots(2)
     fig.set_size_inches(24,16)
 
-    bins    = data[dsname][phase]['mass_fraction']['bins']
+    bins    = dd.io.load(file_name, '/' + '/'.join([dsname,phase,'mass_fraction','bins']))
     centers = 0.5 * (bins[1:]+ bins[:-1])
 
 
@@ -353,7 +355,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     for i, e in enumerate(elements):
         field = e + '_Fraction'
 
-        ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
+        ds_data = load_distribution_data(file_name, dsname, phase, field, centers = centers) # subselect
 
         fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
                    #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
@@ -414,7 +416,7 @@ def plot_all_elements(data, dsname, phase, elements = None, **kwargs):
     return
 
 
-def plot_phase_panel(data, dsname, elements = None, plot_fit = True, **kwargs):
+def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwargs):
 
     phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
 
@@ -426,7 +428,7 @@ def plot_phase_panel(data, dsname, elements = None, plot_fit = True, **kwargs):
     fig, ax = plt.subplots(3,2)
     fig.set_size_inches(36,6*3)
 
-    bins    = data[dsname][phases[0]]['mass_fraction']['bins']
+    bins    = dd.io.load(file_name,'/'+'/'.join([dsname,phases[0],'mass_fraction','bins']))
     centers = 0.5 * (bins[1:]+ bins[:-1])
 
 
@@ -447,7 +449,7 @@ def plot_phase_panel(data, dsname, elements = None, plot_fit = True, **kwargs):
         for i, e in enumerate(elements):
             field = e + '_Fraction'
 
-            ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
+            ds_data = load_distribution_data(file_name, dsname, phase, field, centers = centers) # subselect
 
             if plot_fit:
                 fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
@@ -517,7 +519,7 @@ def plot_phase_panel(data, dsname, elements = None, plot_fit = True, **kwargs):
 
     return
 
-def plot_phase_abundance_panel(data, dsname, elements = None, denominator = 'H', **kwargs):
+def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator = 'H', **kwargs):
     
     
     phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
@@ -530,7 +532,7 @@ def plot_phase_abundance_panel(data, dsname, elements = None, denominator = 'H',
     fig, ax = plt.subplots(3,2)
     fig.set_size_inches(36,6*3)
 
-    bins    = data[dsname][phases[0]]['mass_fraction']['abins']
+    bins    = dd.io.load(file_name,'/'+'/'.join([dsname,phases[0],'mass_fraction','abins']))
     centers = 0.5 * (bins[1:]+ bins[:-1])
 
 
@@ -553,7 +555,7 @@ def plot_phase_abundance_panel(data, dsname, elements = None, denominator = 'H',
                 continue
             field = e + '_over_' + denominator
 
-            ds_data = load_distribution_data(data, dsname, phase, field, centers = centers) # subselect
+            ds_data = load_distribution_data(file_name, dsname, phase, field, centers = centers) # subselect
 
             #fit_dict = fit_multifunction_PDF(1.0*bins, 1.0*ds_data['hist'], ds_data)
                    #fit_PDF(bins, ds_data['hist'], data = ds_data, **kwargs)
@@ -656,21 +658,21 @@ if __name__ == '__main__':
 
     individual_fail = False
     gas_file = 'gas_abundances_H2SH.h5'
-    try:
-        data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
-    except:
-        individual_fail = True
-        all_data = dd.io.load(gas_file)
+#    try:
+#        data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
+#    except:
+#        individual_fail = True
+#        all_data = dd.io.load(gas_file)
 
     for dsname in all_ds:
         print "Beginning on " + dsname
 
-        if individual_fail:
-            data = {dsname : all_data[dsname]}
-        else:
-            data = {dsname : dd.io.load(gas_file, "/" + dsname) }
+#        if individual_fail:
+#            data = {dsname : all_data[dsname]}
+#        else:
+#            data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
-        plot_phase_panel(data, dsname, plot_fit = False)
+        plot_phase_panel(gas_file, dsname, plot_fit = False)
 
 #        dsarray = ["DD%0004i"%(x) for x in [100,500]] #np.arange(50, 555, 250)]
 #        plot_time_evolution(gas_file, dsarray, denominator = None)
