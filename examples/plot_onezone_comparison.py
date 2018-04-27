@@ -103,6 +103,26 @@ def compute_all_data():
 
     return simulation_data, onezone_data
 
+def plot_variance(sim_data, onez_data):
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8,8)
+
+    labels = sort_labels(onez_data.keys())
+    x = np.arange(1,len(labels)+1)
+
+    yz = np.array([ onez_data[l]['std']/onez_data[l]['mean'] for l in labels])
+    ax.scatter(x, yz, c = 'C0', s = 20, label = r'Onezone')
+    ax.set_xticks(x)
+    ax.set_ylim(1.0E-2, 10.0)
+    ax.semilogy()
+    ax.set_xticklabels(labels)
+    ax.set_ylabel(r'Standard Deviation')
+    plt.tight_layout()
+    
+    fig.savefig('onezone_std.png')
+    plt.close()
+    return
 
 def plot_masses(sim_data, onez_data):
 
@@ -160,4 +180,5 @@ if __name__ == "__main__":
 
     sim, onez = compute_all_data()
 
+    plot_variance(sim, onez)
     plot_masses(sim, onez)
