@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 import deepdish as dd
 from galaxy_analysis.analysis import compute_time_average as cta
+from galaxy_analysis.static_data import ISM
 
 from multiprocessing import Pool
 from contextlib import closing
@@ -86,7 +87,8 @@ def compute_all_data(nproc = 28):
         old_times = 1.0 * all_data['times']
         all_data['times'] = np.zeros(np.size(ds_list))
         all_data['times'][:np.size(old_times)] = old_times
-        it = np.size(old_times)
+        numold = np.size(old_times)
+        it = 1.0*numold
 
     already_computed = np.sort([x for x in all_data.keys() if 'DD' in x])
     ds_list = [x.split('/')[0] for x in ds_list if (not (x.split('/')[0] in already_computed))]
@@ -110,7 +112,7 @@ def compute_all_data(nproc = 28):
                 all_data[r.keys()[0]][k] = r[r.keys()[0]][k]
 #            all_data[r.keys()[0]]['scale_height'] = r[r.keys()[0]]['scale_height']
 #            all_data[r.keys()[0]]['phases'] = r[r.keys()[0]]['phases']
-#            all_data['times'][it] = r[r.keys()[0]]['times']
+            all_data['times'][it] = r[r.keys()[0]]['times']
             it = it +1
         del(results)
 
@@ -119,6 +121,39 @@ def compute_all_data(nproc = 28):
     dd.io.save('scale_height_data.h5', all_data)
 
     return all_data
+
+def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM','HIM']):
+    """
+    Plot scale height for given phases for a single dataset
+    """
+
+    data = dd.io.load('scale_height_data.h5')
+    data_list = np.array([x for x in data.keys() if 'DD' in x])
+
+    fig,ax = plt.subplots()
+    fig.set_size_inches(8,8)
+
+    i = 0
+    tmin = t - 0.5*dt + t_o
+    tmax = t + 0.5*dt + t_o
+    for p in phases:
+        x, avg, min, max, std = cta.compute_time_average(['phases',p], dir = '.', data_list = data_list, sc_data=data,  #data_list = 'scale_height_data.h5',
+                                                         self_contained = True, x_field = None,
+                                                         times = data['times'], tmin = tmin, tmax = tmax)
+
+        plot_histogram(ax, data['xbins'], avg,
+                                   lw = line_width, color = color_dict[p], ls = '-', label = p)
+
+    ax.set_xlabel(r'R (pc)')
+    ax.set_ylabel(r'Scale Height (pc)')
+    plt.minorticks_on()
+    plt.tight_layout()
+    ax.set_xlim(0, 600)
+    ax.set_ylim(0, 300)
+    ax.legend(loc = 'upper right')
+    fig.savefig('scale_height_phases.png')
+
+    return
 
 def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
     """
@@ -160,23 +195,8 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
         plot_histogram(ax, data['xbins'], avg,
                                    lw = line_width, color = plasma((i+1) / (1.0*len(t)+1)), ls = ls[i], label = '%3i Myr'%(t_center+t_o))
 
-#    x, avg, min, max, std = cta.compute_time_average(['scale_height'], dir = '.', data_list = data_list, sc_data = data, #data_list = 'scale_height_data.h5',
-#                                                     self_contained = True, x_field = None,
-#                                                     times = data['times'], tmin = 326.0, tmax = 366.0)
-
-#    plot_histogram(ax, data['xbins'], avg,
-#                               lw = line_width, color = plasma(0.5), label = '300 Myr', ls = '-.')
-
-#    x, avg, min, max, std = cta.compute_time_average(['scale_height'], dir = '.', data_list = data_list, sc_data = data, # data_list = 'scale_height_data.h5',
-#                                                     self_contained = True, x_field = None,
-#                                                     times = data['times'], tmin = 526.0, tmax = 566.0)
-#    plot_histogram(ax, data['xbins'], avg,
-#                               lw = line_width, color = plasma(0.75), label = '500 Myr', ls = ':')
-
-
     ax.set_xlabel(r'R (pc)')
     ax.set_ylabel(r'Scale Height (pc)')
-#    ax.semilogy()
     plt.minorticks_on()
     plt.tight_layout()
     ax.set_xlim(0, 600)
@@ -189,8 +209,8 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
 if __name__ == "__main__":
 
     if len(sys.argv) == 1:
-#    compute_all_data()
-
+        #compute_all_data()
+        plot_phase_comparison(t_o = 0, t = 120)
         plot_all_data()
     else:
         if len(sys.argv < 4):
