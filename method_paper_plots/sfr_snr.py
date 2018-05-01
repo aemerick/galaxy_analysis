@@ -66,7 +66,7 @@ if separate_axis:
     ax.set_ylim(2E-7,5.0E-4)
     ax2.set_ylim(ax.get_ylim())
 else:
-    ax.set_ylim(1.0E-5, 5.0E-4)
+    ax.set_ylim(1.0E-5, 1.0E-3)
 
 if separate_axis:
     outname = 'sfr_snr_2ax.png'
