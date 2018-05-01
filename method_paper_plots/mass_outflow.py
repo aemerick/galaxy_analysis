@@ -23,7 +23,7 @@ def obtain_mprod(data_list, fieldname):
 
     return all_data
 
-def obtain_outflow_rates(data_list, outflow_field):
+def obtain_outflow_rates(data_list, outflow_field, elements):
     _temp_dict = {}
     all_data = {}
 
@@ -54,7 +54,7 @@ def obtain_metal_mass(data_list):
                dd.io.load(k, '/gas_meta_data/masses/OutsideBox')['Total Tracked Metals']
     return m
 
-def obtain_sfr(data_list,smooth_sfr = True):
+def obtain_sfr(data_list, times, smooth_sfr = True):
     sfr = np.ones(np.size(data_list))
 
     for i,k in enumerate(data_list):
@@ -108,7 +108,7 @@ def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
     fig.set_size_inches(16,16)
     fig.subplots_adjust(hspace = 0.0, wspace = 0.0)
 
-    SFR = obtain_sfr(data_list)
+    SFR = obtain_sfr(data_list, times)
 
     axi,axj = 0,0
 
@@ -116,7 +116,7 @@ def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
         index = (axi,axj)
 
         field_name = e + '_Mass'
-        all_data = obtain_outflow_rates(data_list, field_name)
+        all_data = obtain_outflow_rates(data_list, field_name, elements)
         M_prod   = obtain_mprod(data_list, e)
 
         binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
@@ -193,11 +193,11 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    all_data   = obtain_outflow_rates(data_list, 'cell_mass')
-    metal_data = obtain_outflow_rates(data_list, 'Total Tracked Metals')
+    all_data   = obtain_outflow_rates(data_list, 'cell_mass', elements)
+    metal_data = obtain_outflow_rates(data_list, 'Total Tracked Metals', elements)
     metal_mass = obtain_metal_mass(data_list)
     stellar_mass = obtain_stellar_mass(data_list) # total mass in stars produced at a time, NOT M_* of galaxy
-    sfr        = obtain_sfr(data_list)
+    sfr        = obtain_sfr(data_list, times)
 
     binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
     binned_metal_mass = 1.0 * metal_data
