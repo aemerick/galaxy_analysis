@@ -100,10 +100,12 @@ def plot_volume_fraction(t, y, std = None):
 
     return
 
-
-if __name__ == '__main__':
-
+def plot_fractions():
     times, mass = get_fractions(tmin = 50, tmax = 1260, ftype = 'mass')
     plot_mass_fraction(times, mass)
     times, volume = get_fractions(tmin = 50, tmax = 1260, ftype = 'volume')
     plot_volume_fraction(times, volume)
+    return
+
+if __name__=='__main__':
+    plot_fractions()
