@@ -8,18 +8,6 @@ import glob
 import sys
 
 
-TMAX = 500.0
-
-if len(sys.argv) > 1:
-
-    wdir = ''
-    work_dir = sys.argv[1]
-
-else:
-    wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
-    work_dir = wdir + 'final_sndriving/'
-
-###work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                  tmin=0.0,tmax=650.0)
 M_HI    = np.ones(np.size(data_list))
@@ -37,9 +25,6 @@ def plot_resolution_study():
 
     labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
     lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
-#    for l in lstyle:
-#        lstyle[l] = '-'
-#    colors = {'3pc_hsn' : 'C0', '3pc' : 'C1', 'final_sndriving' : 'C2', '6pc_hsn' : 'C3'}
 
     dirs   = {}
 
@@ -111,7 +96,19 @@ def plot_resolution_study():
     plt.close()
     return
 
-def plot_mass_evolution(t_f = None, image_num = 0):
+def plot_mass_evolution(work_dir, t_f = None, image_num = 0, outdir = './'):
+
+    data_list, times = utilities.select_data_by_time(dir = work_dir,
+                                                     tmin=0.0,tmax=650.0)
+    M_HI    = np.ones(np.size(data_list))
+    M_star  = np.ones(np.size(data_list))
+    M_total = np.ones(np.size(data_list))
+    M_H2    = np.ones(np.size(data_list))
+    for i,k in enumerate(data_list):
+        M_HI[i] = dd.io.load(k, '/meta_data/M_HI')
+        M_star[i] = dd.io.load(k, '/meta_data/M_star')
+        M_total[i] = dd.io.load(k, '/meta_data/M_H_total') + dd.io.load(k,'/meta_data/M_He_total')
+        M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
 
     selection = (times == times) # all vals
     plot_times = times
@@ -139,7 +136,7 @@ def plot_mass_evolution(t_f = None, image_num = 0):
     plt.minorticks_on()
 
     if t_f is None:
-        fig.savefig('mass_evolution.png')
+        fig.savefig(outdir + 'mass_evolution.png')
     else:
         fig.savefig('./mass_evolution_movie/mass_evolution_%0004i.png'%(image_num))
 
@@ -150,6 +147,14 @@ def plot_mass_evolution(t_f = None, image_num = 0):
 
 if __name__ == "__main__":
 
+    if len(sys.argv) > 1:
+
+        wdir = ''
+        work_dir = sys.argv[1]
+
+    else:
+        wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
+        work_dir = wdir + 'final_sndriving/'
 
     #plot_resolution_study()
 ####
