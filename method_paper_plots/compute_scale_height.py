@@ -88,7 +88,7 @@ def compute_all_data(nproc = 28):
         all_data['times'] = np.zeros(np.size(ds_list))
         all_data['times'][:np.size(old_times)] = old_times
         numold = np.size(old_times)
-        it = 1.0*numold
+        it = 1*numold
 
     already_computed = np.sort([x for x in all_data.keys() if 'DD' in x])
     ds_list = [x.split('/')[0] for x in ds_list if (not (x.split('/')[0] in already_computed))]
@@ -209,7 +209,7 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
 if __name__ == "__main__":
 
     if len(sys.argv) == 1:
-        #compute_all_data()
+        compute_all_data()
         plot_phase_comparison(t_o = 0, t = 120)
         plot_all_data()
     else:
