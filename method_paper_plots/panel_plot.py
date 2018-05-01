@@ -17,7 +17,7 @@ default_list = ['DD0046/DD0046','DD0196/DD0196', 'DD0346/DD0346', 'DD0546/DD0546
 default_fields = ['number_density', 'temperature', 'H_p0_number_density', 'H2_p0_number_density']
 
 def plot_panel(ds_list = default_list, fields_list = default_fields, axis = 'x',
-               width = (1.55,'kpc'), fsize = 4)
+               width = (1.55,'kpc'), fsize = 4, outdir = './'):
 
     ncol = len(fields_list)
     nrow = len(ds_list)
@@ -106,7 +106,7 @@ def plot_panel(ds_list = default_list, fields_list = default_fields, axis = 'x',
     #    cax.toggle_label(True)
     #    cax.axis[cax.orientation].set_label('label')
     fig.set_size_inches(fsize*nrow,fsize*ncol)
-    plt.savefig('multiplot_4x4_' + axis+ '_w%.2f.png'%(width[0]))
+    plt.savefig(outdir + 'multiplot_4x4_' + axis+ '_w%.2f.png'%(width[0]))
 
     del(fig)
     return
