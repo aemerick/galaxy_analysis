@@ -691,7 +691,7 @@ def _additional_helper_fields(fields):
 
         return pe.convert_to_units('erg/s/cm**3')
 
-    def _pe_heating_rate(field, data):
+    def _pe_heating_rate_masked(field, data):
         pe = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3')
 
         x = 1.0 * pe
@@ -709,7 +709,11 @@ def _additional_helper_fields(fields):
         Z   = (data['Metal_Density'] / data['Density']).value
         n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
                 0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
-        g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)
+
+        logZ   = np.log10(Z / 0.014)
+        g_to_d = np.zeros(np.shape(logZ))
+        g_to_d[logZ <= -0.73] = 0.68 - 3.08*logZ[logZ <= -0.73]
+        g_to_d[logZ  > -0.73] = 2.21 - 1.00*logZ[logZ  > -0.73]
         d_to_g = 1.0 / (10.0**(g_to_d))
         D = d_to_g / 6.616595E-3
         epsilon = 0.01488637246 * (n_H)**(0.235269059)
@@ -723,10 +727,11 @@ def _additional_helper_fields(fields):
         n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
                 0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
 
-        g_to_d = 0.68 - 3.08 * np.log10(Z / 0.014)
-
+        logZ   = np.log10(Z / 0.014)
+        g_to_d = np.zeros(np.shape(logZ))
+        g_to_d[ logZ <= -0.73] = 0.68 - 3.08*logZ[logZ <= -0.73]
+        g_to_d[ logZ  > -0.73] = 2.21 - 1.00*logZ[logZ  > -0.73]
         d_to_g = 1.0 / (10.0**(g_to_d))
-
         D = d_to_g / 6.616595E-3
 
         epsilon = 0.01488637246 * (n_H)**(0.235269059)
@@ -904,7 +909,7 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
     yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
-    yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate, units='erg/s/cm**3')
+    yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate_masked, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
     yt.add_field(('gas','G_eff'), function = _G_eff, units = "")
     yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
