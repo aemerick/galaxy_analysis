@@ -10,21 +10,9 @@ from scipy.interpolate import interp1d
 TMAX = 500.0
 
 
-outflow_field = 'cell_mass'
-work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
-#work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11/corrected_sndriving/'
 
 
-data_list, times = utilities.select_data_by_time(dir = work_dir,
-                                                 tmin=0.0,tmax=1000)
-
-xpos = dd.io.load(data_list[0], '/gas_profiles/outflow/sphere')
-xpos = xpos['centers_rvir']
-temp = dd.io.load(data_list[0], '/gas_meta_data/masses/CNM')
-elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
-
-
-def obtain_mprod(fieldname):
+def obtain_mprod(data_list, fieldname):
     all_data = {}
 
     for i,k in enumerate(data_list):
@@ -35,7 +23,7 @@ def obtain_mprod(fieldname):
 
     return all_data
 
-def obtain_outflow_rates(outflow_field):
+def obtain_outflow_rates(data_list, outflow_field, elements):
     _temp_dict = {}
     all_data = {}
 
@@ -53,20 +41,20 @@ def obtain_outflow_rates(outflow_field):
     print np.shape(all_data)
     return all_data
 
-def obtain_stellar_mass():
+def obtain_stellar_mass(data_list):
     m = np.ones(np.size(data_list))
     for i,k in enumerate(data_list):
         m[i] = dd.io.load(k, '/particle_meta_data/total_birth_mass')
     return m
 
-def obtain_metal_mass():
+def obtain_metal_mass(data_list):
     m = np.ones(np.size(data_list))
     for i,k in enumerate(data_list):
         m[i] = dd.io.load(k, '/gas_meta_data/masses/FullBox')['Total Tracked Metals'] +\
                dd.io.load(k, '/gas_meta_data/masses/OutsideBox')['Total Tracked Metals']
     return m
 
-def obtain_sfr(smooth_sfr = True):
+def obtain_sfr(data_list, times, smooth_sfr = True):
     sfr = np.ones(np.size(data_list))
 
     for i,k in enumerate(data_list):
@@ -100,26 +88,36 @@ def obtain_sfr(smooth_sfr = True):
 
     return sfr
 
-def plot_species_outflow_panel(method = 'fraction'):
+def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
+                               method = 'fraction', outdir = './'):
     """
     Default to plotting the following:
         For each species, x, plots   (dM_x/dt / M_x_prod) / SFR
         or the fractional mass outflow rate per unit SFR.
     """
+
+    data_list, times = utilities.select_data_by_time(dir = work_dir,
+                                                     tmin=0.0,tmax=1000)
+
+    xpos = dd.io.load(data_list[0], '/gas_profiles/outflow/sphere')
+    xpos = xpos['centers_rvir']
+    temp = dd.io.load(data_list[0], '/gas_meta_data/masses/CNM')
+    elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
+
     fig, ax = plt.subplots(4, 4, sharex=True, sharey=True)
     fig.set_size_inches(16,16)
     fig.subplots_adjust(hspace = 0.0, wspace = 0.0)
 
-    SFR = obtain_sfr()
+    SFR = obtain_sfr(data_list, times)
 
     axi,axj = 0,0
-    
+
     for e in elements:
         index = (axi,axj)
 
         field_name = e + '_Mass'
-        all_data = obtain_outflow_rates(field_name)
-        M_prod   = obtain_mprod(e)
+        all_data = obtain_outflow_rates(data_list, field_name, elements)
+        M_prod   = obtain_mprod(data_list, e)
 
         binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
         for i, loc in enumerate([0.1,0.25,0.5,1.0]):
@@ -171,25 +169,35 @@ def plot_species_outflow_panel(method = 'fraction'):
 
     plt.minorticks_on()
     if method == 'fraction':
-        fig.savefig('X_Fractional_Outflow_panel.png')
+        fig.savefig(outdir + 'X_Fractional_Outflow_panel.png')
     else:
-        fig.savefig('X_Fractional_Outflow_loading_panel.png')
+        fig.savefig(outdir + 'X_Fractional_Outflow_loading_panel.png')
     plt.close()
 
     return
 
-def plot_basic_outflow_and_loading():
+def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
+                                   outdir = './'):
+
+    data_list, times = utilities.select_data_by_time(dir = work_dir,
+                                                     tmin=t_min,tmax=t_max)
+
+    xpos = dd.io.load(data_list[0], '/gas_profiles/outflow/sphere')
+    xpos = xpos['centers_rvir']
+    temp = dd.io.load(data_list[0], '/gas_meta_data/masses/CNM')
+    elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
+
     #
     # Mass Outflow Plot
     #
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    all_data   = obtain_outflow_rates('cell_mass')
-    metal_data = obtain_outflow_rates('Total Tracked Metals')
-    metal_mass = obtain_metal_mass()
-    stellar_mass = obtain_stellar_mass() # total mass in stars produced at a time, NOT M_* of galaxy
-    sfr        = obtain_sfr()
+    all_data   = obtain_outflow_rates(data_list, 'cell_mass', elements)
+    metal_data = obtain_outflow_rates(data_list, 'Total Tracked Metals', elements)
+    metal_mass = obtain_metal_mass(data_list)
+    stellar_mass = obtain_stellar_mass(data_list) # total mass in stars produced at a time, NOT M_* of galaxy
+    sfr        = obtain_sfr(data_list, times)
 
     binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
     binned_metal_mass = 1.0 * metal_data
@@ -215,7 +223,7 @@ def plot_basic_outflow_and_loading():
     plt.tight_layout()
     ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig('total_mass_outflow.png')
+    fig.savefig(outdir + 'total_mass_outflow.png')
     plt.close()
 
     #
@@ -246,7 +254,7 @@ def plot_basic_outflow_and_loading():
     plt.tight_layout()
     #ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig('total_mass_loading.png')
+    fig.savefig(outdir + 'total_mass_loading.png')
     plt.close()
 
     #
@@ -279,7 +287,7 @@ def plot_basic_outflow_and_loading():
     plt.tight_layout()
     ax.legend(loc='upper right')
     plt.minorticks_on()
-    fig.savefig('metal_mass_loading.png')
+    fig.savefig(outdir + 'metal_mass_loading.png')
     plt.close()
 
     #
@@ -314,13 +322,14 @@ def plot_basic_outflow_and_loading():
     plt.tight_layout()
     ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig('metal_mass_loading_sfr.png')
+    fig.savefig(outdir + 'metal_mass_loading_sfr.png')
     plt.close()
 
     return
 
 
 if __name__ == "__main__":
+    work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 
 #    plot_species_outflow_panel()
     plot_basic_outflow_and_loading()

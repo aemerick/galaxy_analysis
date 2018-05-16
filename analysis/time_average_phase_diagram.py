@@ -79,7 +79,8 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
                                x_bins=None, y_bins=None, outname = None,
                                zunit = None, zlim = None, xlabel = None, ylabel = None, zlabel = None,
                                region_type = 'FullBox', region_kwargs = {},
-                               xlog = True, ylog = True, zlog=False, cmap = 'cubehelix'):
+                               xlog = True, ylog = True, zlog=False, cmap = 'cubehelix',
+                               outdir = None):
 
     if (zfield == 'cell_mass') and (zunit is None):
         zunit = 'Msun'
@@ -87,8 +88,8 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     # this is really not fun when parallel computation is on, as it does
     # this for every processor. Preference is to use already filtered dataset
     # list. (could just do this on root and communicate, but I'm a lazy coder)
-    if outname is None:
-        outname = wdir + xfield + '_' + yfield + '_time_avg_PD.png'
+    if outdir is None:
+        outdir = wdir
 
     if ds_list is None:
         ds_list = np.sort(glob.glob(wdir + '/DD????/DD????'))
@@ -212,7 +213,10 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     if not (zlabel is None):
         main_pd.set_colorbar_label(zf, zlabel)
 
-    outname = xfield + "_" + yfield + "_" + zfield + "_" + outname
+    if outname is None:
+        outname = outdir + xfield + "_" + yfield + "_" + zfield + "_time_average.png"
+    else:
+        outname = outdir + outname
 
     # only write one image
     if yt.is_root():

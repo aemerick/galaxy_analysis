@@ -8,19 +8,19 @@ import glob
 import sys
 
 
-data_list, times = utilities.select_data_by_time(dir = work_dir,
-                                                 tmin=0.0,tmax=650.0)
-M_HI    = np.ones(np.size(data_list))
-M_star  = np.ones(np.size(data_list))
-M_total = np.ones(np.size(data_list))
-M_H2    = np.ones(np.size(data_list))
-for i,k in enumerate(data_list):
-    M_HI[i] = dd.io.load(k, '/meta_data/M_HI')
-    M_star[i] = dd.io.load(k, '/meta_data/M_star')
-    M_total[i] = dd.io.load(k, '/meta_data/M_H_total') + dd.io.load(k,'/meta_data/M_He_total')
-    M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
-
-
+#data_list, times = utilities.select_data_by_time(dir = work_dir,
+#                                                 tmin=0.0,tmax=650.0)
+#M_HI    = np.ones(np.size(data_list))
+#M_star  = np.ones(np.size(data_list))
+#M_total = np.ones(np.size(data_list))
+#M_H2    = np.ones(np.size(data_list))
+#for i,k in enumerate(data_list):
+#    M_HI[i] = dd.io.load(k, '/meta_data/M_HI')
+#    M_star[i] = dd.io.load(k, '/meta_data/M_star')
+#    M_total[i] = dd.io.load(k, '/meta_data/M_H_total') + dd.io.load(k,'/meta_data/M_He_total')
+#    M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
+#
+#
 def plot_resolution_study():
 
     labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
@@ -96,7 +96,8 @@ def plot_resolution_study():
     plt.close()
     return
 
-def plot_mass_evolution(work_dir, t_f = None, image_num = 0, outdir = './'):
+def plot_mass_evolution(work_dir, t_f = None, image_num = 0, outdir = './',
+                        TMAX = 500.0):
 
     data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                      tmin=0.0,tmax=650.0)
@@ -129,7 +130,6 @@ def plot_mass_evolution(work_dir, t_f = None, image_num = 0, outdir = './'):
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Mass in Disk (M$_{\odot}$)')
     ax.semilogy()
-
     ax.set_xlim(np.min(times-times[0]), np.min([TMAX, np.max(times - times[0])]) )
     ax.legend(loc='lower right')
     plt.tight_layout()

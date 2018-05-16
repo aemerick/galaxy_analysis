@@ -105,11 +105,11 @@ def plot(work_dir = './', t_min = 300.0, t_max = 350.0, xmax = 600.0,
     #    plot_histogram(ax, all_profiles['Q1_flux']['radius'], all_profiles['Q1_flux']['avg']*q1_conv,
     #                        color = color2, label = r'Q$_{\rm 1}$', lw = line_width)
 
-        fillmin = all_profiles['Q1_flux']['q1']
-        fillmax = all_profiles['Q1_flux']['max']
+        #fillmin = all_profiles['Q1_flux']['q1']
+        #fillmax = all_profiles['Q1_flux']['max']
 
-        fillmin[ fillmin <= 0.0] = np.min(fillmin[fillmin>0.0]) # lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
-        fillmax[ fillmax <= 0.0] = np.min(fillmax[fillmax>0.0]) #lower_lim
+        #fillmin[ fillmin <= 0.0] = np.min(fillmin[fillmin>0.0]) # lower_lim # * np.min(all_profiles['Q0_flux']['avg'])
+        #fillmax[ fillmax <= 0.0] = np.min(fillmax[fillmax>0.0]) #lower_lim
 
 
         # shade in std
