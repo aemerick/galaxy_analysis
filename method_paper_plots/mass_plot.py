@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     #plot_resolution_study()
 ####
-    plot_mass_evolution()
+    plot_mass_evolution(work_dir)
 
 
     if False:
