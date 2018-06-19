@@ -77,7 +77,8 @@ def plot_panel(ds_list = default_list, fields_list = default_fields, axis = 'x',
                 p = yt.ProjectionPlot(gal.ds, axis, field, width = width, data_source = region,
                                   weight_field = None)
 #            p.set_zlim(field, 6.0E18, 1.0E21)
-                p.set_zlim(field, 6.1E18, 0.9E21)
+                #p.set_zlim(field, 6.1E18, 0.9E21)
+                p.set_zlim(field, 1.0E16, 4.0E20)
                 p.set_cmap(field, 'plasma')
                 p.set_colorbar_label(field, r'N$_{\rm H_2}$ (cm$^{-2}$)')
             elif field == 'O_Number_Density':
