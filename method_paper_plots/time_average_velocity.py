@@ -1,7 +1,7 @@
 from galaxy_analysis.plot.plot_styles import *
 from galaxy_analysis.analysis.compute_time_average import compute_time_average
 from galaxy_analysis.utilities import utilities
-
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -24,8 +24,9 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
         x,avg,min,max,std = compute_time_average(['gas_profiles','velocity','halo',phase], tmin = t_min, tmax = t_max,
                                                  dir = workdir, x_field = 'vbins')
+        print np.min(x), np.max(x)
         x, avg = utilities.simple_rebin(x, avg, dv) # re-bin in 10 km/s
-
+        print np.min(x), np.max(x)
         plot_histogram(ax, x, avg, color = phase_colors[phase], lw = line_width,
                                   ls = '-', label = labels[phase])
         if sum is None:
@@ -60,4 +61,17 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
     return
 
 if __name__ == "__main__":
-    plot()
+    work_dir = './'
+    if len(sys.argv) > 1:
+        work_dir = sys.argv[1]
+    out_dir = './'
+    if len(sys.argv) > 2:
+        out_dir = sys.argv[2]
+
+    tmin, tmax = 250.0, 350.0
+    if len(sys.argv) > 3:
+        tmin = float(sys.argv[3])
+    if len(sys.argv) > 4:
+        tmax = float(sys.argv[4])
+
+    plot(workdir = work_dir, outdir = out_dir, t_min = tmin, t_max = tmax)
