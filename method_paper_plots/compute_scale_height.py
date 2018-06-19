@@ -128,7 +128,7 @@ def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM
     """
 
     data = dd.io.load('scale_height_data.h5')
-    data_list = np.array([x for x in data.keys() if 'DD' in x])
+    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -165,7 +165,8 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
     """
 
     data = dd.io.load('scale_height_data.h5')
-    data_list = np.array([x for x in data.keys() if 'DD' in x])
+    print np.sort(data.keys())
+    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -213,8 +214,10 @@ if __name__ == "__main__":
         plot_phase_comparison(t_o = 0, t = 120)
         plot_all_data()
     else:
-        if len(sys.argv < 4):
+        if len(sys.argv) < 4:
             print "if passing arguments need to pass at least 3, t_o, dt, and then at least 1 time to plot (prefereably more)"
             raise ValueError
         # assume all args are provided:
-        plot_all_data( t_o = sys.argv[1], dt = sys.argv[2], t = sys.argv[3:])
+        plot_all_data( t_o = float(sys.argv[1]),
+                       dt = float(sys.argv[2]),
+                       t = [float(x) for x in sys.argv[3:]])

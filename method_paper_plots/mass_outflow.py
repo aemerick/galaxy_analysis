@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import deepdish as dd
 from galaxy_analysis.utilities import utilities
 import numpy as np
-
+import sys
 from scipy.interpolate import interp1d
 
 TMAX = 500.0
@@ -332,5 +332,8 @@ if __name__ == "__main__":
     work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 
 #    plot_species_outflow_panel()
-    plot_basic_outflow_and_loading()
+    if len(sys.argv) > 1:
+        work_dir = sys.argv[1]
+
+    plot_basic_outflow_and_loading(work_dir = work_dir)
 
