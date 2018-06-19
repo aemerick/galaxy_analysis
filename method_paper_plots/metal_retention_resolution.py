@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob as glob
 import deepdish as dd
+import sys
 
 TMAX = 500.0
 
@@ -16,18 +17,22 @@ line_width = 3.0
 # would be nice to start making gather functions
 # for all of these plot functions to not have to
 # do any more looping over ALL data sets to gather
-wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
-def plot_metal_retention_resolution():
+def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparison = None):
 
-    labels     = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
-    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
-#    for l in lstyle:
-#        lstyle[l] = '-'
+    if output_dir is None:
+        output_dir = work_dir
 
-    dirs   = {}
+    if comparison is None:
+        labels = {'3pcH2' : '3.6 pc' , '6pcH2' : '7.2 pc', 'Fiducial' : 'Fiducial'}
+        lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
+        dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
 
-    for k in labels.keys():
-        dirs[k] = wdir + k + '/'
+    else:
+	for k in comparison.keys():
+            dirs[k]   = work_dir + comparison[0]
+            labels[k] = comparison[1]
+            lstyle[k] = comparison[2]
+
 
     gather_keys = {'Disk TM' : ['gas_meta_data', 'masses', 'Disk', 'Total Tracked Metals'],
                    'Halo TM' : ['gas_meta_data', 'masses', 'Halo', 'Total Tracked Metals'],
@@ -48,7 +53,7 @@ def plot_metal_retention_resolution():
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for sim in ['final_sndriving','3pc','3pc_hsn','6pc_hsn']:
+    for sim in all_data.keys():
         total = all_data[sim]['FB TM'] + all_data[sim]['Outside Box TM']
 
 
@@ -72,11 +77,18 @@ def plot_metal_retention_resolution():
     ax.legend(loc = 'best')
     plt.minorticks_on()
     plt.tight_layout()
-    fig.savefig('metal_retention_resolution.png')
+    fig.savefig(work_dir + output_dir + 'metal_retention_resolution.png')
     plt.close()
 
     return
 
 if __name__ == "__main__":
 
-    plot_metal_retention_resolution()
+    work_dir = './'
+    if len(sys.argv) > 1:
+        work_dir = sys.argv[1]
+    output_dir = None
+    if len(sys.argv) > 2:
+        output_dir = sys.argv[2]
+
+    plot_metal_retention_resolution(work_dir = work_dir, output_dir = output_dir)
