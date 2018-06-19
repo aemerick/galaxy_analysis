@@ -21,28 +21,37 @@ import sys
 #    M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
 #
 #
-def plot_resolution_study():
+def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
 
-    labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
-    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
+    if output_dir is None:
+        output_dir = work_dir
 
-    dirs   = {}
+    if comparison is None:
+        labels = {'3pcH2' : '3.6 pc' , '6pcH2' : '7.2 pc', 'Fiducial' : 'Fiducial'}
+        lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
+        dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
 
-    for k in labels.keys():
-        dirs[k] = wdir + k + '/'
+    else:
+        for k in comparison.keys():
+            dirs[k]   = work_dir + comparison[0]
+            labels[k] = comparison[1]
+            lstyle[k] = comparison[2]
+
+#    labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
+#    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
 
     all_data = {}
     for k in labels.keys():
         all_data[k] = {}
 
-        if k == 'final_sndriving':
-            all_data[k]['times'] = times
-            all_data[k]['M_HI'] = M_HI
-            all_data[k]['M_star'] = M_star
-            all_data[k]['M_total'] = M_total
-            all_data[k]['M_H2I']    = M_H2
-
-        else:
+#        if k == 'final_sndriving':
+#            all_data[k]['times'] = times
+#            all_data[k]['M_HI'] = M_HI
+#            all_data[k]['M_star'] = M_star
+#            all_data[k]['M_total'] = M_total
+#            all_data[k]['M_H2I']    = M_H2
+#
+        if True:
             dl, t = utilities.select_data_by_time(dir =  dirs[k], tmin = 0.0, tmax=1000.0)
 
             all_data[k]['times'] = t
@@ -63,7 +72,7 @@ def plot_resolution_study():
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for k in ['final_sndriving','3pc','3pc_hsn','6pc_hsn']:
+    for k in all_data.keys():
 
 
         for field,color in [('M_total','black'), ('M_HI','C0'), ('M_H2I','C1'), ('M_star','C3')]:
@@ -92,7 +101,7 @@ def plot_resolution_study():
     plt.tight_layout()
     plt.minorticks_on()
 
-    fig.savefig('mass_evolution_resolution.png')
+    fig.savefig(work_dir + output_dir + 'mass_evolution_resolution.png')
     plt.close()
     return
 
@@ -156,7 +165,7 @@ if __name__ == "__main__":
         wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
         work_dir = wdir + 'final_sndriving/'
 
-    #plot_resolution_study()
+    plot_mass_resolution(work_dir)
 ####
     plot_mass_evolution(work_dir)
 
