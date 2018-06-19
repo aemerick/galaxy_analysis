@@ -38,7 +38,7 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
     ax.set_xlabel(r'Outflow Velocity (km s$^{-1})$')
     ax.set_ylabel(r'Mass (M$_{\odot}$)')
     ax.semilogy()
-    ax.set_xlim(0.0 ,np.max(x[sum>0.1]))
+    ax.set_xlim(0.0 ,np.max(  x[1:][sum>0.1] ))
     ax.set_ylim(0.1, 4.0E5)
     plt.minorticks_on()
     ax.legend(loc='best')
