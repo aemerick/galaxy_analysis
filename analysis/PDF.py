@@ -45,6 +45,103 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 
     return time_series
 
+def plot_normalized(ax, masses, field, xnorm = 'median'):
+    return
+
+def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
+    """
+    Constructs a panel plot showing all phases for a single element
+    on a single panel (so 4x4 plot: 15 elements + total metallicity field).
+    Each plot is normalized to the median mass fraction (i.e. log(median) = 0)
+    and centered on this value (so shareaxis is on). Each plot is normalized
+    such that the integral over the disk PDF / max(disk PDF) = 1, and so that
+    integral(phase)/integral(disk) gives mass fraction of that phase.
+
+    Requires galaxy analysis output file (For mass fractions)
+    """
+
+    all_phases = ['CNM', 'WNM', 'WIM', 'HIM']
+    elements   = get_element_list(datafile, dsname)
+
+    fig, ax = plt.subplots(4,4, sharex=True, sharey=True)
+    fig.set_size_inches(4*4,4*4)
+    fig.subplots_adjust(hspace = 0.0, wspace = 0.0)
+
+
+    gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
+    masses = {}
+    for k in gasdata.keys():
+        try:
+            masses[k] = gasdata[k]['Total']
+        except:
+          print k
+
+#    disk_mass = masses['Disk']
+#    for k in masses.keys():
+#        masses[k] = masses[k] / disk_mass
+# ----
+    axi = 0
+    axj = 0
+
+    for element in elements:
+        centers = 'bins'
+        index = (axi,axj)
+
+        field = element + '_Fraction'
+        print element, axi, axj
+        disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
+        disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
+        xbins = disk_data['bins']
+        xcent = disk_data['centers']
+        xnorm = disk_data['median']
+        xplot  = np.log10(xbins) - xnorm
+        xplotc = np.log10(xcent) - xnorm
+
+        mass_norm = masses['Disk'] - masses['Molecular']
+        yplot     = disk_data['norm_y'] * masses['Disk'] / mass_norm
+        ynorm     = np.max(yplot)
+        yplot     = yplot / ynorm
+
+        # plot disk here
+        plot_histogram(ax[index], xplot, yplot, lw = line_width, color = 'black', label = 'Disk')
+        if show_fit:
+            fit = fit_multifunction_PDF(xbins, disk_data['hist'], disk_data)
+            ax[index].plot(xplotc, fit['fit_result'](xplotc)/ynorm*masses['Disk']/mass_norm,
+                           lw = line_width, color = 'black', ls = '--')
+
+        for phase in all_phases:
+            data  = load_distribution_data(datafile, dsname, phase, field, centers = 'bins')
+            data['norm_y'] = data['hist'] / disk_data['binsize']
+            yplot = data['norm_y'] / ynorm * masses[phase] / mass_norm
+            plot_histogram(ax[index], xplot, yplot, lw = line_width, color = color_dict[phase],
+                           label=phase)
+
+            if show_fit:
+                fit = fit_multifunction_PDF(xbins, data['hist'], data)
+                ax[index].plot( xplotc, fit['fit_result'](xplotc) / ynorm * masses[phase]/mass_norm,
+                                lw = line_width, color = color_dict[phase], ls = '--')
+
+        ax[index].set_xlim(-3,3)
+        ax[index].set_ylim(1.0E-6, 1.0)
+        ax[index].semilogy()
+        ax[index].plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '--', color = 'black')
+        ax[index].plot([-1,-1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
+        ax[index].plot([1,1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
+
+        # ax[index].annotate()
+        axj = axj + 1
+        if axj >= 4:
+            axj = 0
+            axi = axi + 1
+
+    for i in np.arange(4):
+        ax[(3,i)].set_xlabel(r'Normalized Mass Fraction')
+        ax[(0,i)].set_ylabel(r'Normalized PDF')
+
+    fig.savefig('test.png')
+    plt.close()
+
+    return
 
 def plot_time_evolution(datafile, dsarray, denominator = None):
     """
@@ -139,7 +236,13 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     
     return
 
+def get_element_list(file_name, dsname):
+    keys = dd.io.load(file_name, '/' + '/'.join([dsname,'CNM','mass_fraction'])).keys()
 
+    x = [y.split('_over_')[0] for y in keys if '_over_Fe' in y]
+    x = x + ['Fe']
+
+    return utilities.sort_by_anum(x)
 
 def load_distribution_data(file_name, dsname, phase, field, centers = None):
     """
@@ -184,7 +287,9 @@ def load_distribution_data(file_name, dsname, phase, field, centers = None):
     if not 'over' in field:
         rdata['median'] = np.log10(rdata['median'])
 
-
+    rdata['centers'] = centers
+    rdata['binsize'] = bins[1:] - bins[:-1]
+    rdata['bins'] = bins
     return rdata
 
 
@@ -428,7 +533,6 @@ def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
 
     return
 
-
 def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwargs):
 
     phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
@@ -670,7 +774,7 @@ if __name__ == '__main__':
                                                      int(sys.argv[2])+di/2.0, di)]
 
     individual_fail = False
-    gas_file = './../abundances/gas_abundances_ratios.h5'
+    gas_file = 'gas_abundances.h5'
 #    try:
 #        data = {all_ds[0] : dd.io.load(gas_file, "/" + all_ds[0]) }
 #    except:
@@ -678,11 +782,11 @@ if __name__ == '__main__':
 #        all_data = dd.io.load(gas_file)
 
 
-    dsarray = ["DD%0004i"%(x) for x in np.arange(50, 555,5)] #np.arange(50, 555, 250)]
+#    dsarray = ["DD%0004i"%(x) for x in np.arange(119, 202, 1)] #np.arange(50, 555, 250)]
 #    plot_time_evolution(gas_file, dsarray, denominator = None)
-    plot_time_evolution(gas_file, dsarray, denominator = 'O')
-    plot_time_evolution(gas_file, dsarray, denominator = 'Fe')
-    plot_time_evolution(gas_file, dsarray, denominator = 'N')
+#    plot_time_evolution(gas_file, dsarray, denominator = 'O')
+#    plot_time_evolution(gas_file, dsarray, denominator = 'Fe')
+#    plot_time_evolution(gas_file, dsarray, denominator = 'N')
 
 
 
@@ -695,7 +799,7 @@ if __name__ == '__main__':
 #        else:
 #            data = {dsname : dd.io.load(gas_file, "/" + dsname) }
 
-#        plot_phase_panel(gas_file, dsname, plot_fit = False)
+        plot_phase_panel(gas_file, dsname, plot_fit = False)
 
 
 #        if True:
