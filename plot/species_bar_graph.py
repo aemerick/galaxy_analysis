@@ -17,8 +17,9 @@ from galaxy_analysis.utilities import utilities
 ###
 ###
 
-def species_bar_graph(name, data, fraction = True, disk_only = False, outname = None, sources = False,
-                      display_total = None, show_individual_amounts = False, **kwargs):
+def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = None, sources = False,
+                      display_total = None, show_individual_amounts = False, 
+                      disk_only = False, **kwargs):
    """
    Uses an analysis output to give a bar graph
    """
@@ -36,10 +37,10 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
 
        if sources:
            s2 = '_sources'
-       elif disk_only:
-           s2 = '_disk_only'
+       elif ISM_bar:
+           s2 = '_ISM_bar'
 
-       outname = name + '_species_bar' + s1 + s2 + '.png'
+       outname = name + '_species_bar' + s1 + s2
 
    # set defaults for displaying total amount
    if display_total is None:
@@ -63,7 +64,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        if sources:
            for species in ordered_species:
                total[species] = masses['Type']['Total'][species]
-       elif disk_only: # use disk mass + stars
+       elif ISM_bar: # use disk mass + stars
            for species in ordered_species:
                total[species] = masses['Disk'][species] + masses['stars'][species]
        else: # full box, stars, and mass loss in box
@@ -103,7 +104,7 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
            bottom += bar_values * 1.0
            sum    = sum + bottom
 
-   elif not disk_only:
+   elif not ISM_bar:
        fields = ['Disk','stars','Halo']
 
        colors = {'Disk' : 'purple', 'stars' : 'gold',
@@ -114,7 +115,12 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
        bottom  = np.zeros(N)
        sum     = np.zeros(N)
        # plot!
-       for f in ['stars','Disk','Halo']:
+       if disk_only:
+           regions = ['Disk']
+       else:
+           regions = ['stars','Disk','Halo']
+
+       for f in regions:
 
            bar_values = np.array([masses[f][k]/total[k] for k in ordered_species])
 
@@ -123,8 +129,9 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
            bottom += bar_values * 1.0
            sum    = sum + bottom
 
-       bar_values = 1.0 - bottom
-       barplot['Outside Halo'] = ax.bar(index, bar_values, width,
+       if not disk_only:
+           bar_values = 1.0 - bottom
+           barplot['Outside Halo'] = ax.bar(index, bar_values, width,
                                         color = colors['Outside Halo'], bottom = bottom, label = 'Outside Halo', **kwargs)
        bottom += bar_values * 1.0
        sum = sum + bottom
@@ -180,7 +187,8 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    loc = 'lower left'
    if sources:
        loc = 'upper right'
-   ax.legend(handles[::-1], labels[::-1], loc=loc)
+   if not disk_only:
+       ax.legend(handles[::-1], labels[::-1], loc=loc)
 
    if fraction:
        ax.set_ylim(0.0,1.0)
@@ -188,11 +196,14 @@ def species_bar_graph(name, data, fraction = True, disk_only = False, outname = 
    else:
        ax.semilogy()
 
+   if disk_only:
+       outname = outname + '_just_disk'
+
    # turn on minorticks, but keep x axis ticks off
    plt.minorticks_on()
    ax.tick_params(axis='x',which='minor',bottom='off')
    plt.tight_layout()
-   fig.savefig(outname)
+   fig.savefig(outname + '.png')
    plt.close()
 
    return
@@ -204,18 +215,24 @@ if __name__ == "__main__":
         for fraction in [True, False]:
             species_bar_graph(name, data,
                               fraction      = fraction,
-                              disk_only     = False,
+                              ISM_bar     = False,
                               display_total = True, sources = False,
                               show_individual_amounts = False)
+
+            species_bar_graph(name, data,
+                              fraction = fraction,
+                              ISM_bar = False, display_total = False,
+                              sources = False, show_individual_amounts = False,
+                              disk_only = True)
 
             species_bar_graph(name, data,
                               fraction      = fraction,
-                              disk_only     = True,
+                              ISM_bar     = True,
                               display_total = True, sources = False,
                               show_individual_amounts = False)
 
             species_bar_graph(name, data,
-                              fraction = fraction, disk_only = False,
+                              fraction = fraction, ISM_bar = False,
                               display_total = False, sources = True,
                               show_individual_amounts = False)
         return
