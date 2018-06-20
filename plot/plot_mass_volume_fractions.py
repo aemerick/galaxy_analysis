@@ -52,7 +52,7 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False)
         return fractions
 
 
-def plot_mass_fraction(t, y, std = None):
+def plot_mass_fraction(t, y, std = None, outdir = './'):
 
     fig, ax = plt.subplots()
 
@@ -71,12 +71,12 @@ def plot_mass_fraction(t, y, std = None):
     ax.set_ylim(1.0E-5, 1.0)
     ax.semilogy()
     ax.legend(loc='lower right', ncol=2)
-    fig.savefig('phase_mass_fraction_evolution_log.png')
+    fig.savefig(outdir + 'phase_mass_fraction_evolution_log.png')
     plt.close()
 
     return
 
-def plot_volume_fraction(t, y, std = None):
+def plot_volume_fraction(t, y, std = None, outdir = './'):
 
     fig, ax = plt.subplots()
 
@@ -95,15 +95,17 @@ def plot_volume_fraction(t, y, std = None):
     ax.set_ylim(1.0E-5, 1.0)
     ax.semilogy()
     ax.legend(loc='lower right', ncol = 2)
-    fig.savefig('phase_volume_fraction_evolution_log.png')
+    fig.savefig(outdir + 'phase_volume_fraction_evolution_log.png')
     plt.close()
 
     return
 
-
-if __name__ == '__main__':
-
+def plot_fractions(outdir = './'):
     times, mass = get_fractions(tmin = 50, tmax = 1260, ftype = 'mass')
-    plot_mass_fraction(times, mass)
+    plot_mass_fraction(times, mass, outdir = outdir)
     times, volume = get_fractions(tmin = 50, tmax = 1260, ftype = 'volume')
-    plot_volume_fraction(times, volume)
+    plot_volume_fraction(times, volume, outdir = outdir)
+    return
+
+if __name__=='__main__':
+    plot_fractions()

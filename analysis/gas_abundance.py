@@ -191,8 +191,8 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     cv = data_source['cell_volume'][mask]
     cm = data_source['cell_mass'][mask]
-    total_volume = np.sum(cv) * 1.0     # total volume of masked cells
-    total_mass   = np.sum(cm) * 1.0     # total mass   of masked cells
+    total_volume = np.sum(cv.value) * cv.unit_quantity * 1.0     # total volume of masked cells
+    total_mass   = np.sum(cm.value) * cm.unit_quantity * 1.0     # total mass   of masked cells
 
     all_fields = None
     if not (fraction_fields is None):
@@ -251,8 +251,8 @@ def compute_abundance_stats(ds, data_source, mask = None,
             r_cyl = data_source['cylindrical_radius'][mask]
 
             # compute the histograms of the data
-            mass_hist, temp = np.histogram(fdata, weights = cm, bins = bins) / total_mass
-            vol_hist, temp  = np.histogram(fdata, weights = cv, bins = bins) / total_volume
+            mass_hist, temp = np.histogram(fdata.value, weights = cm.value, bins = bins) / total_mass.value
+            vol_hist, temp  = np.histogram(fdata.value, weights = cv.value, bins = bins) / total_volume.value
 
             # now compute descriptive statistics for each weighting
             stats = utilities.compute_weighted_stats(fdata, cv, return_dict = True)
@@ -372,8 +372,8 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
     hf = dd.io.load(hdf5_filename)
 
-    ds_list = np.sort( glob.glob('./DD???0/DD???0') +\
-                       glob.glob('./DD???5/DD???5'))
+    ds_list = np.sort( glob.glob('./DD????/DD????')) # +\
+    #                   glob.glob('./DD???5/DD???5'))
 
     print "WARNING: Only doing limited number of outputs for ease of use"
 
@@ -415,7 +415,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             if i == 0:
                 # limit ourselves to Fe and H demoninators for now to speed up computation
                 abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                          select_denom = ['Fe','H'])
+                                                                          select_denom = ['Fe','H','O','Mg','N'])
                 species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
                 metal_species = utilities.species_from_fields(gal.ds.field_list)
 
@@ -475,7 +475,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         if len(ds_list) > 0:
             gal = Galaxy(ds_list[0].split('/')[1])
             abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                      select_denom = ['Fe','H'])
+                                                                      select_denom = ['Fe','H','O','Mg','N'])
             species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
             metal_species = utilities.species_from_fields(gal.ds.field_list)
             del(gal)
