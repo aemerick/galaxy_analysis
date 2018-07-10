@@ -165,9 +165,9 @@ if __name__ == "__main__":
         wdir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/'
         work_dir = wdir + 'final_sndriving/'
 
+    plot_mass_evolution(work_dir, TMAX = 1.0E3)
+
     plot_mass_resolution(work_dir)
-####
-    plot_mass_evolution(work_dir)
 
 
     if False:
