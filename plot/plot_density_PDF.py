@@ -6,7 +6,7 @@ from galaxy_analysis.plot.plot_styles import *
 from scipy.stats import binned_statistic
 import matplotlib.pyplot as plt
 
-gal = Galaxy('DD0349')
+gal = Galaxy('DD0401')
 #
 #
 #
@@ -40,7 +40,7 @@ plot_histogram(ax, n_bins, PDF, lw = 3, color = 'black', label = 'Total')
 
 colors = {'Molecular':'C1','CNM':'C0','WNM':'C2','WIM':'C4','HIM':'C3'}
 
-for field in ['Molecular','CNM','WNM','WIM','HIM']:
+for field in ['CNM','WNM','WIM','HIM']:
     n = gal.disk.cut_region(ISM[field])['number_density']
     M = gal.disk.cut_region(ISM[field])['cell_mass'].convert_to_units('Msun')
     
@@ -71,7 +71,7 @@ plot_histogram(ax, n_bins, PDF, lw = 3, color = 'black', label = 'Total')
 
 colors = {'Molecular':'C1','CNM':'C0','WNM':'C2','WIM':'C4','HIM':'C3'}
 
-for field in ['Molecular','CNM','WNM','WIM','HIM']:
+for field in ['CNM','WNM','WIM','HIM']:
     n = gal.disk.cut_region(ISM[field])['number_density']
     V = gal.disk.cut_region(ISM[field])['cell_volume']
     
