@@ -372,7 +372,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
     hf = dd.io.load(hdf5_filename)
 
-    ds_list = np.sort( glob.glob('./DD????/DD????')) # +\
+    ds_list = np.sort( glob.glob('./DD???0/DD???0')) # +\
     #                   glob.glob('./DD???5/DD???5'))
 
     print "WARNING: Only doing limited number of outputs for ease of use"
@@ -812,7 +812,7 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 28)
+    generate_all_stats(overwrite=False, nproc = 12)
 
 #    plot_time_evolution(abundance=True, plot_type = 'Fe')
 #    plot_time_evolution(abundance=True, plot_type = 'H')
