@@ -213,6 +213,8 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     if not (zlabel is None):
         main_pd.set_colorbar_label(zf, zlabel)
 
+    main_pd.set_font( {'size' : 32} )
+
     if outname is None:
         outname = outdir + xfield + "_" + yfield + "_" + zfield + "_time_average.png"
     else:
