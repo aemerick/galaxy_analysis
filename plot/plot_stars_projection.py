@@ -37,7 +37,7 @@ class MidpointNormalize(mpl_colors.Normalize):
 colors     = {'massive_star_winds' : 'white', 'AGB_winds' : 'C1', 'SN' : 'black', 'other_stars' : 'black'}
 markers    = {'massive_star_winds' : '*',     'AGB_winds' : 'D', 'SN' : '*', 'other_stars' : '.'}
 ps         = {'massive_star_winds' :  75, 'AGB_winds' : 300, 'SN' : 300, 'other_stars' : 15}
-all_fields = ['number_density','Temperature','N_over_O_filtered','logNO_filtered','O_over_H_filtered']
+all_fields = ['number_density','Temperature','N_over_O_filtered','O_over_H_filtered', 'G_o', 'Q0_flux']
 
 tol      = 1.0E-25
 
@@ -64,8 +64,8 @@ def make_filtered_field(ds, fieldname, filter_fields = [], tolerance = tol):
     ds.add_field(('gas',fieldname + '_filtered'), function = _filtered_field, units = "")
     return
 
-def plot(dsname, wdir = './', width = 500.0, dt = 5.0*yt.units.Myr, fields = all_fields,
-         thickness = 20.0, outdir = './enrichment_plots'):
+def plot(dsname, wdir = './', width = 1000.0, dt = 5.0*yt.units.Myr, fields = all_fields,
+         thickness = 20.0, outdir = './enrichment_plots_kpc_noax'):
     """
     Given a datasetname, compute thin projections with different types of stars
     using different points. Meant to illustrate evolution of metal enrichment from various
@@ -152,11 +152,31 @@ def plot(dsname, wdir = './', width = 500.0, dt = 5.0*yt.units.Myr, fields = all
         proj.set_zlim('Temperature',10.0, 1.0E7)
         proj.set_colorbar_label('Temperature', r'Temperature (K)')
 
+    if 'G_o' in fields:
+        proj.set_cmap('G_o', 'cubehelix')
+        proj.set_log('G_o', True)
+        proj.set_zlim('G_o',0.05, 100.0)
+        proj.set_colorbar_label('G_o', r'ISRF (G$_{\rm o}$)')
+
+    if 'Q0_flux':
+        proj.set_cmap('Q0_flux', 'magma')
+        proj.set_log('Q0_flux',True)
+        proj.set_zlim('Q0_flux',1.0E-6, 1.0E-1)
+        proj.set_colorbar_label('Q0_flux', r'HI Ionizing Radiation (s$^{-1}$)')
+
+    Mstar = np.sum(gal.df['particle_mass'][ gal.df['particle_type'] == 11]).to('Msun')
+    time  = gal.ds.current_time.to('Myr')
+    proj.annotate_title(r"Time = %1.1f Myr     M$_{*}$ = %2.2E M$_{\odot}$"%(time.value,Mstar.value))
     proj.save(outdir + '/') # necessary
 
 
     dt = 5.0 * yt.units.Myr
-    in_image     = (np.abs(pz) <= boxdim[2]*0.5) * (np.abs(px) <= width*0.5) * (np.abs(py) <= width*0.5)
+    # buffer around image. otherwise points plotted near edge of image my run a little outside
+    # viewing area, causing weird shifts in plotting. Not sure how to control this otherwise
+    buffer = 15.0 # in pc
+    in_image     = (np.abs(pz) <= boxdim[2]*0.5) *\
+                   (np.abs(px) <= (width*0.5 - buffer)) *\
+                   (np.abs(py) <= (width*0.5 - buffer))
 
     pp = {}
     pp['massive_star_winds'] = in_image * alive * massive_star
@@ -178,6 +198,7 @@ def plot(dsname, wdir = './', width = 500.0, dt = 5.0*yt.units.Myr, fields = all
                 print 'No particles in ', s
 
 #    proj.refresh()
+    proj.hide_axes()
     proj.save(outdir + '/') # necessary
 
     if 'N_over_O' in fields:
