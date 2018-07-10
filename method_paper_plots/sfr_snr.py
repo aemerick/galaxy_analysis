@@ -76,4 +76,4 @@ if __name__ == "__main__":
     else:
         work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
 
-    plot(work_dir)
+    plot(work_dir, TMAX = 1.0E3)
