@@ -6,7 +6,7 @@ import sys
 import deepdish as dd
 from scipy.optimize import brentq
 from galaxy_analysis.utilities import utilities
-
+import h5py
 from galaxy_analysis.utilities import functions
 
 import matplotlib.pyplot as plt
@@ -37,8 +37,10 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
         data  = load_distribution_data(datafile, dsname, phase, field, centers = cname)
 
         for k in data.keys():
-            if k == 'hist':
+
+            if np.size(data[k]) > 1: # cannot handle > 1D data for now
                 continue
+
             time_series[k][i] = data[k]
 
         i = i + 1
@@ -48,7 +50,94 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 def plot_normalized(ax, masses, field, xnorm = 'median'):
     return
 
-def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
+def resolution_study(abundance_filename,
+                     work_dir = './', output_dir = None,
+                     comparison = None):
+
+    phases = ['CNM','WNM','WIM','HIM']
+
+    if output_dir is None:
+        output_dir = work_dir
+
+    if comparison is None:
+        labels = {'3pcH2' : '3.6 pc', '6pcH2' : '7.2 pc' , 'Fiducial' : 'Fiducial'}
+        lstyle = {'3pcH2' : '--', '6pcH2' : '-.' , 'Fiducial' : '-'}
+        dirs   = {'3pcH2' : '../3pc_H2/', '6pcH2' : '../6pc_H2/', 'Fiducial' : ''}
+        for k in dirs.keys():
+            dirs[k] = work_dir + dirs[k]
+    else:
+        dirs = {}
+        labels = {}
+        lstyle = {}
+        for k in comparison.keys():
+            dirs[k] = work_dir + comparison[0]
+            labels[k] = comparison[1]
+            lstyle[k] = comparison[2]
+
+    fig, ax = plt.subplots(2,2,sharex=True,sharey=True)
+    fig.set_size_inches(12,12)
+    fig.subplots_adjust(hspace=0.0,wspace=0.0)
+    #
+    # Plot individual panels showing:
+    #   a time evolution of
+    #
+    time_data = {}
+    for k in labels.keys():
+        f = h5py.File(dirs[k] + abundance_filename,'r')
+        dsarray = np.sort([str(x) for x in f.keys() if 'DD' in x])
+        f.close()
+        time_data[k] = {}
+        time_data[k]['times'] = np.array([float(x.strip('DD')) for x in dsarray])
+        time_data[k]['times'] = time_data[k]['times'] - time_data[k]['times'][0]
+        for field in ['O_Fraction','Ba_Fraction']:
+            time_data[k][field] = {}
+            for phase in phases:
+                time_data[k][field][phase] = gather_time_series(dirs[k] + abundance_filename,
+                                                                dsarray, phase, field)
+
+    for phase in phases:
+        ls = '-'
+        if phase == 'HIM':
+            ls = ':'
+        ax[(0,0)].plot(time_data['3pcH2']['times'],
+                       time_data['3pcH2']['O_Fraction'][phase]['q90_q10_range'],
+                        lw = 3, color = color_dict[phase], ls = ls)
+        ax[(1,0)].plot(time_data['3pcH2']['times'],
+                       time_data['3pcH2']['Ba_Fraction'][phase]['q90_q10_range'],
+                       lw = 3, color = color_dict[phase], ls = ls)
+        ax[(0,1)].plot(time_data['6pcH2']['times'],
+                       time_data['6pcH2']['O_Fraction'][phase]['q90_q10_range'],
+                         lw = 3, color = color_dict[phase], ls = ls)
+        ax[(1,1)].plot(time_data['6pcH2']['times'],
+                       time_data['6pcH2']['Ba_Fraction'][phase]['q90_q10_range'],
+                         lw = 3, color = color_dict[phase], ls = ls)
+
+    for a1 in ax:
+        for a2 in a1:
+            a2.set_xlim(0, 600)
+            a2.set_ylim(0, 3)
+            a2.minorticks_on()
+
+    for i in [0,1]:
+        ax[(i,0)].set_ylabel(r'log(90%) - log(10%) [dex]')
+        ax[(1,i)].set_xlabel(r'Time (Myr)')
+
+    x = 400
+    y = 2.7
+    size = 20
+    ax[(0,0)].text(x, y, r'O  - 3.6 pc', color = 'black', size = size)
+    ax[(1,0)].text(x, y, r'Ba - 3.6 pc', color = 'black', size = size)
+    ax[(0,1)].text(x, y, r'O  - 7.2 pc', color = 'black', size = size)
+    ax[(1,1)].text(x, y, r'Ba - 7.2 pc', color = 'black', size = size)
+
+    #plt.tight_layout()
+    fig.savefig('O_Ba_spread_resolution-comparison.png')
+    plt.close()
+
+    return
+
+def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
+                             elements = '3x3', outname = None):
     """
     Constructs a panel plot showing all phases for a single element
     on a single panel (so 4x4 plot: 15 elements + total metallicity field).
@@ -60,11 +149,22 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
     Requires galaxy analysis output file (For mass fractions)
     """
 
-    all_phases = ['CNM', 'WNM', 'WIM', 'HIM']
-    elements   = get_element_list(datafile, dsname)
+    if outname is None:
+        outname = galaxy_file.split('_galaxy')[0] + '_element_by_element.png'
 
-    fig, ax = plt.subplots(4,4, sharex=True, sharey=True)
-    fig.set_size_inches(4*4,4*4)
+    all_phases = ['CNM', 'WNM', 'WIM', 'HIM']
+
+    if elements is None:
+        elements   = get_element_list(datafile, dsname)
+        xp,yp = 4,4
+    elif elements == '3x3':
+        elements   = ['O','C','Fe','Mg','N','Mn','Y','Sr','Ba']
+        xp,yp = 3,3
+
+    xsize, ysize = xp*6, yp*6
+
+    fig, ax = plt.subplots(xp,yp, sharex=True, sharey=True)
+    fig.set_size_inches(xsize,ysize)
     fig.subplots_adjust(hspace = 0.0, wspace = 0.0)
 
 
@@ -97,7 +197,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
         xplot  = np.log10(xbins) - xnorm
         xplotc = np.log10(xcent) - xnorm
 
-        mass_norm = masses['Disk'] - masses['Molecular']
+        mass_norm = masses['Disk'] #- masses['Molecular']
         yplot     = disk_data['norm_y'] * masses['Disk'] / mass_norm
         ynorm     = np.max(yplot)
         yplot     = yplot / ynorm
@@ -106,7 +206,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
         plot_histogram(ax[index], xplot, yplot, lw = line_width, color = 'black', label = 'Disk')
         if show_fit:
             fit = fit_multifunction_PDF(xbins, disk_data['hist'], disk_data)
-            ax[index].plot(xplotc, fit['fit_result'](xplotc)/ynorm*masses['Disk']/mass_norm,
+            ax[index].plot(xplotc, fit['fit_result'](xcent)/ynorm*masses['Disk']/mass_norm,
                            lw = line_width, color = 'black', ls = '--')
 
         for phase in all_phases:
@@ -118,27 +218,30 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True):
 
             if show_fit:
                 fit = fit_multifunction_PDF(xbins, data['hist'], data)
-                ax[index].plot( xplotc, fit['fit_result'](xplotc) / ynorm * masses[phase]/mass_norm,
+                ax[index].plot( xplotc, fit['fit_result'](xcent) / ynorm * masses[phase]/mass_norm,
                                 lw = line_width, color = color_dict[phase], ls = '--')
 
-        ax[index].set_xlim(-3,3)
-        ax[index].set_ylim(1.0E-6, 1.0)
+        ax[index].set_xlim(-3.1,3.1)
+        ax[index].set_ylim(5.0E-7, 1.0)
         ax[index].semilogy()
         ax[index].plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '--', color = 'black')
         ax[index].plot([-1,-1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
         ax[index].plot([1,1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
 
         # ax[index].annotate()
+        ax[index].minorticks_on()
+        xytext = (-2.7,0.2)
+        ax[index].text(xytext[0], xytext[1], element,  color = 'black', size = 40)
         axj = axj + 1
-        if axj >= 4:
+        if axj >= yp:
             axj = 0
             axi = axi + 1
 
-    for i in np.arange(4):
-        ax[(3,i)].set_xlabel(r'Normalized Mass Fraction')
-        ax[(0,i)].set_ylabel(r'Normalized PDF')
+    if (xp,yp) == (3,3):
+        ax[(2,1)].set_xlabel(r'Median Normalized Mass Fraction')
+        ax[(1,0)].set_ylabel(r'Peak-Normalized PDF')
 
-    fig.savefig('test.png')
+    fig.savefig(outname)
     plt.close()
 
     return
@@ -156,7 +259,7 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     ratios (e.g. denominator = "Fe")
     """
 
-    all_phases = ['Molecular','CNM','WNM','WIM']
+    all_phases = ['CNM','WNM','WIM']
     elements   = ['Ba','Sr','Fe','Mn','Ni','Mg','N','O']
 
     all_time_data = {}
@@ -535,7 +638,7 @@ def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
 
 def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwargs):
 
-    phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
+    phases = ['CNM','WNM','WIM','HIM','Disk']
 
     if elements is None:
         elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']
@@ -639,7 +742,7 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
 def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator = 'H', **kwargs):
     
     
-    phases = ['Molecular','CNM','WNM','WIM','HIM','Disk']
+    phases = ['CNM','WNM','WIM','HIM','Disk']
 
     if elements is None:
         elements = ['Ba','Y','As','Sr','Mn','Na','Ca','N','Ni','Mg','S','Si','Fe','C','O']

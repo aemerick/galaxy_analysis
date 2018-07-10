@@ -9,7 +9,7 @@ from galaxy_analysis.static_data import ISM # some pre-defined masks
 # phase mass fraction / abundance distribution for an arbitrarily
 # defined mask
 #
-gal = Galaxy('DD0401/DD0401')        # load galaxy
+gal = Galaxy('DD0401')        # load galaxy
 
 
 # mask is just a boolean mask over the cells. This hould
@@ -19,8 +19,8 @@ data_source = gal.disk
 
 abundances = {}
 for n in [50, 100, 150]:
-    mask        = mask*(data_source['number_density'] > 100.0)
+    mask        = (data_source['number_density'] > n)
     abundances[n] = GA.compute_abundance_stats(gal.ds, data_source, mask = mask,
-                               fraction_fields = ['O','N'])
+                               fraction_fields = ['O_Fraction','N_Fraction'])
 
 
