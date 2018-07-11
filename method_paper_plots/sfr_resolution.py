@@ -16,10 +16,13 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None):
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
 
     else:
+        dirs = {}
+        labels = {}
+        lstyle = {}
 	for k in comparison.keys():
-            dirs[k]   = work_dir + comparison[0]
-            labels[k] = comparison[1]
-            lstyle[k] = comparison[2]
+            dirs[k]   = work_dir + comparison[k][0]
+            labels[k] = comparison[k][1]
+            lstyle[k] = comparison[k][2]
 
     all_data = {}
     for k in labels.keys():
