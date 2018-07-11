@@ -117,6 +117,40 @@ rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               21: (4,6), 22: (4,6), 23: (4,6), 24 : (4,6),
               25: (5,5)}
 
+def get_property(field_path, file_list=None, dir = '.', tmin = None, tmax = None, data_list = None,
+                 times = None, self_contained = False):
+    """
+    field_path can either be a list of strings corresponding to the kwargs in the nested dictionary
+    to pull from, or just a single string with kwargs separated by '/'. Must have a leading '/'.
+
+       example: either is fine:
+             field_path = ['meta_data','M_HI']
+        or
+             firld_path = '/meta_data/M_HI'
+    """
+
+    return_times = False
+    if file_list is None:
+        return_times = True
+
+    if file_list is None:
+        file_list, t = select_data_by_time( dir = dir, tmin = tmin, tmax = tmax,
+                                            data_list = None, times = None, self_contained = False)
+
+    if isinstance(field_path, basestring):
+        if field_path[0] != '/':
+            field_path = '/' + field_path
+    else:
+        field_path = "/" + "/".join(field_path)
+
+    load_data = lambda fname : dd.io.load(fname, field_path)
+    x = np.array( map( load_data, file_list ) )
+
+    if return_times:
+        return x, t
+    else:
+        return x
+
 def select_data_by_time(dir = '.', tmin = None, tmax = None,
                         data_list = None, times = None, self_contained = False):
     """
