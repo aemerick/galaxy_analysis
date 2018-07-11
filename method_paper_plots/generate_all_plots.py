@@ -10,7 +10,7 @@ import sys
 work_dir     = './'
 output_dir   = './method_paper_plots/'
 
-override_dsi = [119, 209, 299, 400] # plot these files!
+override_dsi = [119, 269, 419, 619] # plot these files!
 t_o          = 119                # dataset of first star formation
 
 
@@ -64,11 +64,12 @@ mass_plot.plot_mass_evolution(work_dir = work_dir, outdir = output_dir)
 #
 # Fig. 5: Time average phase diagrams:
 #
+from galaxy_analysis.method_paper_plots import phase_diagrams
+
 if not ( 'no_phase' in sys.argv):
     t_min = 390.0 # 300.0
     t_max = 399.0 # 350.0
 
-    from galaxy_analysis.method_paper_plots import phase_diagrams
     phase_diagrams.plot_time_average_PD(work_dir, t_min = t_min, t_max = t_max, plots = ['nT'],
                                         outdir = output_dir)
 
@@ -83,6 +84,8 @@ plot_mass_volume_fractions.plot_fractions(outdir = output_dir)
 # Fig. 7: G_o and Q_o 1D radial profiles
 #
 from galaxy_analysis.method_paper_plots import radiation_profiles
+t_min = 119.0 + 250.0
+t_max = 119.0 + 350.0
 radiation_profiles.plot(t_min = t_min, t_max = t_max,
                         fields = ['G_o','Q0_flux'],
                         work_dir = work_dir, outdir = output_dir)
@@ -91,10 +94,11 @@ radiation_profiles.plot(t_min = t_min, t_max = t_max,
 #
 # Fig. 8: G_o and Q_o 2D phase diagrams
 #
-t_min = 408.1 # 200
-t_max = 410.1 # 201
+t_min = 119.0 + 300.0 - 5.1 # 499.1 # 280
+t_max = 119.0 + 300.0 + 5.1 # 509.1 # 290
 phase_diagrams.plot_time_average_PD(work_dir, t_min = t_min, t_max = t_max, 
-                                    plots = ['G_o','Q_o'], outdir = output_dir)
+                                    plots = ['G_o','Q_o'], outdir = output_dir,
+                                    nbin = 100)
 
 #
 # Fig. 9: Mass outflow, mass loading rates
@@ -109,8 +113,8 @@ mass_outflow.plot_basic_outflow_and_loading(work_dir = work_dir, t_min = 0.0, t_
 #
 # Fig. 10: time averaged radial velocity
 #
-t_min = 390.0
-t_max = 420.1
+t_min = 119.0 + 250.0
+t_max = 119.0 + 350.1
 from galaxy_analysis.method_paper_plots import time_average_velocity
 time_average_velocity.plot(workdir = work_dir, outdir = output_dir,
                            t_min = t_min, t_max = t_max)
@@ -135,7 +139,7 @@ metal_retention.plot_metal_retention(workdir = work_dir, outdir = output_dir)
 from galaxy_analysis.method_paper_plots import schmidt_law
 
 schmidt_law.schmidt_law(work_dir = work_dir, obs_method = True,
-                        total_gas = False, tmin = 0.0) # maybe change tmin to after trans phase
+                        total_gas = False, tmin = 150.0) # maybe change tmin to after trans phase
 
 
 
@@ -151,8 +155,9 @@ schmidt_law.schmidt_law(work_dir = work_dir, obs_method = True,
 from galaxy_analysis.method_paper_plots import sfr_resolution
 # from galaxy_analysis.method_paper_plots import 
 comparison = {'3pcH2' : ('../3pc_H2', '3.6 pc', '--'),
-              '6pcH2'  :  '../6pc_H2', '7.2 pc', '-.'),
+              '6pcH2'  :  ('../6pc_H2', '7.2 pc', '-.'),
               'Fiducial' : (work_dir, 'Fiducial', '-')}
+comparison = None # need to fix a bug
 sfr_resolution.sfr_resolution(work_dir = work_dir,
                               output_dir = output_dir, comparison=comparison)
 

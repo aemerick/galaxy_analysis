@@ -120,7 +120,7 @@ def plot(work_dir = './', t_min = 300.0, t_max = 350.0, xmax = 600.0,
         ax.set_xlim(0.0, xmax)
         ax.set_ylabel(r'Ionizing Radiation Flux (erg s$^{-1}$ cm$^{-2}$)')
         ax.semilogy()
-        ax.set_ylim(1.0E-9, 1.0E-3)
+        ax.set_ylim(1.0E-9, 3.0E-3)
         plt.minorticks_on()
         plt.tight_layout()
         fig.savefig(outdir + 'ionizing_photon_profile.png')
@@ -175,4 +175,16 @@ def plot(work_dir = './', t_min = 300.0, t_max = 350.0, xmax = 600.0,
 if __name__ == "__main__":
 
     work_dir = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/final_sndriving/'
-    plot(work_dir = workd_dir)
+
+    if len(sys.argv) > 1:
+        work_dir = './'
+
+    if len(sys.argv) >= 3:
+        tmin = float(sys.argv[1])
+        tmax = float(sys.argv[2])
+
+    if len(sys.argv) >= 4:
+        fields = [str(x) for x in sys.argv[3:]]
+
+    plot(t_min = tmin, t_max = tmax, fields = fields,
+         work_dir = work_dir)

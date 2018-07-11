@@ -122,7 +122,7 @@ def compute_all_data(nproc = 28):
 
     return all_data
 
-def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM','HIM']):
+def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM','HIM'], outstr = ''):
     """
     Plot scale height for given phases for a single dataset
     """
@@ -151,7 +151,9 @@ def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM
     ax.set_xlim(0, 600)
     ax.set_ylim(0, 300)
     ax.legend(loc = 'upper right')
-    fig.savefig('scale_height_phases.png')
+
+    outname = 'scale_height_phases' + outstr + '.png'
+    fig.savefig(outname)
 
     return
 
@@ -194,7 +196,8 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
                                                          times = data['times'], tmin = tmin, tmax = tmax)
 
         plot_histogram(ax, data['xbins'], avg,
-                                   lw = line_width, color = plasma((i+1) / (1.0*len(t)+1)), ls = ls[i], label = '%3i Myr'%(t_center+t_o))
+                                   lw = line_width, color = plasma((i+1) / (1.0*len(t)+1.0)), ls = ls[i], label = '%3i Myr'%(t_center))
+        i = i + 1
 
     ax.set_xlabel(r'R (pc)')
     ax.set_ylabel(r'Scale Height (pc)')
@@ -218,6 +221,14 @@ if __name__ == "__main__":
             print "if passing arguments need to pass at least 3, t_o, dt, and then at least 1 time to plot (prefereably more)"
             raise ValueError
         # assume all args are provided:
-        plot_all_data( t_o = float(sys.argv[1]),
-                       dt = float(sys.argv[2]),
-                       t = [float(x) for x in sys.argv[3:]])
+        times = np.array([float(x) for x in sys.argv[3:]])
+        t_o = float(sys.argv[1])
+        dt  = float(sys.argv[2])
+
+        if len(sys.argv) < 5:
+            plot_all_data( t_o = t_o,
+                           dt  = dt,
+                           t = times)
+
+        for t in times:
+            plot_phase_comparison(t_o = t_o, dt = dt, t = t, outstr = "_%3.0f"%(t))

@@ -36,12 +36,15 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
     plot_histogram(ax, x, sum, color = 'black', lw = line_width, ls = '-', label = 'Total')
 
-    ax.set_xlabel(r'Outflow Velocity (km s$^{-1})$')
+    ax.set_xlabel(r'Radial Velocity (km s$^{-1})$')
     ax.set_ylabel(r'Mass (M$_{\odot}$)')
     ax.semilogy()
-    ax.set_xlim(0.0 ,np.max(  x[1:][sum>0.1] ))
-    ax.set_ylim(0.1, 4.0E5)
+    ymin = 0.001
+    ax.set_xlim(np.min(x[:-1][sum>=ymin]) ,np.max(  x[1:][sum>=ymin] ))
+    ax.set_ylim(ymin, 4.0E5)
+    ax.plot([0.0,0.0], ax.get_ylim(), lw = 2.0, color = 'black', ls = '--')
     plt.minorticks_on()
+    plt.tight_layout()
     ax.legend(loc='best')
 
     fig.savefig(outdir + 'velocity_distribution_time_average.png')
@@ -54,6 +57,16 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
     f.write("#percentile bin val\n")
     for q in np.arange(0,100,5):
         bin = np.max( [len(percent[percent <= q]) - 1, 0])
+        f.write("%3i percentile: %3.3E %3.3E\n"%(q, bin, x[bin]))
+
+    f.write("#outflowing gas ONLY\n")
+    xcent = 0.5 * (x[1:] + x[:-1])
+    x     = x[x>0]
+    sum = sum[ xcent > 0.0]
+    cum_sum = np.cumsum(sum)
+    percent = cum_sum / (cum_sum[-1]) * 100.0
+    for q in np.arange(0,100,5):
+        bin = np.max( [ len(percent[percent <= q]) - 1, 0])
         f.write("%3i percentile: %3.3E %3.3E\n"%(q, bin, x[bin]))
     f.close()
 

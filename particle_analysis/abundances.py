@@ -98,7 +98,7 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
 #                                                             'mass' )
     return aratios
 
-def plot_acf(h5file = 'abundances.h5', dir = './abundances/', ds_list = None):
+def plot_acf(h5file = 'star_abundances.h5', dir = './abundances/', ds_list = None):
     """
     Plots the time evolution of all abundance ratios [X/Fe]. Optionally
     can include bands giving the standard deviation and 1st and 3rd 
@@ -167,7 +167,7 @@ def plot_acf(h5file = 'abundances.h5', dir = './abundances/', ds_list = None):
     return
 
 
-def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
+def plot_time_evolution(h5file = 'star_abundances.h5', dir = './abundances/',
                         plot_type = 'standard', ds_list = None,
                         show_std = True, show_quartile = True):
     """
@@ -251,7 +251,7 @@ def plot_time_evolution(h5file = 'abundances.h5', dir = './abundances/',
 
     return
 
-def plot_abundances(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard', color_by_age=False,
+def plot_abundances(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = 'standard', color_by_age=False,
                     ds_list = None, show_average = False):
     """
     Given an hdf5 file of stored abundances generated from Enzo particle data,
@@ -390,7 +390,7 @@ def single_MDF(x, bins = None, norm = 'peak', ax = None, label = True, **kwargs)
         return
 
 
-def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'standard',
+def plot_MDF(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = 'standard',
              ds_list = None, show_average = False, norm = 'peak'):
     """
     Plot the MDF of each element (for now, hard coded as all over Fe and [Fe/H]). Choose
@@ -469,7 +469,7 @@ def plot_MDF(h5file = 'abundances.h5', dir = './abundances/', plot_type = 'stand
     return
 
 
-def generate_abundances(ds_list = None, outfile = 'abundances.h5', dir = './abundances/', overwrite = False):
+def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = './abundances/', overwrite = False):
     """
     Function to generate hdf5 output file containing abundance ratios for all metal
     species in all main sequence stars in all data sets in the given directory.

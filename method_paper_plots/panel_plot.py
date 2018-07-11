@@ -58,7 +58,7 @@ def plot_panel(ds_list = default_list, fields_list = default_fields, axis = 'x',
                 p.set_colorbar_label(field, r'n (cm$^{-3}$)')
     
                 if gal.ds.parameters['NumberOfParticles'] > 0:
-                    p.annotate_particles((1.0,'kpc'), p_size = 0.5, ptype='main_sequence_stars')
+                    p.annotate_particles((1.0,'kpc'), p_size = 0.5, ptype='main_sequence_stars', col = 'white')
  
             elif field == 'temperature':
                 p = yt.SlicePlot(gal.ds, axis, field, width = width, data_source = region)
