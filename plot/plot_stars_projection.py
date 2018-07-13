@@ -65,7 +65,7 @@ def make_filtered_field(ds, fieldname, filter_fields = [], tolerance = tol):
     return
 
 def plot(dsname, wdir = './', width = 1000.0, dt = 5.0*yt.units.Myr, fields = all_fields,
-         thickness = 20.0, outdir = './enrichment_plots_kpc_noax'):
+         thickness = 20.0, outdir = './enrichment_plots_kpc'):
     """
     Given a datasetname, compute thin projections with different types of stars
     using different points. Meant to illustrate evolution of metal enrichment from various
@@ -166,7 +166,8 @@ def plot(dsname, wdir = './', width = 1000.0, dt = 5.0*yt.units.Myr, fields = al
 
     Mstar = np.sum(gal.df['particle_mass'][ gal.df['particle_type'] == 11]).to('Msun')
     time  = gal.ds.current_time.to('Myr')
-    proj.annotate_title(r"Time = %1.1f Myr     M$_{*}$ = %2.2E M$_{\odot}$"%(time.value,Mstar.value))
+#    proj.annotate_title(r"Time = %1.1f Myr     M$_{*}$ = %2.2E M$_{\odot}$"%(time.value,Mstar.value))
+    proj.set_font( {'size' : 32} )
     proj.save(outdir + '/') # necessary
 
 
@@ -198,7 +199,7 @@ def plot(dsname, wdir = './', width = 1000.0, dt = 5.0*yt.units.Myr, fields = al
                 print 'No particles in ', s
 
 #    proj.refresh()
-    proj.hide_axes()
+#    proj.hide_axes()
     proj.save(outdir + '/') # necessary
 
     if 'N_over_O' in fields:
