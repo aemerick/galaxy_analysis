@@ -120,6 +120,53 @@ rowcoldict = {2 : (1,1), 3: (1,3), 4:(2,2),
               21: (4,6), 22: (4,6), 23: (4,6), 24 : (4,6),
               25: (5,5)}
 
+def get_property(field_path, file_list=None, dir = '.', tmin = None, tmax = None, data_list = None,
+                 times = None, self_contained = False):
+    """
+    field_path can either be a list of strings corresponding to the kwargs in the nested dictionary
+    to pull from, or just a single string with kwargs separated by '/'. Must have a leading '/'.
+
+       example: either is fine:
+             field_path = ['meta_data','M_HI']
+        or
+             firld_path = '/meta_data/M_HI'
+    """
+
+    return_times = False
+    if file_list is None:
+        return_times = True
+
+    if file_list is None:
+        file_list, t = select_data_by_time( dir = dir, tmin = tmin, tmax = tmax,
+                                            data_list = None, times = None, self_contained = False)
+
+    if isinstance(field_path, basestring):
+        if field_path[0] != '/':
+            field_path = '/' + field_path
+    else:
+        field_path = "/" + "/".join(field_path)
+
+    if self_contained:
+        if not isinstance(file_list, basestring):
+            print "If loading self-contained data, file_list MUST be the name of the file"
+            raise ValueError
+
+        if data_list is None:
+            print "If loading self-contained data, data_list must be kwargs of 'files' in top level to loop over"
+            raise ValueError
+
+        load_data = lambda dname : dd.io.load(file_list, '/' + str(dname) + field_path)
+
+        x = np.array( map( load_data, data_list))
+    else:
+        load_data = lambda fname : dd.io.load(fname, field_path)
+        x = np.array( map( load_data, file_list ) )
+
+    if return_times:
+        return x, t
+    else:
+        return x
+
 def select_data_by_time(dir = '.', tmin = None, tmax = None,
                         data_list = None, times = None, self_contained = False):
     """
@@ -197,14 +244,14 @@ def nested_haskey(x, keys):
 def filter_dict(field, dictionary, level = 2):
     """
     Filter through nested dictionarys like one would do with
-    arrays. Only works if sub-dictionaries all have same 
+    arrays. Only works if sub-dictionaries all have same
     kwargs as desired by 'field'
     """
     return [(x,dictionary[x][field]) for x in dictionary.keys]
 
 def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained = True):
     """
-    If one wants to extract a value deep in a nested dictionary 
+    If one wants to extract a value deep in a nested dictionary
     across many "rows". Example, your dictionary looks like this maybe:
 
                                 "time" - single_value
@@ -214,7 +261,7 @@ def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained 
                       /         "HI_Mass" - single_value
                      /
                     /           "time" - single_value
-                   /           / 
+                   /           /
     dictionary ------- "DD0001"
                    \          \
                     \           "HI_Mass"      - single_value
@@ -276,8 +323,8 @@ def extract_nested_dict_asarray(dict, key_list, loop_keys = None, self_contained
     """
     Wrapper on extract_nested_dict_aslist to return a numpy array instead.
     """
- 
-    return np.array(extract_nested_dict_aslist(dict, key_list, 
+
+    return np.array(extract_nested_dict_aslist(dict, key_list,
                     loop_keys = loop_keys, self_contained = self_contained))
 
 class _DummyFile(object):
@@ -322,7 +369,7 @@ def nostdout():
 
 def sort_by_anum(names):
     """
-    For a list of either element symbols or 
+    For a list of either element symbols or
     arbitrary strings beginning with element symbols (with a
     consistent pattern), sort by atomic number. Returns
     the sorted list.
@@ -572,5 +619,3 @@ def ratios_list(species):
     ratios = list(np.sort(np.unique(ratios)))
 
     return ratios
-
-

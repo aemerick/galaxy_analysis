@@ -32,10 +32,13 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
 
     else:
+        dirs = {}
+        labels = {}
+        lstyle = {}
         for k in comparison.keys():
-            dirs[k]   = work_dir + comparison[0]
-            labels[k] = comparison[1]
-            lstyle[k] = comparison[2]
+            dirs[k]   = work_dir + comparison[k][0]
+            labels[k] = comparison[k][1]
+            lstyle[k] = comparison[k][2]
 
 #    labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
 #    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
@@ -82,7 +85,7 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
                 label = labels[k]
             else:
                 label = None
-            print k, field, np.size(all_data[k]['times']), np.size(all_data[k][field])
+            # print k, field, np.size(all_data[k]['times']), np.size(all_data[k][field])
             plot_histogram(ax, all_data[k]['times'] - all_data[k]['times'][0], all_data[k][field], ls = lstyle[k], lw = line_width, color = color)
 
     ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'black', label = r'M$_{\rm total}$')
