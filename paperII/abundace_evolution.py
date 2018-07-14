@@ -10,28 +10,12 @@ from galaxy_analysis.utilities import utilities
 # temporary
 import time as cpu_time
 
-def plot_abundance_evolution(time, data,
-                             fields = ['O_Fraction','Ba_Fraction'],
-                             property_list = ['median','IQR'],
-                             phases = ['CNM','WNM','WIM','HIM'],
-                             figdim=None,
-                             field_types = None,
-                             labels = None, line_styles = None,
-                             xlim = None, ylim = None,
-                             annotate_text = None):
 
-    if figdim is None:
-        ncol = len(property_list)
-        nrow = len(fields)
-    else:
-        nrow, ncol = figdim
-
-    data_list = np.array(np.sort([x for x in data.keys() if 'DD' in x]))
-    data_list = data_list[:len(time)]
-
-
-
-    start = cpu_time.time()
+def load_abundance_data(data, data_list,
+                        fields,
+                        property_list,
+                        phases = ['CNM','WNM','WIM','HIM'],
+                        field_types = None):
 
     time_data = {}
     for i, field in enumerate(fields):
@@ -103,6 +87,97 @@ def plot_abundance_evolution(time, data,
                     if property in ['median','mean']:
                         time_data[field][phase][property] = np.log10(time_data[field][phase][property])
 
+    return time_data
+
+def plot_abundace_resolution_study():
+
+    fields = ['O_Fraction','Ba_Fraction']
+    property_list = ['d9_d1_range']
+    phases = ['CNM','WNM','WIM','HIM']
+
+    simulations = {'3pcH2' : './3pc_H2/abundances/gas_abundances.h5',
+                   '6pcH2' : './6pc_H2/abundances/gas_abundances.h5'}
+
+    fig, ax = plt.subplots(2,2,sharex=True,sharey=True)
+    fig.set_size_inches(12,12)
+    fig.subplots_adjust(hspace=0.0,wspace=0.0)
+
+    all_time_data = {}
+    for sim in simulations:
+        data = h5py.File(simulations[sim])
+
+        data_list = np.sort([x for x in data.keys() if 'DD' in x])
+        times     = np.array([float(x.strip('DD')) for x in data_list])
+
+        all_time_data[sim] = load_abundance_data(data, data_list,
+                                                 fields, property_list)
+        all_time_data[sim]['time'] = times
+
+    ls = {'CNM':'-','WNM':'-','WIM':'-','HIM':':'}
+
+    for phase in phases:
+
+        ax[(0,0)].plot(all_time_data['3pcH2']['time'],
+                       all_time_data['3pcH2']['O_Fraction'][phase]['d9_d1_range'],
+                       color = color_dict[phase], ls = ls[phase], lw = line_width)
+        ax[(0,1)].plot(all_time_data['6pcH2']['time'],
+                       all_time_data['6pcH2']['O_Fraction'][phase]['d9_d1_range'],
+                       color = color_dict[phase], ls = ls[phase], lw = line_width)
+        ax[(1,0)].plot(all_time_data['3pcH2']['time'],
+                       all_time_data['3pcH2']['Ba_Fraction'][phase]['d9_d1_range'],
+                       color = color_dict[phase], ls = ls[phase], lw = line_width)
+        ax[(1,1)].plot(all_time_data['6pcH2']['time'],
+                       all_time_data['6pcH2']['Ba_Fraction'][phase]['d9_d1_range'],
+                       color = color_dict[phase], ls = ls[phase], lw = line_width)
+
+    for a1 in ax:
+        for a2 in a1:
+            a2.set_xlim(0, 500)
+            a2.set_ylim(0, 3)
+            a2.minorticks_on()
+
+    for i in [0,1]:
+        ax[(i,0)].set_ylabel(r'Inner Decile Range [dex]')
+        ax[(1,i)].set_xlabel(r'Time (Myr)')
+
+    x = 300
+    y = 2.7
+    size = 20
+    ax[(0,0)].text(x, y, r'O  - 3.6 pc', color = 'black', size = size)
+    ax[(1,0)].text(x, y, r'Ba - 3.6 pc', color = 'black', size = size)
+    ax[(0,1)].text(x, y, r'O  - 7.2 pc', color = 'black', size = size)
+    ax[(1,1)].text(x, y, r'Ba - 7.2 pc', color = 'black', size = size)
+
+    plt.minorticks_on()
+    fig.savefig('O_Ba_resolution_study.png')
+
+    return
+def plot_abundance_evolution(time, data,
+                             fields = ['O_Fraction','Ba_Fraction'],
+                             property_list = ['median','IQR'],
+                             phases = ['CNM','WNM','WIM','HIM'],
+                             figdim=None,
+                             field_types = None,
+                             labels = None, line_styles = None,
+                             xlim = None, ylim = None,
+                             annotate_text = None):
+
+    if figdim is None:
+        ncol = len(property_list)
+        nrow = len(fields)
+    else:
+        nrow, ncol = figdim
+
+    data_list = np.array(np.sort([x for x in data.keys() if 'DD' in x]))
+    data_list = data_list[:len(time)]
+
+
+
+    start = cpu_time.time()
+
+    time_data = load_abundance_data(data, data_list, fields, property_list,
+                                    phases = phases, field_types = field_types)
+
     print "DATA LOADING TOOK %2.2E"%(cpu_time.time()- start)
 
     fig, ax = plt.subplots(nrow,ncol)
@@ -162,6 +237,9 @@ def plot_abundance_evolution(time, data,
     return
 
 if __name__ == "__main__":
+
+    plot_abundace_resolution_study()
+
 
     if len(sys.argv) > 1:
         filename = sys.argv[1]
