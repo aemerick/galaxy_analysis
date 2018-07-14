@@ -11,6 +11,11 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 
+fsize = 22
+rc('text', usetex=False)
+rc('font', size=fsize)#, ftype=42)
+
+
 ###
 ###
 from galaxy_analysis.utilities import utilities
@@ -111,6 +116,9 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
                  'Halo' : 'black'}
        colors = {'Disk': 'C0', 'stars': plasma(1.0),
                  'Halo': 'C1', 'Outside Halo' : 'C2'}
+       colors = {'Disk' : plasma(0.0), 'Halo' : plasma(0.33333),
+                 'Outside Halo' : plasma(0.6666666), 'stars' : plasma(1.0)}
+
        barplot = {}
        bottom  = np.zeros(N)
        sum     = np.zeros(N)
@@ -137,13 +145,16 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
        sum = sum + bottom
 
    else:
-       fields = ['Molecular', 'CNM', 'WNM', 'WIM', 'HIM', 'stars']
+       fields = ['CNM', 'WNM', 'WIM', 'HIM', 'stars']
        colors = {'stars': 'gold', 'CNM' : 'blue', 'WNM' : 'green',
                  'WIM' : 'orange', 'HIM'  : 'red', 'Molecular' : 'black'}
 
        colors = {'Molecular' : plasma(0.0), 'CNM' : plasma(1.0/5.0),
                  'WNM' : plasma (2.0/5.0), 'WIM' : plasma(3.0/5.0),
                  'HIM' : plasma(4.0/5.0), 'stars' : plasma(1.0)}
+
+       colors = color_dict
+       colors['stars'] = plasma(1.0)
 
        barplot = {}
        bottom  = np.zeros(N)
