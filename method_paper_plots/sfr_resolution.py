@@ -5,7 +5,7 @@ import numpy as np
 import glob
 import sys
 
-def sfr_resolution(work_dir = './', output_dir = None, comparison = None):
+def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim = None):
 
     if output_dir is None:
         output_dir = work_dir
@@ -45,7 +45,10 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None):
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SFR (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
-    ax.set_ylim(1.0E-5, 2.0E-3)
+    if ylim is None:
+        ylim = (1.0E-5, 2.0E-3)
+        
+    ax.set_ylim(ylim)
     ax.set_xlim(0.0, 500.0)
     ax.legend(loc='best')
 
