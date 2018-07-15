@@ -174,7 +174,7 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
        rects = barplot[np.array(fields)[-1]]
        totals = np.array([ total[k] for k in ordered_species])
        for i, rect in enumerate(rects):
-           ax.text(rect.get_x() + rect.get_width()/2.0, 0.85*bottom[i],
+           ax.text(rect.get_x() + rect.get_width()/2.0, 0.80*bottom[i],
                    '%.1E' % float(totals[i]), ha='center', va='bottom', color = 'white',
                    rotation='vertical')
 
@@ -195,9 +195,13 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
 
    # make legend, reverse label ordering
    handles, labels = ax.get_legend_handles_labels()
-   loc = 'lower left'
+   loc = 'center left'
    if sources:
        loc = 'upper right'
+
+   if ISM_bar:
+       loc = 'lower left'
+
    if not disk_only:
        ax.legend(handles[::-1], labels[::-1], loc=loc)
 
