@@ -190,7 +190,8 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
 #                        color = 'orange')
 
         print "avg    max   ", 100*avg_unres, 100 * max_unres
-        ax.annotate(r"Resolved (4.5$\times$ dx)", xy=(logdx-0.15,txy_1[1]),xytext=(logdx-0.15,txy_1[1]),
+
+        ax.annotate(r"Resolved (4.5$\times$ dx)", xy=(logdx+0.075,txy_1[1]),xytext=(logdx+0.075,txy_1[1]),
                       color='black', rotation=90)
         ax.annotate(r"Cell Width", xy=(np.log10(dx)-0.15,txy_1[1]),
                                    xytext=(np.log10(dx)-0.15,txy_1[1]),
