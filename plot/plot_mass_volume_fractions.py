@@ -5,14 +5,16 @@ import matplotlib.pyplot as plt
 
 import deepdish as dd
 from galaxy_analysis.utilities import utilities
+from galaxy_analysis.plot.plot_styles import color_dict
 import numpy as np
+import sys
 
 TMAX = 500.0 # maximum (normalized) plot time
 
 
-_phases = ['Molecular','CNM','WNM','WIM','HIM']
-
-def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False):
+def get_fractions(ftype, data = None, tmin = None, tmax = None,
+                  average = False,
+                  phases = ['Molecular','CNM','WNM','WIM','HIM']):
 
     if (not (ftype == 'mass')) and (not (ftype == 'volume')):
         print  "ftype must be either 'mass' or 'volume'"
@@ -27,7 +29,7 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False)
             # compute averages for each field
             fractions = {}
             min, max, std = {}, {}, {}
-            for k in _phases:
+            for k in phases:
                 x, fractions[k], min[k], max[k], std[k] =\
                      compute_time_average(['gas_meta_data', ftype +'_fractions'.k],
                                           tmin = tmin, tmax = tmax, xbins = None)
@@ -43,7 +45,7 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False)
 
             # transfer to plotable format
             combined_fractions = {}
-            for k in _phases:
+            for k in phases:
                 combined_fractions[k] = [all_fractions[i][k] for i in np.arange(len(data_list))]
 
             return times[(times>tmin)*(times<tmax)], combined_fractions
@@ -52,12 +54,13 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None, average = False)
         return fractions
 
 
-def plot_mass_fraction(t, y, std = None, outdir = './'):
+def plot_mass_fraction(t, y, std = None, outdir = './',
+                       phases = ['Molecular','CNM','WNM','WIM','HIM'] ):
 
     fig, ax = plt.subplots()
 
-    for k in _phases:
-        ax.plot(t-t[0], y[k], lw = line_width, label = k)
+    for k in phases:
+        ax.plot(t-t[0], y[k], lw = line_width, label = k, color = color_dict[k])
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Mass Fraction')
@@ -76,12 +79,13 @@ def plot_mass_fraction(t, y, std = None, outdir = './'):
 
     return
 
-def plot_volume_fraction(t, y, std = None, outdir = './'):
+def plot_volume_fraction(t, y, std = None, outdir = './',
+                         phases = ['Molecular','CNM','WNM','WIM','HIM']):
 
     fig, ax = plt.subplots()
 
-    for k in _phases:
-        ax.plot(t-t[0], y[k], lw = line_width, label = k)
+    for k in phases:
+        ax.plot(t-t[0], y[k], lw = line_width, label = k, color = color_dict[k])
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'ISM Volume Fraction')
@@ -100,12 +104,21 @@ def plot_volume_fraction(t, y, std = None, outdir = './'):
 
     return
 
-def plot_fractions(outdir = './'):
-    times, mass = get_fractions(tmin = 50, tmax = 1260, ftype = 'mass')
-    plot_mass_fraction(times, mass, outdir = outdir)
-    times, volume = get_fractions(tmin = 50, tmax = 1260, ftype = 'volume')
-    plot_volume_fraction(times, volume, outdir = outdir)
+def plot_fractions(outdir = './',
+                   phases = ['Molecular','CNM','WNM','WIM','HIM']):
+    times, mass = get_fractions(tmin = 50, tmax = 1260,
+                                ftype = 'mass', phases = phases)
+    plot_mass_fraction(times, mass, outdir = outdir, phases = phases)
+    times, volume = get_fractions(tmin = 50, tmax = 1260,
+                                  ftype = 'volume', phases = phases)
+    plot_volume_fraction(times, volume, outdir = outdir, phases = phases)
     return
 
 if __name__=='__main__':
-    plot_fractions()
+
+    if len(sys.argv) > 1:
+        outdir = sys.argv[1]
+
+    phases = ['CNM','WNM','WIM','HIM']
+
+    plot_fractions(outdir = outdir, phases = phases)
