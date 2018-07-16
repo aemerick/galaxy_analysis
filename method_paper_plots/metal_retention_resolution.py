@@ -1,7 +1,7 @@
 from galaxy_analysis.plot.plot_styles import *
 from galaxy_analysis.utilities import utilities
 #----------------------------------------------
-
+rc('font',size=22)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +43,7 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
 
     for sim in labels.keys():
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
-                                                         tmin=0.0,tmax= 650.0)
+                                                         tmin=0.0,tmax= 1000.0)
         all_data[sim] = {}
         all_data[sim]['times'] = times
         for k in gather_keys.keys():
