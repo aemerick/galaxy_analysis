@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import glob
 import sys
 
-
+rc('font',size=22)
 #data_list, times = utilities.select_data_by_time(dir = work_dir,
 #                                                 tmin=0.0,tmax=650.0)
 #M_HI    = np.ones(np.size(data_list))
