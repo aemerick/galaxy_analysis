@@ -1,4 +1,6 @@
 from galaxy_analysis.plot.plot_styles import *
+rc('font', size=22)#, ftype=42)
+
 import yt
 import numpy as np
 from copy import copy
@@ -62,7 +64,7 @@ def resolution_study(abundance_filename,
     if comparison is None:
         labels = {'3pcH2' : '3.6 pc', '6pcH2' : '7.2 pc' , 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.' , 'Fiducial' : '-'}
-        dirs   = {'3pcH2' : '../3pc_H2/', '6pcH2' : '../6pc_H2/', 'Fiducial' : ''}
+        dirs   = {'3pcH2' : '../3pc_H2/abundances/', '6pcH2' : '../6pc_H2/abundances/', 'Fiducial' : ''}
         for k in dirs.keys():
             dirs[k] = work_dir + dirs[k]
     else:
@@ -224,9 +226,9 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
         ax[index].set_xlim(-3.1,3.1)
         ax[index].set_ylim(5.0E-7, 1.0)
         ax[index].semilogy()
-        ax[index].plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '--', color = 'black')
-        ax[index].plot([-1,-1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
-        ax[index].plot([1,1],[1.0E-7,2.0], lw = 0.25 * line_width, ls = ':', color = 'black')
+        ax[index].plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '-.', color = 'black')
+        ax[index].plot([-1,-1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
+        ax[index].plot([1,1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
 
         # ax[index].annotate()
         ax[index].minorticks_on()
@@ -240,6 +242,9 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
     if (xp,yp) == (3,3):
         ax[(2,1)].set_xlabel(r'Median Normalized Mass Fraction')
         ax[(1,0)].set_ylabel(r'Peak-Normalized PDF')
+
+#    for i in [0,1,2]:
+#        ax[(2,i)].set_xticks([-3,-2,-1,0,1,2,3], [-3,-2,-1,0,1,2,3])
 
     fig.savefig(outname)
     plt.close()

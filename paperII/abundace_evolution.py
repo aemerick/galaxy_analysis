@@ -6,6 +6,10 @@ import deepdish as dd
 import h5py, glob, sys
 
 from galaxy_analysis.utilities import utilities
+from galaxy_analysis.analysis import Galaxy
+
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.stats import binned_statistic_2d
 
 # temporary
 import time as cpu_time
@@ -89,6 +93,146 @@ def load_abundance_data(data, data_list,
 
     return time_data
 
+def plot_stellar_2d_hist(galaxy, field, time_bins = np.arange(0.0,20.0,0.2),
+                         ybins = np.arange(-20,-6,0.1)):
+
+    if '_Fraction' in field:
+        yval = np.log10(galaxy.df[('io','particle_' + field.strip('_Fraction') + '_fraction')].value)
+    else:
+        yval = galaxy.df[('io','particle_' + field)].value
+
+    creation_time = galaxy.df['creation_time'].to('Myr').value
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8,8)
+    statistic_data = np.ones(np.size(creation_time))
+    N, x_edge, y_edge, binnum = binned_statistic_2d(creation_time - np.min(creation_time), yval, statistic_data,
+                                                    statistic = 'count', bins =  (time_bins,ybins))
+
+    fraction = N / (1.0 * np.size(creation_time))
+    fraction[fraction <= 0] = -99
+    fraction[fraction >  0] = np.log10(fraction[fraction > 0])
+    fraction = np.log10(N / (1.0 * np.size(creation_time)))
+    plot_val = fraction
+
+    xmesh, ymesh = np.meshgrid(x_edge, y_edge)
+    img1 = ax.pcolormesh(xmesh, ymesh, plot_val.T,
+                              cmap = 'magma', vmin = -4, vmax = -1)
+
+    divider = make_axes_locatable(ax)
+    cax1 = divider.append_axes('right', size = '5%', pad = 0.05)
+    fig.colorbar(img1, cax=cax1, label = "Fraction")
+    ax.set_xlabel(r'Time (Myr)')
+
+    plt.minorticks_on()
+    plt.tight_layout()
+    fig.savefig('stellar_O_2d_hist.png')
+
+    return
+
+def plot_stellar_separation(time, data, galaxy,
+                            field    = 'O_Fraction',
+                            property = 'median',
+                            phases   = ['CNM'],
+                            figdim=None,
+                            field_types = None,
+                            labels = None, line_styles = None,
+                            xlim = None, ylim = None,
+                            annotate_text = None):
+    if labels is None:
+        labels = {}
+
+    for k in phases + [field] + [property]:
+        if not (k in labels.keys()):
+            labels[k] = k
+
+    if figdim is None:
+        if len(phases) == 1:
+            nrow, ncol = 1, 1
+        else:
+            ncol = 3
+            nrow = 2
+    else:
+        nrow, ncol = figdim
+
+    data_list = np.array(np.sort([x for x in data.keys() if 'DD' in x]))
+    data_list = data_list[:len(time)]
+
+    time_data = load_abundance_data(data, data_list, [field], [property],
+                                    phases = phases, field_types = field_types)
+
+    # now need to load the data output to get the stellar values
+
+    #
+    if nrow*ncol > 1:
+        fig, all_axes = plt.subplots(nrow,ncol,sharex=True,sharey=True)
+        fig.set_size_inches(ncol*5, nrow*5)
+        fig.subplots_adjust(hspace=0.0,wspace=0.0)
+    else:
+        fig, ax = plt.subplots()
+        fig.set_size_inches(6,6)
+
+    axi = axj = 0
+
+    creation_time = galaxy.df['creation_time'].convert_to_units('Myr').value
+
+    for i, phase in enumerate(phases):
+        if nrow*ncol > 1:
+            ax = all_axes[(axi,axj)]
+
+        property_value = time_data[field][phase][property]
+
+        if '_Fraction' in field:
+            star_val = np.log10(galaxy.df['particle_' + field.strip('_Fraction') + '_fraction'])
+        else:
+            star_val = galaxy.df['particle_' + field]
+
+        select = creation_time > 0.0 #do all for now (np.min(creation_time) + 100.0)
+
+        distance = star_val[select] - np.interp(creation_time[select],time,property_value)
+
+        ax.scatter(creation_time[select] - np.min(creation_time),
+                   distance, alpha = 0.75, color = 'black', s = 20)
+        ax.set_xlim(0.0, 500.0)
+        ax.set_ylim(-2.5,2.5)
+        ax.plot( ax.get_xlim(), [0.0,0.0], color = 'black', lw = line_width, ls = '--')
+        plt.minorticks_on()
+
+        xy = (200.0, ax.get_ylim()[1] - 0.35)
+        #q3dist = q3 - median_distance
+        #q1dist = median_distance - q1
+#        ax.annotate(labels[phase] + " : %.2f + %.2f - %.2f"%(median_distance,q3dist,q1dist), xy=xy,xytext=xy)
+        #d1, d9 = np.percentile(distance, [0.1,0.9])
+        select = creation_time > (np.min(creation_time) + 120.0)
+
+        ax.annotate("Median Dist. = %.2f"%(np.median(np.abs(distance[select]))), xy=xy,xytext=xy)
+        xy = (200.0, ax.get_ylim()[1] - 0.7)
+        q1, q3 = np.percentile(np.abs(distance[select]), [25,75])
+        print q3, q1, q3-q1, np.size(distance[select][distance[select]<0])/(1.0*np.size(distance[select])), np.size(distance[select][distance[select]>0])
+        ax.annotate("IQR = %.2f"%(q3-q1), xy=xy,xytext=xy)
+
+
+
+        axj = axj + 1
+        if axj >= ncol:
+            axj = 0
+            axi = axi + 1
+
+    #plt.tight_layout()
+    if nrow*ncol>1:
+        for i in np.arange(ncol):
+            all_axes[(nrow-1,i)].set_xlabel(r'Time (Myr)')
+        for i in np.arange(nrow):
+            all_axes[(i,0)].set_ylabel(r'Distance From ' + labels[property] + '[dex]')
+    else:
+        ax.set_xlabel(r'Time (Myr)')
+        ax.set_ylabel(r'Distance to ' + labels[phase] + ' ' + labels[property] + ' [dex]')
+    if nrow*ncol == 1:
+        plt.tight_layout()
+    fig.savefig("stellar_distance_to_median.png")
+
+    return
+
 def plot_abundace_resolution_study():
 
     fields = ['O_Fraction','Ba_Fraction']
@@ -111,7 +255,7 @@ def plot_abundace_resolution_study():
 
         all_time_data[sim] = load_abundance_data(data, data_list,
                                                  fields, property_list)
-        all_time_data[sim]['time'] = times
+        all_time_data[sim]['time'] = times - times[0]
 
     ls = {'CNM':'-','WNM':'-','WIM':'-','HIM':':'}
 
@@ -152,6 +296,7 @@ def plot_abundace_resolution_study():
     fig.savefig('O_Ba_resolution_study.png')
 
     return
+
 def plot_abundance_evolution(time, data,
                              fields = ['O_Fraction','Ba_Fraction'],
                              property_list = ['median','IQR'],
@@ -238,8 +383,8 @@ def plot_abundance_evolution(time, data,
 
 if __name__ == "__main__":
 
-    plot_abundace_resolution_study()
 
+#    plot_abundace_resolution_study()
 
     if len(sys.argv) > 1:
         filename = sys.argv[1]
@@ -251,6 +396,17 @@ if __name__ == "__main__":
     #time = np.arange(0.0, 10.0*(len( [x for x in data.keys() if 'DD' in x])-1) + 0.1, 10.0)
 
     time = [float(x.strip('DD')) for x in np.sort(data.keys()) if 'DD' in x]
+
+    galaxy = Galaxy('DD0619')
+
+    plot_stellar_2d_hist(galaxy, 'O_Fraction')
+
+    plot_stellar_separation(time, data, galaxy,
+                            field    = 'O_Fraction',
+                            property = 'median',
+                            phases   = ['CNM'],
+                            labels = {'median' : 'Median'})
+
 
     plot_abundance_evolution(time, data,
                              fields = ['O_Fraction','Ba_Fraction'],

@@ -282,7 +282,6 @@ class lognormal_powerlaw(general_functions):
         p_o = 1.0/(np.sqrt(2.0*np.pi)*sigma*self.xt) * np.exp(-1.0*(self.st-mu)**2 / (2.0*sigma*sigma) + alpha*self.st)
 
 
-#        N = 2.0 * (1.0 + erf( (2.0*self.st + sigma*sigma) / (2.0**(3.0/2.0)*sigma)) - (2.0*p_o*self.xt**(-alpha))/(-alpha))**(-1)
 
         # N = (0.5 * ( 1.0 + erf( (self.st - mu)/(np.sqrt(2)*sigma))) + (self.xt*p_o/(-1.0+alpha)) * (self.xt/self.full_mean)**(-alpha+1.0))**(-1)
 
