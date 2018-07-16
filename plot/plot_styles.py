@@ -37,10 +37,10 @@ color_dict = {
               '30' : purple, '40' : black
               # ----
              }
-color_dict['Molecular'] = 'C1'
+color_dict['Molecular'] = 'C4'
 color_dict['CNM'] = 'C0'
-color_dict['WNM'] = 'C2'
-color_dict['WIM'] = 'C4'
+color_dict['WNM'] = 'C1'
+color_dict['WIM'] = 'C2'
 color_dict['HIM'] = 'C3'
 
 
