@@ -5,6 +5,8 @@ import numpy as np
 import glob
 import sys
 
+rc('font', size = 22)
+
 def sfr_resolution(work_dir = './', output_dir = None, comparison = None):
 
     if output_dir is None:
