@@ -30,6 +30,10 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
         labels = {'3pcH2' : '3.6 pc' , '6pcH2' : '7.2 pc', 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
+    
+        comparison = {}
+        for k in labels.keys():
+            comparison[k] = (dirs[k],labels[k],lstyle[k])
 
     else:
         dirs = {}
@@ -44,7 +48,7 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
 #    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
 
     all_data = {}
-    for k in labels.keys():
+    for k in comparison.keys():
         all_data[k] = {}
 
 #        if k == 'final_sndriving':
@@ -75,7 +79,7 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for k in all_data.keys():
+    for k in comparison.keys():
 
 
         for field,color in [('M_total','black'), ('M_HI','C0'), ('M_H2I','C1'), ('M_star','C3')]:

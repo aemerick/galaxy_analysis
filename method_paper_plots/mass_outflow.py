@@ -6,6 +6,7 @@ from galaxy_analysis.utilities import utilities
 import numpy as np
 import sys
 from scipy.interpolate import interp1d
+rc('font',size=22)
 
 TMAX = 500.0
 
@@ -19,7 +20,7 @@ def obtain_mprod(data_list, fieldname):
         x = dd.io.load(k, '/gas_meta_data/masses')
         all_data[k] = x['FullBox'][fieldname] + x['OutsideBox'][fieldname]
 
-    all_data = np.array([all_data[k] for k in all_data.keys()])
+    all_data = np.array([all_data[k] for k in np.sort(all_data.keys())])
 
     return all_data
 
@@ -37,7 +38,7 @@ def obtain_outflow_rates(data_list, outflow_field, elements):
         else:
             all_data[k] =  _temp_dict[k][ ('gas',outflow_field) ] # Becuase i'm dumb
 
-    all_data =np.array( [all_data[k] for k in all_data.keys()])
+    all_data =np.array( [all_data[k] for k in np.sort(all_data.keys())])
     print np.shape(all_data)
     return all_data
 
@@ -204,7 +205,7 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     for i,loc in enumerate([0.1, 0.25, 0.5, 1.0]):
         loc_bin = np.argmin(np.abs(xpos-loc)) # get the right position bin
         y = binned_y[:,loc_bin]
-
+        print i, loc, loc_bin
         bin_edges=utilities.bin_edges(np.round(times))
         # rebin with 10 Myr bins, rather than previous 1 Myr bins
         newx,rebiny=utilities.simple_rebin(1.0*bin_edges,1.0*y,
@@ -218,7 +219,7 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     ax.set_ylabel(r'Outflow Rate (M$_{\odot}$ yr$^{-1}$)')
     ax.semilogy()
     ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
-    ax.set_ylim(7E-6, 0.01)
+    ax.set_ylim(1.0E-5, 0.03)
 
     plt.tight_layout()
     ax.legend(loc='best')
@@ -249,7 +250,7 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     ax.set_ylabel(r'Mass Loading Factor')
     ax.semilogy()
     ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
-    ax.set_ylim(0.1,500)
+    ax.set_ylim(0.1,300)
 
     plt.tight_layout()
     #ax.legend(loc='best')
@@ -282,7 +283,7 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     ax.set_ylabel(r'Metal Mass Loading Factor')
     ax.semilogy()
     ax.set_xlim(0.0, np.min([TMAX,np.max(newx-newx[0])]))
-    ax.set_ylim(0.07, 15)
+    ax.set_ylim(0.04, 20)
 
     plt.tight_layout()
     ax.legend(loc='upper right')
@@ -336,4 +337,3 @@ if __name__ == "__main__":
         work_dir = sys.argv[1]
 
     plot_basic_outflow_and_loading(work_dir = work_dir)
-

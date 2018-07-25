@@ -26,7 +26,10 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
         labels = {'3pcH2' : '3.6 pc' , '6pcH2' : '7.2 pc', 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
-
+        
+        comparison = {}
+        for k in labels.keys():
+            comparison[k] = (dirs[k],labels[k],lstyle[k])
     else:
         dirs = {}
         labels = {}
@@ -44,7 +47,7 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
 
     all_data = {}
 
-    for sim in labels.keys():
+    for sim in comparison.keys():
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
                                                          tmin=0.0,tmax= 1000.0)
         all_data[sim] = {}

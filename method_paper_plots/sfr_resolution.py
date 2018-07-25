@@ -16,7 +16,9 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
         labels = {'3pcH2' : '3.6 pc' , '6pcH2' : '7.2 pc', 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
-
+        comparison = {}
+        for k in labels.keys():
+            comparison[k] = (dirs[k],labels[k],lstyle[k])
     else:
         dirs = {}
         labels = {}
@@ -38,7 +40,7 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for k in all_data.keys(): # labels.keys():
+    for k in comparison.keys(): # labels.keys():
         x = (all_data[k]['time_data']['time'] - all_data[k]['time_data']['time'][0])/1.0E6
 
         plot_histogram(ax, x,
