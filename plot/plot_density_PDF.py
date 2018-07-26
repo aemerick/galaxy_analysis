@@ -5,8 +5,14 @@ from galaxy_analysis.static_data import ISM
 from galaxy_analysis.plot.plot_styles import *
 from scipy.stats import binned_statistic
 import matplotlib.pyplot as plt
+import sys
 
-gal = Galaxy('DD0401')
+if len(sys.argv) > 1:
+    dsname = str(sys.argv[1])
+else:
+    dsname = 'DD0401'
+
+gal = Galaxy(dsname)
 #
 #
 #
