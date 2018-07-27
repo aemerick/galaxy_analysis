@@ -76,6 +76,11 @@ def panel_plot(datasets = {}, fields = ['number_density','Temperature','ion_frac
             plots[axi][axj].set_cmap(cmaps[field])
 
             #for p, cax, t in zip(plots[0:6:2], colorbars, titles):
+            if axj == 0:
+                xy = (0.07,0.07)
+                ax.text(xy[0], xy[1], k, color = 'white', fontsize = 28,
+#                                         textcoords = 'axes fraction',
+                                         transform = ax.transAxes)
             if axi == 2:
                 cbar = fig.colorbar(plots[axi][axj], cax=colorbars[axj], orientation='horizontal')
                 cbar.set_label(labels[field])
