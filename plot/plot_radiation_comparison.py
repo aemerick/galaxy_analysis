@@ -7,6 +7,7 @@ from collections import OrderedDict
 from yt.visualization.base_plot_types import get_multi_plot
 import matplotlib.colorbar as cb
 from matplotlib.colors import LogNorm
+import sys
 
 def _ion_fraction(field, data):
     return data['H_p1_fraction'] / (data['H_p0_fraction'] + data['H_p1_fraction'])
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     for dsi in dsnum:
         dsname = "DD%0004i"%(dsi)
 
-        workdir = './''
+        workdir = './'
         datasets = OrderedDict()
         datasets['Fiducial'] = Galaxy(dsname,wdir=workdir + 'sn_H2atten_H2sh/')
         datasets['NoRT']     = Galaxy(dsname,wdir=workdir + 'sn_H2atten_H2_noion/')
