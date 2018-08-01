@@ -17,7 +17,7 @@ line_width = 3.0
 # would be nice to start making gather functions
 # for all of these plot functions to not have to
 # do any more looping over ALL data sets to gather
-def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparison = None):
+def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False):
 
     if output_dir is None:
         output_dir = work_dir
@@ -47,6 +47,14 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
 
     all_data = {}
 
+
+    colors = {}
+    i = 0
+    for k in comparison.keys():
+        if not (k in colors.keys()):
+            colors[k] = 'C%1i'%(i)
+            i = i + 1    
+    
     for sim in comparison.keys():
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
                                                          tmin=0.0,tmax= 1000.0)
@@ -69,12 +77,20 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
 
         t = all_data[sim]['times'] - all_data[sim]['times'][0]
 
-        ax.plot(t, disk_frac, lw = line_width,  ls = lstyle[sim], color = 'navy')
-        ax.plot(t, outside_halo_frac, lw = line_width, ls = lstyle[sim], color = 'C1')
+        if new_color:
+            ax.plot(t, disk_frac, lw = line_width, ls = '-', color = colors[sim])
+            ax.plot(t, outside_halo_frac, lw = line_width, ls = ':', color = colors[sim])
+        else:
+            ax.plot(t, disk_frac, lw = line_width,  ls = lstyle[sim], color = 'navy')
+            ax.plot(t, outside_halo_frac, lw = line_width, ls = lstyle[sim], color = 'C1')
 
     # plot this so it shows up on diagram
-    ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='navy', label = 'Disk')
-    ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='C1', label = 'Outside Halo')
+    if new_color:
+        ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='black', label = 'Disk')
+        ax.plot([-10,-1],[0,0],lw=line_width,ls='--',color='black', label = 'Outside Halo')        
+    else:
+        ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='navy', label = 'Disk')
+        ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='C1', label = 'Outside Halo')
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'Fraction of Metals')
