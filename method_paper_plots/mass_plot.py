@@ -21,7 +21,7 @@ rc('font',size=22)
 #    M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
 #
 #
-def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False):
+def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False, colors = None):
 
     if output_dir is None:
         output_dir = work_dir
@@ -81,12 +81,13 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, 
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    colors = {}
-    i = 0
-    for k in comparison.keys():
-        if not (k in colors.keys()):
-            colors[k] = 'C%1i'%(i)
-            i = i + 1
+    if colors is None:
+        colors = {}
+        i = 0
+        for k in comparison.keys():
+            if not (k in colors.keys()):
+                colors[k] = 'C%1i'%(i)
+                i = i + 1
     
     
     lstyle['M_total'] = '-'
