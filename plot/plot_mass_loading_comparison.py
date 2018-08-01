@@ -93,7 +93,7 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
 #newx,rebiny=utilities.simple_rebin(1.0*bin_edges,1.0*y,
 #               np.arange(np.min(bin_edges),np.max(bin_edges)+2,10), 'average')
 
-        ax.plot(t-t[0],yplot, lw = line_width, ls = '-', color = color[sim], label = labels[sim])
+        ax.plot(t-t[0],yplot, lw = line_width, ls = '-', color = color[sim]) #, label = labels[sim])
         ax.plot(t-t[0],Mdot[:,5], lw = line_width, ls = '--', color = color[sim])#, label = sim)
         #xc  = 0.5  *(newx[1:] + newx[:-1])
         #ax.plot(xc-xc[0], rebiny, lw = line_width,  ls = ':', color = color[sim], label = sim)
@@ -102,8 +102,8 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
         print np.size(Mdot[:,2]), np.size(rebiny)
 
     # plot this so it shows up on diagram
-#    ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='navy', label = 'Disk')
-#    ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='C1', label = 'Outside Halo')
+    ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='black', label = r'0.25 R$_{\rm vir}$')
+    ax.plot([-10,-1],[0,0],lw=line_width,ls='--',color='black', label = r'1.0 R$_{\rm vir}$')
 
     ax.semilogy()
     ax.set_xlabel(r'Time (Myr)')
@@ -155,7 +155,7 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
     ax.set_xlim(0.0, TMAX)
     #if not (ylim is None):
     ax.set_ylim(0.01,1000.0)
-    ax.legend(loc = 'best')
+    #ax.legend(loc = 'best')
     plt.minorticks_on()
     plt.tight_layout()
     fig.savefig(work_dir + output_dir + 'mass_loading_comparison.png')
