@@ -61,7 +61,7 @@ ax.set_ylim(4.0E-6, 11.0)
 ax.legend(loc='best')
 ax.semilogy()
 plt.tight_layout()
-fig.savefig('density_PDF.png')
+fig.savefig(dsname + '_density_PDF.png')
 
 
 fig, ax = plt.subplots()
@@ -92,5 +92,5 @@ ax.set_ylim(1.0E-8, 1.0E4)
 ax.legend(loc='best')
 ax.semilogy()
 plt.tight_layout()
-fig.savefig('density_PDF_volume_weighted.png')
+fig.savefig(dsname + '_density_PDF_volume_weighted.png')
 
