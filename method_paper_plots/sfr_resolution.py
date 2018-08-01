@@ -7,7 +7,7 @@ import sys
 
 rc('font', size = 22)
 
-def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim = None):
+def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim = None, colors = None):
 
     if output_dir is None:
         output_dir = work_dir
@@ -36,6 +36,12 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
     #data_list, times = utilities.select_data_by_time(dir = work_dir,
     #                                                 tmin=0.0,tmax=1000)
 
+    if colors is None:
+        colors = {}
+        i = 0
+        for k in comparison.keys():
+            colors[k] = "C%1i"%(i)
+            i = i + 1
 
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -44,7 +50,8 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
         x = (all_data[k]['time_data']['time'] - all_data[k]['time_data']['time'][0])/1.0E6
 
         plot_histogram(ax, x,
-                          all_data[k]['time_data']['SFR'], lw = line_width, ls = lstyle[k], label = labels[k])
+                          all_data[k]['time_data']['SFR'], lw = line_width, ls = lstyle[k], label = labels[k],
+                          color = colors[k])
 
     ax.set_xlabel(r'Time (Myr)')
     ax.set_ylabel(r'SFR (M$_{\odot}$ yr$^{-1}$)')
