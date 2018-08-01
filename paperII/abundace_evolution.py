@@ -138,7 +138,7 @@ def plot_stellar_separation(time, data, galaxy,
                             field_types = None,
                             labels = None, line_styles = None,
                             xlim = None, ylim = None,
-                            annotate_text = None):
+                            annotate_text = None, ylabels = None):
     if labels is None:
         labels = {}
 
@@ -225,8 +225,12 @@ def plot_stellar_separation(time, data, galaxy,
         for i in np.arange(nrow):
             all_axes[(i,0)].set_ylabel(r'Distance From ' + labels[property] + '[dex]')
     else:
+        
         ax.set_xlabel(r'Time (Myr)')
-        ax.set_ylabel(r'Distance to ' + labels[phase] + ' ' + labels[property] + ' [dex]')
+        if ylabels is None:
+            ax.set_ylabel(r'Distance to ' + labels[phase] + ' ' + labels[property] + ' [dex]')
+        else:
+            ax.set_ylabel(ylabels[0])
     if nrow*ncol == 1:
         plt.tight_layout()
     fig.savefig("stellar_distance_to_median.png")
@@ -405,7 +409,8 @@ if __name__ == "__main__":
                             field    = 'O_Fraction',
                             property = 'median',
                             phases   = ['CNM'],
-                            labels = {'median' : 'Median'})
+                            labels = {'median' : 'Median'},
+                            ylabels = [r"[O/H] - [O/H]$_{\rm CNM}$"])
 
 
     plot_abundance_evolution(time, data,
