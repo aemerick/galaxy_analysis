@@ -21,7 +21,7 @@ rc('font',size=22)
 #    M_H2[i] = dd.io.load(k, '/meta_data/M_H2I')
 #
 #
-def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
+def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False):
 
     if output_dir is None:
         output_dir = work_dir
@@ -46,6 +46,8 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
 
 #    labels = {'3pc_hsn' : '3.6 pc - SNx2', '3pc' : '3.6 pc', 'final_sndriving' : 'Fiducial', '6pc_hsn' : '7.2 pc'}
 #    lstyle     = {'3pc_hsn' : '--', '3pc' : ':', 'final_sndriving' : '-', '6pc_hsn' : '-.'}
+
+    
 
     all_data = {}
     for k in comparison.keys():
@@ -79,6 +81,19 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
+    colors = {}
+    i = 0
+    for k in comparison.keys():
+        if not (k in colors.keys()):
+            colors[k] = 'C%1i'%(i)
+            i = i + 1
+    
+    
+    lstyle['M_total'] = '-'
+    lstyle['M_HI'] = '--'
+    lstyle['M_H2I'] = '-.'
+    lstyle['M_star'] = ':'
+    
     for k in comparison.keys():
 
 
@@ -90,12 +105,24 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None):
             else:
                 label = None
             # print k, field, np.size(all_data[k]['times']), np.size(all_data[k][field])
-            plot_histogram(ax, all_data[k]['times'] - all_data[k]['times'][0], all_data[k][field], ls = lstyle[k], lw = line_width, color = color)
+            if new_color:
+                ax.plot(all_data[k]['times'] - all_data[k]['times'][0], all_data[k][field], 
+                        ls = lstyle[field],
+                        lw = line_width, color = colors[k])
+            else:
+                        
+                plot_histogram(ax, all_data[k]['times'] - all_data[k]['times'][0], all_data[k][field], ls = lstyle[k], lw = line_width, color = color)
 
-    ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'black', label = r'M$_{\rm total}$')
-    ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C0', label = r'M$_{\rm HI}$')
-    ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C1', label = r'M$_{\rm H_2}$')
-    ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C3', label = r'M$_{\rm *}$')
+    if new_color:
+        ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'black', label = r'M$_{\rm total}$')
+        ax.plot((-1,-1), (-2,-2), ls = '--', lw = 3, color = 'black', label = r'M$_{\rm HI}$')
+        ax.plot((-1,-1), (-2,-2), ls = '-.', lw = 3, color = 'black', label = r'M$_{\rm H_2}$')
+        ax.plot((-1,-1), (-2,-2), ls = ':', lw = 3, color = 'black', label = r'M$_{\rm *}$')        
+    else:
+        ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'black', label = r'M$_{\rm total}$')
+        ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C0', label = r'M$_{\rm HI}$')
+        ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C1', label = r'M$_{\rm H_2}$')
+        ax.plot((-1,-1), (-2,-2), ls = '-', lw = 3, color = 'C3', label = r'M$_{\rm *}$')
 
 
     ax.set_xlabel(r'Time (Myr)')
