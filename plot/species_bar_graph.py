@@ -14,6 +14,7 @@ import multiprocessing
 fsize = 22
 rc('text', usetex=False)
 rc('font', size=fsize)#, ftype=42)
+mpl.rcParams['hatch.linewidth'] = 2
 
 
 ###
@@ -23,7 +24,7 @@ from galaxy_analysis.utilities import utilities
 ###
 
 def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = None, sources = False,
-                      display_total = None, show_individual_amounts = False, 
+                      display_total = None, show_individual_amounts = False,
                       disk_only = False, **kwargs):
    """
    Uses an analysis output to give a bar graph
@@ -95,17 +96,18 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
 
    if sources:
        fields = ['SNII','SNIa','SWind','AGB']
-       colors = {'SNII': 'C0', 'SNIa' : 'C1' , 'SWind' : 'crimson', 'AGB' : 'C4'}
+       colors = {'SNII': 'C0', 'SNIa' : 'C1' , 'SWind' : 'C3', 'AGB' : 'C2'}
+       #colors = {'SNII': magma(0.2), 'SNIa' : magma(0.4), 'SWind' : magma(0.6), 'AGB' : magma(0.8)}
        labels = {'SNII' : 'SNII', 'SNIa':'SNIa','SWind' : r'M$_{*} > 8$ M$_{\odot}$ Winds', 'AGB' : 'AGB Winds'}
        barplot = {}
        bottom = np.zeros(N)
        sum    = np.zeros(N)
-
+       hatch = {'SNII' : None, 'SNIa'  : None, 'SWind' : None, 'AGB' : '//'}
        for f in ['AGB','SWind','SNIa','SNII']: #['SNII','SNIa','SWind','AGB']:
            bar_values = np.array( [masses['Type'][f][k]/total[k] for k in ordered_species])
 
            barplot[f] = ax.bar(index, bar_values, width,
-                               color = colors[f], bottom = bottom, label = labels[f], **kwargs)
+                               color = colors[f], bottom = bottom, label = labels[f], hatch = hatch[f], **kwargs)
            bottom += bar_values * 1.0
            sum    = sum + bottom
 
@@ -190,7 +192,7 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
    ax.set_xticks(index)
 
    if ordered_species[0] == 'Total Tracked Metals':
-       ordered_species[0] = "All Metals"
+       ordered_species[0] = "All\n Metals"
    ax.set_xticklabels(ordered_species)
 
    # make legend, reverse label ordering

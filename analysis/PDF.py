@@ -223,7 +223,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
                 ax[index].plot( xplotc, fit['fit_result'](xcent) / ynorm * masses[phase]/mass_norm,
                                 lw = line_width, color = color_dict[phase], ls = '--')
 
-        ax[index].set_xlim(-3.1,3.1)
+        ax[index].set_xlim(-3.8,3.3)
         ax[index].set_ylim(5.0E-7, 1.0)
         ax[index].semilogy()
         ax[index].plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '-.', color = 'black')
@@ -232,7 +232,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
 
         # ax[index].annotate()
         ax[index].minorticks_on()
-        xytext = (-2.7,0.2)
+        xytext = (-3.4,0.2)
         ax[index].text(xytext[0], xytext[1], element,  color = 'black', size = 40)
         axj = axj + 1
         if axj >= yp:
@@ -246,6 +246,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
 #    for i in [0,1,2]:
 #        ax[(2,i)].set_xticks([-3,-2,-1,0,1,2,3], [-3,-2,-1,0,1,2,3])
 
+    ax[(1,0)].legend(loc = 'lower left', ncol = 1, fancybox=True, framealpha = 0.4)
     fig.savefig(outname)
     plt.close()
 
