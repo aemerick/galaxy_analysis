@@ -207,7 +207,14 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
 
    if fraction:
        ax.set_ylim(0.0,1.0)
-       ax.set_ylabel('Mass Fraction')
+
+       if disk_only:
+           ax.set_ylabel('Disk Mass Fraction')
+       elif sources:
+           ax.set_ylabel('All Gas Mass Fraction')
+       else:
+           ax.set_ylabel('All Gas Mass Fraction')
+
    else:
        ax.semilogy()
 
