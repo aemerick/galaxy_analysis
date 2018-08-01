@@ -17,7 +17,7 @@ line_width = 3.0
 # would be nice to start making gather functions
 # for all of these plot functions to not have to
 # do any more looping over ALL data sets to gather
-def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False):
+def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparison = None, new_color = False, colors = None):
 
     if output_dir is None:
         output_dir = work_dir
@@ -48,12 +48,13 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
     all_data = {}
 
 
-    colors = {}
-    i = 0
-    for k in comparison.keys():
-        if not (k in colors.keys()):
-            colors[k] = 'C%1i'%(i)
-            i = i + 1    
+    if colors is None:
+        colors = {}
+        i = 0
+        for k in comparison.keys():
+            if not (k in colors.keys()):
+                colors[k] = 'C%1i'%(i)
+                i = i + 1    
     
     for sim in comparison.keys():
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
