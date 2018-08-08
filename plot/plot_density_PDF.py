@@ -28,11 +28,13 @@ n_bins = np.arange(-6, 3.01, 0.05) # 0.05 dex bins in n
 
 def compute_pdf(n, M, norm = None):
     stat, bin_edges, dummy = binned_statistic(np.log10(n), M, statistic = 'sum', bins = n_bins)
-    bin_sizes = 0.5 * (10.0**n_bins[1:] - 10.0**(n_bins[:-1]))
-    
+    bin_sizes = 0.5 * (10.0**n_bins[1:] + 10.0**(n_bins[:-1]))
+
+#    bin_sizes = 0.5 * (bins
+
     if norm is None:
         norm = 1.0 * np.sum(M)
-    
+
     frac = stat / (norm)
     PDF  = frac / bin_sizes
     return PDF
@@ -44,14 +46,13 @@ fig.set_size_inches(8,8)
 PDF = compute_pdf(n,M)
 plot_histogram(ax, n_bins, PDF, lw = 3, color = 'black', label = 'Total')
 
-colors = {'Molecular':'C1','CNM':'C0','WNM':'C2','WIM':'C4','HIM':'C3'}
 
 for field in ['CNM','WNM','WIM','HIM']:
     n = gal.disk.cut_region(ISM[field])['number_density']
     M = gal.disk.cut_region(ISM[field])['cell_mass'].convert_to_units('Msun')
     
     PDF = compute_pdf(n,M, norm = M_tot)
-    plot_histogram(ax, n_bins, PDF, lw = 3, color = colors[field], label = field)
+    plot_histogram(ax, n_bins, PDF, lw = 3, color = color_dict[field], label = field)
 
 
 ax.set_xlabel(r'n (cm$^{-3}$)')
@@ -75,14 +76,13 @@ V_tot = np.sum(V) * 1.0
 PDF = compute_pdf(n,V, norm = V_tot)
 plot_histogram(ax, n_bins, PDF, lw = 3, color = 'black', label = 'Total')
 
-colors = {'Molecular':'C1','CNM':'C0','WNM':'C2','WIM':'C4','HIM':'C3'}
 
 for field in ['CNM','WNM','WIM','HIM']:
     n = gal.disk.cut_region(ISM[field])['number_density']
     V = gal.disk.cut_region(ISM[field])['cell_volume']
     
     PDF = compute_pdf(n,V, norm = V_tot)
-    plot_histogram(ax, n_bins, PDF, lw = 3, color = colors[field], label = field)
+    plot_histogram(ax, n_bins, PDF, lw = 3, color = color_dict[field], label = field)
 
 
 ax.set_xlabel(r'n (cm$^{-3}$)')
