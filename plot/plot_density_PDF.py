@@ -28,8 +28,8 @@ n_bins = np.arange(-6, 3.01, 0.05) # 0.05 dex bins in n
 
 def compute_pdf(n, M, norm = None):
     stat, bin_edges, dummy = binned_statistic(np.log10(n), M, statistic = 'sum', bins = n_bins)
-    bin_sizes = 0.5 * (10.0**n_bins[1:] + 10.0**(n_bins[:-1]))
-
+    bin_sizes = (10.0**n_bins[1:] - 10.0**(n_bins[:-1]))
+    bin_sizes = (n_bins[1:] - n_bins[:-1]) 
 #    bin_sizes = 0.5 * (bins
 
     if norm is None:
@@ -58,7 +58,7 @@ for field in ['CNM','WNM','WIM','HIM']:
 ax.set_xlabel(r'n (cm$^{-3}$)')
 ax.set_ylabel(r'PDF')
 ax.set_xlim(-6,3)
-ax.set_ylim(4.0E-6, 11.0)
+ax.set_ylim(1.0E-7, 8.0)
 ax.legend(loc='best')
 ax.semilogy()
 plt.tight_layout()
@@ -88,7 +88,7 @@ for field in ['CNM','WNM','WIM','HIM']:
 ax.set_xlabel(r'n (cm$^{-3}$)')
 ax.set_ylabel(r'PDF')
 ax.set_xlim(-6,3)
-ax.set_ylim(1.0E-8, 1.0E4)
+ax.set_ylim(1.0E-7, 8.0)
 ax.legend(loc='best')
 ax.semilogy()
 plt.tight_layout()
