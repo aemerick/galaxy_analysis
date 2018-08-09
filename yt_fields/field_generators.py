@@ -18,6 +18,8 @@ from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 from galaxy_analysis.misc import dm_halo
 
+from galaxy_analysis.yt_fields import ionization
+
 from onezone import data_tables
 
 SE_table = data_tables.StellarEvolutionData()
@@ -204,6 +206,38 @@ def _number_density_function_generator(asym):
 
     yt.add_field(('gas','H_total_number_density'),
                  function = _H_total_number_density, units = 'cm**(-3)')
+
+    return nfields
+
+def _ionization_state_generator(metals):
+
+    temp_ions     = ionization.get_ions()
+
+    all_ions      = [x for x in temp_ions if ionization.get_elements(x) in metals]
+
+
+    def return_function(ion):
+        def _ion_density(field,data):
+            ele    = ionization.get_elements(ion)
+            n_ele  = data[('gas', ele + '_Number_Density')].value
+
+            n      = data['H_total_number_density'].to('cm**(-3)').value
+            n      = np.log10(n)
+            T      = data['Temperature'].to('K').value
+            T      = np.log10(T)
+
+            f_ion  = 10.0**(ionization.get_ion_fraction(n, T, ion))
+
+            return (n_ele * f_ion) * yt.units.cm**(-3)
+
+        return _ion_density
+
+    nfields = 0
+    for ion in all_ions:
+
+        yt.add_field(('gas', ion + '_Number_Density'),
+                     function = return_function(ion), units='cm**(-3)')
+        nfields = nfields + 1
 
     return nfields
 
@@ -962,6 +996,8 @@ def generate_derived_fields(ds):
     print nfields, "mass fraction fields defined"
     nfields = _number_density_function_generator(metals)
     print nfields, "number density fields defined"
+    nfields = _ionization_state_generator(metals)
+    print nfields, "ionization state fields defined"
     nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
     print nfields, "abundance ratio fields defined"
     nfields = _abundance_function_generator(metals)
