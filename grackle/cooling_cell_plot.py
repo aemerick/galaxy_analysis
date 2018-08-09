@@ -1,6 +1,6 @@
 from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
-import os
+import os, sys
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -16,6 +16,10 @@ def bins_from_centers(x):
     return xnew
 
 def plot_2d_histogram(datafile = 'all_runs_d_12.20.dat'):
+
+    ylabel = 'log(H- Photo-Diss. Scale Factor)'
+    xlabel = "log(LW Scale Factor)"
+
 
     data = np.genfromtxt(datafile) # names = True)
 
@@ -46,8 +50,8 @@ def plot_2d_histogram(datafile = 'all_runs_d_12.20.dat'):
                          vmax = np.max(np.log10(z_mesh)))
     ax.semilogx()
     ax.semilogy()
-    ax.set_xlabel('log(LW Factor)')
-    ax.set_ylabel("log(k27 Factor)")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     divider = make_axes_locatable(ax)
     cax1 = divider.append_axes('right', size = '5%', pad = 0.05)
@@ -56,7 +60,7 @@ def plot_2d_histogram(datafile = 'all_runs_d_12.20.dat'):
     plt.minorticks_on()
 
     plt.tight_layout(h_pad = 0, w_pad = 0.05)
-    fig.savefig("test_fH2.png")
+    fig.savefig("fH2.png")
     plt.close()
 
     f_H2 = data[:,3]
@@ -73,8 +77,8 @@ def plot_2d_histogram(datafile = 'all_runs_d_12.20.dat'):
                          vmax = np.max(np.log10(z_mesh)))
     ax.semilogx()
     ax.semilogy()
-    ax.set_xlabel('log(LW Factor)')
-    ax.set_ylabel("log(k27 Factor)")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     divider = make_axes_locatable(ax)
     cax1 = divider.append_axes('right', size = '5%', pad = 0.05)
@@ -83,10 +87,11 @@ def plot_2d_histogram(datafile = 'all_runs_d_12.20.dat'):
     plt.minorticks_on()
 
     plt.tight_layout(h_pad = 0, w_pad = 0.05)
-    fig.savefig("test_T.png")
+    fig.savefig("T.png")
     plt.close()
 
     return
 
 if __name__ == "__main__":
-    plot_2d_histogram()
+
+    plot_2d_histogram( datafile =  str(sys.argv[1]))

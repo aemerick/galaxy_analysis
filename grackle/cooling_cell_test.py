@@ -15,6 +15,10 @@ from pygrackle.utilities.physical_constants import \
 
 import sys
 
+from multiprocessing import Pool
+from contextlib import closing
+import itertools
+
 tiny_number = 1e-20
 
 class NoStdStreams(object):
@@ -33,7 +37,6 @@ class NoStdStreams(object):
         sys.stdout = self.old_stdout
         sys.stderr = self.old_stderr
         self.devnull.close()
-
 
 def cooling_cell(density = 12.2,
                  initial_temperature = 2.0E4,
@@ -189,9 +192,33 @@ def cooling_cell(density = 12.2,
     else:
         return
 
+def _parallel_loop(i, k27, LW):
+
+    data = cooling_cell(k27_factor = k27, LW_factor = LW, save_output = False,
+                 save_H2_fraction = False, return_result = True)
+
+    H2_fraction = (data['H2I'] + data['H2II']) / data['density']
+    T           = (data['temperature'])
+
+    str_i = "%00005i"%(i)
+
+    result = { str_i : {}}
+    result[str_i]['k27'] = k27
+    result[str_i]['LW']  = LW
+    result[str_i]['H2_fraction'] = H2_fraction[-1]
+    result[str_i]['T'] = T[-1]
+
+
+    return result
+
+def _parallel_loop_star(args):
+    return _parallel_loop(*args)
+
+
 
 def cooling_cell_grid(k27_factors = None, LW_factors = None,
-                      fmin = 1.0, fmax = 100.0, npoints = 100):
+                      fmin = 0.1, fmax = 10000.0, npoints = 100,
+                      nproc = 1):
 
     if k27_factors is None:
         k27_factors = np.logspace(np.log10(fmin),
@@ -199,18 +226,48 @@ def cooling_cell_grid(k27_factors = None, LW_factors = None,
     if LW_factors is None:
         LW_factors  = 1.0 * k27_factors
 
-    call_cell = lambda x, y : cooling_cell(k27_factor = x,
-                                           LW_factor  = y, save_H2_fraction = True)
+    if nproc == 1:
+        call_cell = lambda x, y : cooling_cell(k27_factor = x,
+                                               LW_factor  = y, save_H2_fraction = True)
 
+        for i,k27 in enumerate(k27_factors):
+            print (i)*np.size(LW_factors)
 
-    for i,k27 in enumerate(k27_factors):
+            temp_cell = lambda y : call_cell(k27,y)
+            map(temp_cell, LW_factors)
+    else:
 
-        print (i)*np.size(LW_factors)
+        LW_mesh, k27_mesh = np.meshgrid(LW_factors, k27_factors)
 
-        temp_cell = lambda y : call_cell(k27,y)
-        map(temp_cell, LW_factors)
+        k27_mesh = k27_mesh.flatten()
+        LW_mesh  = LW_mesh.flatten()
 
+        for sub_list in itertools.izip_longest(*(iter( np.arange(np.size(k27_mesh))),) * nproc):
+            sub_list = list(sub_list)
+            sub_list = [s for s in sub_list if s is not None]
+            reduced_nproc = np.min( [len(sub_list), nproc])
 
+            print "running for ", sub_list
+
+            imin,imax = sub_list[0], (sub_list[-1] + 1)
+
+            pool = Pool(reduced_nproc)
+            results = pool.map_async(_parallel_loop_star,
+                                     itertools.izip(sub_list,
+                                                    k27_mesh[imin:imax], LW_mesh[imin:imax]))
+            pool.close()
+            pool.join()
+
+            for r in results.get():
+                str_i = r.keys()[0]
+
+                f = open("all_runs_parallel.dat","a")
+                f.write("%8.8E %8.8E %8.8E %8.8E\n"%(  r[str_i]['k27'],
+                                                       r[str_i]['LW'], r[str_i]['H2_fraction'],
+                                                       r[str_i]['T']))
+                f.close()
+
+            del(results)
 
     return
 
@@ -220,5 +277,15 @@ if __name__ == "__main__":
     # test this
     #cooling_cell(k27_factor = 0.99, LW_factor = 0.99,
     #             save_output = False, save_H2_fraction=True)
+    import time
 
-    cooling_cell_grid(npoints = 32)
+    npoints = 48
+    nproc   = 4
+
+    start = time.time()
+    cooling_cell_grid(npoints = npoints, nproc = nproc)
+    end = time.time()
+
+    dt = end - start
+    eff = dt / (1.0*nproc)
+    print "This run of %i models on %i processors took %.3E s - Eff = %.1E"%(npoints*npoints, nproc, dt, eff)
