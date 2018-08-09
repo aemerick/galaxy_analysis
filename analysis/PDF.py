@@ -138,6 +138,97 @@ def resolution_study(abundance_filename,
 
     return
 
+def single_element(datafile, galaxy_file, dsname, show_fit = True,
+                   element = 'O', phases = ['Disk','CNM','WNM','WIM','HIM'], outname = None):
+
+    if outname is None:
+        outname = galaxy_file.split('_galaxy')[0] + '_' + element + '_' +  '_'.join(phases)
+        if show_fit:
+            outname = outname + '_fit'
+        outname = outname + '.png'
+
+    print outname
+    fig, ax = plt.subplots(1)
+    fig.set_size_inches(8,8)
+
+    gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
+    masses = {}
+    for k in gasdata.keys():
+        try:
+            masses[k] = gasdata[k]['Total']
+        except:
+            print k
+
+    centers = 'bins'
+    field = element + '_Fraction'
+    disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
+    disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
+    xbins = disk_data['bins']
+    xcent = disk_data['centers']
+    xnorm = disk_data['median']
+    xplot  = np.log10(xbins) - xnorm
+    xplotc = np.log10(xcent) - xnorm
+
+    mass_norm = masses['Disk'] #- masses['Molecular']
+    yplot     = disk_data['norm_y'] * masses['Disk'] / mass_norm
+    ynorm     = np.max(yplot)
+    yplot     = yplot / ynorm
+
+    if 'Disk' in phases:
+        # plot disk here
+        plot_histogram(ax, xplot, yplot, lw = line_width, color = 'black', label = 'Disk')
+        if show_fit:
+            fit = fit_multifunction_PDF(xbins, disk_data['hist'], disk_data)
+            ax.plot(xplotc, fit['fit_result'](xcent)/ynorm*masses['Disk']/mass_norm,
+                               lw = line_width, color = 'black', ls = '--')
+
+    for phase in phases:
+        if phase == 'Disk':
+            continue
+        data  = load_distribution_data(datafile, dsname, phase, field, centers = 'bins')
+        data['norm_y'] = data['hist'] / disk_data['binsize']
+        yplot = data['norm_y'] / ynorm * masses[phase] / mass_norm
+        plot_histogram(ax, xplot, yplot, lw = line_width, color = color_dict[phase],
+                           label=phase)
+
+        if show_fit:
+            fit = fit_multifunction_PDF(xbins, data['hist'], data)
+            ax.plot( xplotc, fit['fit_result'](xcent) / ynorm * masses[phase]/mass_norm,
+                            lw = line_width, color = color_dict[phase], ls = '--')
+
+    ax.set_xlim(-3.0,3.0)
+    ax.set_ylim(5.0E-7, 1.0)
+    ax.semilogy()
+    if len(phases) >= 1:
+        ax.plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '-.', color = 'black')
+        ax.plot([-1,-1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
+        ax.plot([1,1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
+
+    # ax[index].annotate()
+    ax.minorticks_on()
+    xytext = (-2.98,0.2)
+    if len(phases) >=1:
+        annotate_text = element
+        if element == 'O':
+            annotate_text = 'Oxygen'
+        if element == 'Ba':
+            annotate_text = 'Barium'
+        ax.text(xytext[0], xytext[1], annotate_text,  color = 'black', size = 40)
+
+    ax.set_xlabel(r'Median Normalized Mass Fraction')
+    ax.set_ylabel(r'Peak-Normalized PDF')
+
+    ax.legend(loc = 'upper right', ncol = 1, fancybox=True, framealpha = 0.4)
+    plt.tight_layout()
+    fig.savefig(outname)
+    plt.close()
+
+
+    return
+
+
+
+
 def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
                              elements = '3x3', outname = None):
     """
@@ -240,7 +331,8 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
             axi = axi + 1
 
     if (xp,yp) == (3,3):
-        ax[(2,1)].set_xlabel(r'Median Normalized Mass Fraction')
+        ax[(2,1)].set_xlabel(r'log(Z) - log(Z$_{\rm median}$)')
+#r'Median Normalized Mass Fraction')
         ax[(1,0)].set_ylabel(r'Peak-Normalized PDF')
 
 #    for i in [0,1,2]:
@@ -342,7 +434,7 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     fig.savefig(outname + '.png')
 
     plt.close()
-    
+
     return
 
 def get_element_list(file_name, dsname):
@@ -434,7 +526,7 @@ def fit_multifunction_PDF(bins, y, data):
         gau_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'gaussian_powerlaw')
         success['gaussian_powerlaw'] = True
         gau_pl['error'] = _error(gau_pl['fit_function']._f(centers, *gau_pl['popt']), gau_pl['norm_y'])
-        rdict['gaussian_powerlaw'] = gau_pl	
+        rdict['gaussian_powerlaw'] = gau_pl
     #except RuntimeError:
     #    success['gaussian_powerlaw'] = False
 
@@ -592,7 +684,7 @@ def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
                                     color = colors[ci], ls = lss[li], lw = line_width)
 
         ax[0].plot(np.log10(centers),
-                   #np.log10(fit_dict['fit_x']), 
+                   #np.log10(fit_dict['fit_x']),
                    fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
                                       lw = line_width, ls = lss[li], color = colors[ci])
 
@@ -687,7 +779,7 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
                                             color = colors[ci], ls = lss[li], lw = line_width)
 
                 ax[axi].plot(np.log10(centers),
-                           #np.log10(fit_dict['fit_x']), 
+                           #np.log10(fit_dict['fit_x']),
                            fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
                                               lw = line_width, ls = '--', color = colors[ci])
             else:
@@ -728,11 +820,11 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
         ax[axi].annotate(phases[i], xy = xy, xytext=xy)
 
     for i in [0,1,2]:
-        ax[(i,0)].set_ylabel('Peak Normalized PDF')       
+        ax[(i,0)].set_ylabel('Peak Normalized PDF')
         plt.setp( ax[(i,1)].get_yticklabels(), visible = False)
     #ax[1].set_ylim(0.01, 10.0)
     for i in [0,1]:
-        ax[(2,i)].set_xlabel('log(Z)')         
+        ax[(2,i)].set_xlabel('log(Z)')
 
     #ax[1].set_ylabel('Peak Normalized PDF')
 
@@ -746,8 +838,8 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
     return
 
 def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator = 'H', **kwargs):
-    
-    
+
+
     phases = ['CNM','WNM','WIM','HIM','Disk']
 
     if elements is None:
@@ -798,7 +890,7 @@ def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator =
                                         color = colors[ci], ls = lss[li], lw = line_width, label = e)
 
             #ax[axi].plot(np.log10(centers),
-                       #np.log10(fit_dict['fit_x']), 
+                       #np.log10(fit_dict['fit_x']),
             #           fit_dict['fit_result'](centers) / np.max(fit_dict['norm_y']),
             #                              lw = line_width, ls = lss[li], color = colors[ci])
 
@@ -835,11 +927,11 @@ def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator =
 
     ax[(0,0)].legend(loc = 'upper right')
     for i in [0,1,2]:
-        ax[(i,0)].set_ylabel('Peak Normalized PDF')       
+        ax[(i,0)].set_ylabel('Peak Normalized PDF')
         plt.setp( ax[(i,1)].get_yticklabels(), visible = False)
     #ax[1].set_ylim(0.01, 10.0)
     for i in [0,1]:
-        ax[(2,i)].set_xlabel('[X/' + denominator + ']')         
+        ax[(2,i)].set_xlabel('[X/' + denominator + ']')
 
     #ax[1].set_ylabel('Peak Normalized PDF')
 
@@ -924,5 +1016,3 @@ if __name__ == '__main__':
             plot_all_elements(data, dsname, 'WIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
             plot_all_elements(data, dsname, 'HIM', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
             plot_all_elements(data, dsname, 'Disk', function_to_fit = 'lognormal_powerlaw') #'lognormal_powerlaw')
-
-
