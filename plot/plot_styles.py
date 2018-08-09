@@ -42,6 +42,7 @@ color_dict['CNM'] = "#2c7bb6" # 'C0'
 color_dict['WNM'] = "#abd9e9" # "#fdae61" # 'C1'
 color_dict['WIM'] = "#fdae61" # '#abd9e9' # C2'
 color_dict['HIM'] = "#d7191c"  # "#d7191c" # 'C3'
+color_dict['Disk'] = 'black'
 #color_dict['stars'] = "gold"
 
 
