@@ -17,8 +17,7 @@ except:
 
 __all__ = ['compute_IMF', 'IMF', 'scaled_IMF']
 
-
-def compute_IMF(ds, data, mode = 'mass', **kwargs):
+def compute_IMF(ds, data, mode = 'mass', tmin = 0.0, tmax = np.inf, **kwargs):
     """
     Wrapper around IMF function to compute IMF
     given Enzo data. Options to compute observed IMF using
@@ -41,6 +40,10 @@ def compute_IMF(ds, data, mode = 'mass', **kwargs):
         M = data['birth_mass'].value * u.Msun
     else:
         raise ValueError("Choose either 'mass' or 'birth_mass' for mode")
+
+    t_o = data['creation_time'].to('Myr')
+
+    M = M[ (t_o > tmin) * (t_o < tmax)]
 
     return IMF(M, m_min = ds.parameters['IndividualStarIMFLowerMassCutoff'],
                   m_max = ds.parameters['IndividualStarIMFUpperMassCutoff'],
@@ -135,7 +138,7 @@ def determine_sample_error(Mstar, bins, nmodel = 100):
 
     return std
 
-def plot_IMF(ds, data = None, nbins=80, compute_std = False):
+def plot_IMF(ds, data = None, nbins=80, compute_std = False, tmin = 0.0, tmax = np.inf):
     """
     Plot the IMF. If data is not provided, assumes all data
     """
@@ -144,12 +147,12 @@ def plot_IMF(ds, data = None, nbins=80, compute_std = False):
 
     Mstar = np.sum(data['birth_mass'].value)
 
-    hist, bins, cent = compute_IMF(ds, data, mode = 'mass', bins = nbins)
+    hist, bins, cent = compute_IMF(ds, data, mode = 'mass', bins = nbins, tmin=tmin, tmax = tmax)
 
     fig, ax = plt.subplots(1)
     ax.plot(bins[1:], hist, color = 'red', ls = '-', lw = 3, label = 'Current Masses of Main Sequence Stars',drawstyle='steps-post')
 
-    hist, bins, cent = compute_IMF(ds, data, mode = 'birth_mass', bins = nbins)
+    hist, bins, cent = compute_IMF(ds, data, mode = 'birth_mass', bins = nbins, tmin= tmin, tmax = tmax)
 
     ax.plot(bins[1:], hist, color = 'blue', ls ='-', lw = 3, label = 'Initial Masses of all Stars',drawstyle='steps-post')
 
