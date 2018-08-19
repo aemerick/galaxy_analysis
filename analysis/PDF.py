@@ -251,7 +251,8 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
         elements   = get_element_list(datafile, dsname)
         xp,yp = 4,4
     elif elements == '3x3':
-        elements   = ['O','C','Fe','Mg','N','Mn','Y','Sr','Ba']
+#        elements   = ['O','C','Fe','Mg','N','Mn','Y','Sr','Ba']
+        elements   = ['C','N','O','Mg','Mn','Fe','Sr','Y','Ba']
         xp,yp = 3,3
 
     xsize, ysize = xp*6, yp*6
