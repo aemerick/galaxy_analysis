@@ -39,23 +39,25 @@ def get_list_of_stars(ds, data, dummy_call = False, overload_type = None):
 
     try:
         star_list = [Star(star_type = types[ptype], M=m, Z=z, tform = t, id = i, abundances=yd)\
-                                    for m, z, t, i, pt in zip(M, Z, t_form, id, PT)]
+                                    for m, z, t, i, ptype in zip(M, Z, t_form, id, PT)]
     except:
         if dummy_call:
             star_list = [Star(star_type = 'star', M = 1.0, Z = 0.01, tform = 0.0, id = 0)]
         else:
             # try again and actuall fail this time
             star_list = [Star(star_type = types[ptype], M=m, Z=z, tform = t, id = i, abundances=yd)\
-                                    for m,z,t,i,ptype in zip(M, Z, t_form, id, PT)]
+                                    for m, z, t, i, ptype in zip(M, Z, t_form, id, PT)]
 
 
     M = data['particle_mass'].convert_to_units('Msun').value
     lifetime = data['dynamical_time'].convert_to_units('Myr').value
 
     for i, s in enumerate(star_list):
-        s.M = M[i]
-        if overload_type is None: # use actual lifetimes from the simulation
+
+        if overload_type is None: # use actual lifetimes and masses from the simulation
             s.properties['lifetime'] = lifetime[i]
+            s.M = M[i]
+
         s.set_SNII_properties()
         if ((s.M_o > ds.parameters['IndividualStarSNIaMinimumMass']) and\
             (s.M_o < ds.parameters['IndividualStarSNIaMaximumMass']) and\
