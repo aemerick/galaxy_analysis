@@ -20,7 +20,7 @@ from galaxy_analysis.misc import dm_halo
 
 from galaxy_analysis.yt_fields import ionization
 
-from onezone import data_tables
+from onezone import data_tables, radiation
 
 SE_table = data_tables.StellarEvolutionData()
 
@@ -615,16 +615,18 @@ def generate_stellar_model_fields(ds):
     # luminosity, L_FUV, L_LW, Q0, Q1, E0, E1
     #
 
-    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1']
+    field_names = ['luminosity','L_FUV','L_LW','Q0','Q1','E0','E1', 'Teff','R']
 
     units = {'luminosity' : yt.units.erg/yt.units.s,
              'L_FUV' : yt.units.erg/yt.units.s,
              'L_LW'  : yt.units.erg/yt.units.s,
              'Q0' : 1.0 /yt.units.s, 'Q1' : 1.0 / yt.units.s,
-             'E0' : yt.units.erg, 'E1' : yt.units.erg, 'lifetime' : yt.units.s}
+             'E0' : yt.units.erg, 'E1' : yt.units.erg, 'lifetime' : yt.units.s,
+             'Teff' : yt.units.K, 'R' : yt.units.cm}
 
     unit_label = {'luminosity': 'erg/s', 'L_FUV' : 'erg/s', 'L_LW' : 'erg/s',
-                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 's'}
+                  'Q0' : '1/s', 'Q1' : '1/s', 'E0' : 'erg', 'E1': 'erg', 'lifetime' : 's', 'Teff' : 'K',
+                  'R' : 'cm'}
 
     overload_type = {} # when generating stars, default is use type from simulation
     for k in units.keys():
@@ -668,6 +670,16 @@ def generate_stellar_model_fields(ds):
         t = data.ds.current_time
         return (t - p).convert_to_units('Myr')
 
+    def _model_L_1_3eV(field, data):
+        Teff = data[('io','particle_model_Teff')].value
+        flux = np.array([radiation.BB_flux(1.0, 3.0, T) for T in Teff])
+
+        flux = flux * yt.units.erg / yt.units.s / yt.units.cm**2
+
+        SA = 4.0 * np.pi * data[('io','particle_model_R')]**2
+
+        return flux * SA
+
     for field in field_names:
         yt.add_field(('io', 'particle_model_' + field),
                      function = _function_generator(field), units=unit_label[field],
@@ -697,6 +709,9 @@ def generate_stellar_model_fields(ds):
                  particle_type = True)
 
     yt.add_field(('io','particle_model_L1'), function = _model_L1, units = 'erg/s',
+                 particle_type = True)
+
+    yt.add_field(('io','particle_model_L_1_3eV'), function = _model_L_1_3eV, units = 'erg/s',
                  particle_type = True)
 
     return
