@@ -13,6 +13,12 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
     phase_colors = {'cold' : 'C0', 'warm' : 'C1', 'hot' : 'C3',
                     'WNM'  : 'C0', 'WIM' : 'C1', 'HIM'  : 'C3'}
+
+#   override with global
+    for k in phase_colors:
+        if k in color_dict.keys():
+            phase_colors[k] = color_dict[k]
+
     labels = {'cold' : 'Cold' , 'warm' : 'Warm', 'hot' : 'Hot',
               'WNM' : "WNM", "WIM" : "WIM", "HIM" : "HIM"}
 
