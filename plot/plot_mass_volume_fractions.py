@@ -116,6 +116,8 @@ def plot_fractions(outdir = './',
 
 if __name__=='__main__':
 
+    outdir = './'
+
     if len(sys.argv) > 1:
         outdir = sys.argv[1]
 
