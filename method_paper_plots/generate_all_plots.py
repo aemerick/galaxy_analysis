@@ -32,8 +32,10 @@ if not ('no_panel' in sys.argv):
 #    field_list argument
     _dsi     = [46,196,346,546]
     ds_list = ["DD%0004i/DD%0004i"%(i,i) for i in get_dsi(_dsi)]
-    panel_plot.plot_panel(ds_list = ds_list, axis = 'x', outdir = output_dir)
-    panel_plot.plot_panel(ds_list = ds_list, axis = 'z', outdir = output_dir)
+    panel_plot.plot_panel(ds_list = ds_list,
+                          axis = 'x', outdir = output_dir)
+    panel_plot.plot_panel(ds_list = ds_list,
+                          axis = 'z', outdir = output_dir)
 
 
 # Fig. 3: Scale height plot:
@@ -70,7 +72,9 @@ if not ( 'no_phase' in sys.argv):
     t_min = 390.0 # 300.0
     t_max = 399.0 # 350.0
 
-    phase_diagrams.plot_time_average_PD(work_dir, t_min = t_min, t_max = t_max, plots = ['nT'],
+    phase_diagrams.plot_time_average_PD(work_dir,
+                                        t_min = t_min, t_max = t_max,
+                                        plots = ['nT'],
                                         outdir = output_dir)
 
 #
@@ -96,8 +100,10 @@ radiation_profiles.plot(t_min = t_min, t_max = t_max,
 #
 t_min = 119.0 + 300.0 - 5.1 # 499.1 # 280
 t_max = 119.0 + 300.0 + 5.1 # 509.1 # 290
-phase_diagrams.plot_time_average_PD(work_dir, t_min = t_min, t_max = t_max, 
-                                    plots = ['G_o','Q_o'], outdir = output_dir,
+phase_diagrams.plot_time_average_PD(work_dir,
+                                    t_min = t_min, t_max = t_max,
+                                    plots = ['G_o','Q_o'],
+                                    outdir = output_dir,
                                     nbin = 100)
 
 #
@@ -106,8 +112,9 @@ phase_diagrams.plot_time_average_PD(work_dir, t_min = t_min, t_max = t_max,
 # Fig. 11 (top panel only): Metal mass loading factor
 #
 from galaxy_analysis.method_paper_plots import mass_outflow
-mass_outflow.plot_basic_outflow_and_loading(work_dir = work_dir, t_min = 0.0, t_max = 1000.0,
-                                            outdir = output_dir)
+mass_outflow.plot_basic_outflow_and_loading(work_dir = work_dir,
+                                            t_min    = 0.0, t_max = 1000.0,
+                                            outdir   = output_dir)
 
 
 #
@@ -153,12 +160,24 @@ schmidt_law.schmidt_law(work_dir = work_dir, obs_method = True,
 # Fig. E1
 #
 from galaxy_analysis.method_paper_plots import sfr_resolution
+from galaxy_analysis.method_paper_plots import metal_retention_resolution
 # from galaxy_analysis.method_paper_plots import 
 comparison = {'3pcH2' : ('../3pc_H2', '3.6 pc', '--'),
               '6pcH2'  :  ('../6pc_H2', '7.2 pc', '-.'),
               'Fiducial' : (work_dir, 'Fiducial', '-')}
-comparison = None # need to fix a bug
-sfr_resolution.sfr_resolution(work_dir = work_dir,
-                              output_dir = output_dir, comparison=comparison)
 
-mass_plot.plot_mass_resolution(work_dir = work_dir, output_dir = output_dir, comparison = comparison)
+comparison = None # need to fix a bug
+
+sfr_resolution.sfr_resolution(work_dir   = work_dir,
+                              output_dir = output_dir,
+                              comparison = comparison)
+
+mass_plot.plot_mass_resolution(work_dir = work_dir,
+                               output_dir = output_dir,
+                               comparison = comparison)
+
+
+metal_retention_resolution.plot_metal_retention_resolution(work_dir   = work_dir,
+                                                           output_dir = output_dir,
+                                                           comparison = comparison)
+
