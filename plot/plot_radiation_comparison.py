@@ -53,7 +53,7 @@ def panel_plot(datasets = {}, fields = ['number_density','Temperature','ion_frac
             all_plots[k].set_cmap(field, cmaps[field])
             all_plots[k].set_unit(field, unit[field])
             all_plots[k].set_zlim(field, zlim[field][0], zlim[field][1])
-
+        time = datasets[k].ds.current_time.to('Myr').value - 119.0
         #if annotate_particles:
         #    all_plots[k].annotate_particles(0.9)
         #if velocity:
@@ -81,6 +81,10 @@ def panel_plot(datasets = {}, fields = ['number_density','Temperature','ion_frac
                 ax.text(xy[0], xy[1], k, color = 'white', fontsize = 28,
 #                                         textcoords = 'axes fraction',
                                          transform = ax.transAxes)
+                if axi == 0:
+                  xy = (0.07,0.9)
+                  ax.text(xy[0],xy[1], "%.1f Myr"%(time), color = "white", fontsize = 26,
+                               transform = ax.transAxes)
             if axi == 2:
                 cbar = fig.colorbar(plots[axi][axj], cax=colorbars[axj], orientation='horizontal')
                 cbar.set_label(labels[field])
