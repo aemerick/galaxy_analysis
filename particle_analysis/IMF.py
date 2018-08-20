@@ -31,17 +31,17 @@ def compute_IMF(ds, data, mode = 'mass', tmin = 0.0, tmax = np.inf, **kwargs):
         Use birth mass of ALL star particles (even
         ones that have moved on to greener pastures)
     """
+    t_o = data['creation_time'].to('Myr')
 
     if mode == 'mass':
         M  = data['particle_mass'].convert_to_units('Msun')
         pt = data['particle_type']
         M  = M[pt == 11]
+        t_o = t_o[pt==11]
     elif mode == 'birth_mass':
         M = data['birth_mass'].value * u.Msun
     else:
         raise ValueError("Choose either 'mass' or 'birth_mass' for mode")
-
-    t_o = data['creation_time'].to('Myr')
 
     M = M[ (t_o > tmin) * (t_o < tmax)]
 
