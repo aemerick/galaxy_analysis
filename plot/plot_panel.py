@@ -158,10 +158,10 @@ if __name__ == "__main__":
             sub_list = [s for s in sub_list if s is not None]
             reduced_nproc = np.min( [len(sub_list), nproc] )
 
-        pool = Pool(reduced_nproc)
-        results = pool.map_async(panel_plot, sub_list)
+            pool = Pool(reduced_nproc)
+            results = pool.map_async(panel_plot, sub_list)
 
-        pool.close()
-        pool.join()
+            pool.close()
+            pool.join()
 
-        del(results)
+            del(results)
