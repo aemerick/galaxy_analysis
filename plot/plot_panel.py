@@ -151,7 +151,7 @@ if __name__ == "__main__":
         for i in np.arange(dsmin,dsmax,dsi):
             panel_plot( "DD%0004i"%(i))
     else:
-        ds_list = ["DD%0004i"%(i) for i in np.arange(dsmin,dsmax,i)]
+        ds_list = ["DD%0004i"%(i) for i in np.arange(dsmin,dsmax,dsi)]
 
         for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
             sub_list = list(sub_list)
@@ -159,7 +159,7 @@ if __name__ == "__main__":
             reduced_nproc = np.min( [len(sub_list), nproc] )
 
         pool = Pool(reduced_nproc)
-        results = pool.map_async(_parallel_loop, sub_list)
+        results = pool.map_async(panel_plot, sub_list)
 
         pool.close()
         pool.join()
