@@ -271,6 +271,12 @@ ISM = { "HIM": "(obj['temperature'].in_units('K') >= 10**(5.5))",
         "CNM": "(obj['temperature'].in_units('K') < 10**(2)) & (obj['H2_fraction'] <= 0.5)",
         "Molecular" : "(obj['temperature'].in_units('K') < 10**(2)) & (obj['H2_fraction'] > 0.5)"}
 
+ISM_FILTER = {'HIM'   :   lambda x : x['temperature'] >= 10.0**(5.5)*yt.units.K,
+              'WIM'   :   lambda x : (x['temperature'] >= 10.0**(4)*yt.units.K) * (data['temperature'] < 10.0**(5.5)*yt.units.K),
+              'WNM'   :   lambda x : (x['temperature'] >= 10.0**(2)*yt.units.K) * (data['temperature'] < 10.0**(4)*yt.units.K),
+              'CNM'   :   lambda x : (x['temperature'] <  10.0**(2)*yt.units.K) * (data['H2_fraction'] <= 0.5),
+              'Molecular' : lambda x : (x['temperature'] < 10.0**(2)*yt.units.K) * (data['H2_fraction'] > 0.5)}
+
 # new name to generalize, but leaving ISM for now
 # to keep backwards compatability with existing scripts - Sep 2017
 CUT_REGION = {'hot' : "(obj['temperature'].in_units('K') >= 10**(5.5))",

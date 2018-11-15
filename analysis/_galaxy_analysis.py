@@ -34,7 +34,7 @@ from ..static_data import LABELS,\
                         IMAGE_COLORBAR_LIMITS,\
                         PLOT_LIMITS,\
                         UNITS,\
-                        ISM, CUT_REGION
+                        ISM, CUT_REGION, ISM_FILTER
 
 from galaxy_analysis import particle_analysis as pa
 
@@ -351,7 +351,7 @@ class Galaxy(object):
         return self.gas_profiles['radiation'][mode]['xbins'], self.gas_profiles['radiation'][mode]
 
     def calculate_dMdt_profile(self, fields = None, mode = 'sphere', n_cell = 4,
-                               outflow = True, *args, **kwargs):
+                               outflow = True, phase = None, *args, **kwargs):
         """
         Returns the mass inflow or outflow rate as a function of radius. This can be used
         to compute mass loading factor by dividing by the current SFR.
@@ -369,6 +369,8 @@ class Galaxy(object):
 
         # set up bin values and data region
         xbins, xdata, data = self._get_bins_and_data(mode = mode)
+
+        # 
 
         # get velocity corresponding to outflow / inflow
         if mode == 'sphere' or mode == 'halo_sphere':
@@ -404,14 +406,19 @@ class Galaxy(object):
         else:       # compute inflow
             v_filter = vel < 0.0
 
+        if phase is None:
+            phase_filter = np.ones(np.size(vel))
+        else:
+            phase_filter = ISM_FILTER[phase](data)
+
         for i in np.arange(np.size(center)):
             # define the shell
             x_filter = ( xdata >= (center[i] - 0.5*dL)) * ( xdata < (center[i] + 0.5*dL))
 
             # filter out the data
-            filter = x_filter * v_filter
+            filter = x_filter * v_filter * phase_filter
             for field in fields:
-                M    = data[field].convert_to_units(UNITS['Mass'].units)
+                M        = data[field].convert_to_units(UNITS['Mass'].units)
                 Mdot     = np.sum( M[filter] * vel[filter] ) / dL
                 Mdot     = Mdot.convert_to_units('Msun/yr')
 
@@ -431,11 +438,18 @@ class Galaxy(object):
         if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
 
-        self.gas_profiles[prof_type][mode].update( profile )
-        self.gas_profiles[prof_type][mode]['centers'] = center
-        self.gas_profiles[prof_type][mode]['centers_rvir'] = (center.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
-        self.gas_profiles[prof_type][mode]['dL']      = dL
-        self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.convert_to_units('kpc')/self.R_vir.convert_to_units('kpc')).value
+        if not (phase is None):
+            if not (phase in self.gas_profiles[prof_type][mode].keys()):
+                self.gas_profiles[prof_type][mode][phase] = {}
+
+            self.gas_profiles[prof_type][mode][phase].update(profile)
+        else:
+
+            self.gas_profiles[prof_type][mode].update( profile )
+            self.gas_profiles[prof_type][mode]['centers'] = center
+            self.gas_profiles[prof_type][mode]['centers_rvir'] = (center.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
+            self.gas_profiles[prof_type][mode]['dL']      = dL
+            self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.convert_to_units('kpc')/self.R_vir.convert_to_units('kpc')).value
 
         return xbins, center, profile
 
@@ -794,6 +808,9 @@ class Galaxy(object):
         junk = self.calculate_radiation_profiles()
         junk = self.calculate_dMdt_profile()               # mass outflow rate
         junk = self.calculate_dMdt_profile(outflow=False)  # mass inflow rate
+        for phase in ['CNM','WNM','WIM','HIM']:
+            junk = self.calculate_dMdt_profile(phase = phase)
+            junk = self.calculate_dMdt_profile(phase = phase, outflow = False)
         junk = self.calculate_surface_density_profile()
         junk = self.calculate_mass_profile(mode = 'disk')
         junk = self.calculate_mass_profile(mode = 'sphere')
