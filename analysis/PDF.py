@@ -139,7 +139,8 @@ def resolution_study(abundance_filename,
     return
 
 def single_element(datafile, galaxy_file, dsname, show_fit = True,
-                   element = 'O', phases = ['Disk','CNM','WNM','WIM','HIM'], outname = None):
+                   element = 'O', phases = ['Disk','CNM','WNM','WIM','HIM'], outname = None,
+                   xlabel = None, ylabel = None, label = None, xnorm = None):
 
     if outname is None:
         outname = galaxy_file.split('_galaxy')[0] + '_' + element + '_' +  '_'.join(phases)
@@ -159,15 +160,36 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
         except:
             print k
 
-    centers = 'bins'
-    field = element + '_Fraction'
+    if not 'over' in element:
+        centers = 'bins'
+        field = element + '_Fraction'
+    else:
+        centers = 'abins'
+        field = element
     disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
+    print disk_data.keys()
     disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
     xbins = disk_data['bins']
     xcent = disk_data['centers']
+
+    if not ((xnorm is None) or (xnorm == 'None')):
+        ax.set_xlim(-3,3)
+    else:
+        ax.set_xlim(disk_data['median']-3.0, disk_data['median']+3.0)
+
+
+    if xnorm is None  or  xnorm == "None":
+        xplotnorm = 0.0
+    elif xnorm == 'median':
+        xplotnorm = disk_data['median']
     xnorm = disk_data['median']
-    xplot  = np.log10(xbins) - xnorm
-    xplotc = np.log10(xcent) - xnorm
+
+    if not 'over' in field:
+        xplot  = np.log10(xbins) - xplotnorm
+        xplotc = np.log10(xcent) - xplotnorm
+    else:
+        xplot = xbins - xplotnorm
+        xplotc = xcent - xplotnorm
 
     mass_norm = masses['Disk'] #- masses['Molecular']
     yplot     = disk_data['norm_y'] * masses['Disk'] / mass_norm
@@ -185,7 +207,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
     for phase in phases:
         if phase == 'Disk':
             continue
-        data  = load_distribution_data(datafile, dsname, phase, field, centers = 'bins')
+        data  = load_distribution_data(datafile, dsname, phase, field, centers = centers)
         data['norm_y'] = data['hist'] / disk_data['binsize']
         yplot = data['norm_y'] / ynorm * masses[phase] / mass_norm
         plot_histogram(ax, xplot, yplot, lw = line_width, color = color_dict[phase],
@@ -196,27 +218,38 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
             ax.plot( xplotc, fit['fit_result'](xcent) / ynorm * masses[phase]/mass_norm,
                             lw = line_width, color = color_dict[phase], ls = '--')
 
-    ax.set_xlim(-3.0,3.0)
+
     ax.set_ylim(5.0E-7, 1.0)
     ax.semilogy()
     if len(phases) >= 1:
-        ax.plot([0,0],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '-.', color = 'black')
-        ax.plot([-1,-1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
-        ax.plot([1,1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
+        xlim = ax.get_xlim()
+        x1 = (xlim[1] + xlim[0])*0.5
+        ax.plot([x1,x1],[1.0E-7,2.0], lw = 0.75 * line_width, ls = '-.', color = 'black')
+        ax.plot([x1-1,x1-1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
+        ax.plot([x1+1,x1+1],[1.0E-7,2.0], lw = 0.5 * line_width, ls = ':', color = 'black')
 
     # ax[index].annotate()
     ax.minorticks_on()
     xytext = (-2.98,0.2)
-    if len(phases) >=1:
-        annotate_text = element
-        if element == 'O':
-            annotate_text = 'Oxygen'
-        if element == 'Ba':
-            annotate_text = 'Barium'
-        ax.text(xytext[0], xytext[1], annotate_text,  color = 'black', size = 40)
+#    if len(phases) >=1:
+#        annotate_text = element
+#        if element == 'O':
+#            annotate_text = 'Oxygen'
+#        if element == 'Ba':
+#            annotate_text = 'Barium'
 
-    ax.set_xlabel(r'Median Normalized Mass Fraction')
-    ax.set_ylabel(r'Peak-Normalized PDF')
+    if not (label is None):
+        ax.text(xytext[0], xytext[1], label,  color = 'black', size = 40)
+
+    if xlabel is None:
+        xlabel = 'Median Normalized Mass Fraction'
+
+    ax.set_xlabel(xlabel)
+
+    if ylabel is None:
+        ylabel = r'Mass-Weighted PDF'
+
+    ax.set_ylabel(ylabel)
 
     ax.legend(loc = 'upper right', ncol = 1, fancybox=True, framealpha = 0.4)
     plt.tight_layout()
@@ -492,6 +525,8 @@ def load_distribution_data(file_name, dsname, phase, field, centers = None):
     rdata['centers'] = centers
     rdata['binsize'] = bins[1:] - bins[:-1]
     rdata['bins'] = bins
+    rdata['q90'] = q90
+    rdata['q10'] = q10
     return rdata
 
 
