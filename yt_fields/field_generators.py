@@ -1018,9 +1018,11 @@ def generate_derived_fields(ds):
     nfields = _abundance_function_generator(metals)
 
     if ds.parameters['NumberOfParticles'] > 0:
-        nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
-        print nfields, "particle abundance ratio fields defined"
-        _particle_abundance_function_generator(metals, ds)
+        if ('io','particle_' + metals[0] + '_fraction') in ds.field_list:
+
+            nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
+            print nfields, "particle abundance ratio fields defined"
+            _particle_abundance_function_generator(metals, ds)
 
 
     generate_stellar_model_fields(ds)
