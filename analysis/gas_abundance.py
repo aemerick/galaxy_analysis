@@ -372,8 +372,8 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
 
     hf = dd.io.load(hdf5_filename)
 
-    ds_list = np.sort( glob.glob('./DD???0/DD???0')) # +\
-    #                   glob.glob('./DD???5/DD???5'))
+    ds_list = np.sort( glob.glob('./DD???2/DD???2')  +\
+                       glob.glob('./DD???4/DD???4'))
 
     print "WARNING: Only doing limited number of outputs for ease of use"
 

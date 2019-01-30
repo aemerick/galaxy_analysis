@@ -407,7 +407,7 @@ class Galaxy(object):
             v_filter = vel < 0.0
 
         if phase is None:
-            phase_filter = np.ones(np.size(vel))
+            phase_filter = (vel == vel)
         else:
             phase_filter = ISM_FILTER[phase](data)
 
