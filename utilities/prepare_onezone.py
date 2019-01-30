@@ -30,6 +30,7 @@ import os
 import yt
 import numpy as np
 import deepdish as dd
+import copy
 
 
 _none_parameters = ['config.zone.initial_gas_mass',
@@ -206,9 +207,11 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     gal    = dd.io.load(all_files[0])
     raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
     fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) )  ]
+    fields = [x for x in fields if (len(x[1]) > 1)]
     fields = [x[1] for x in fields if ((not ('_p0_' in x[1])) and (not ('_p1_' in x[1])) and (not x[1] == 'a'))]
     print fields
-    ele    = [x.replace('_Mass','') for x in fields]
+    ele    = copy.copy(fields)
+    ele    = [x.replace('_Mass','') for x in ele]
     ele    = [x.replace('_total','') for x in ele]
     ele    = [x.replace('_mass','') for x in ele]
     ele    = [x.replace('cell', 'm_tot') for x in ele]
