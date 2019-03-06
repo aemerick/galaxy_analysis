@@ -40,10 +40,10 @@ class NoStdStreams(object):
 
 def cooling_cell(density = 12.2,
                  initial_temperature = 2.0E4,
-                 final_time = 200.0,
+                 final_time = 30.0,
                  metal_fraction = 4.0E-4,
                  make_plot = False,
-                 save_output = False,
+                 save_output = False, primordial_chemistry = 2,
                  outname = None, save_H2_fraction = False,
                  return_result = False,
                  verbose = False, H2_converge = None,
@@ -56,13 +56,16 @@ def cooling_cell(density = 12.2,
     my_chemistry = chemistry_data()
     my_chemistry.use_grackle = 1
     my_chemistry.with_radiative_cooling = 1
-    my_chemistry.primordial_chemistry = 2
+    my_chemistry.primordial_chemistry = primordial_chemistry
     my_chemistry.metal_cooling = 1
     my_chemistry.UVbackground = 1
     my_chemistry.self_shielding_method = 3
-    my_chemistry.H2_self_shielding = 2
-    my_chemistry.h2_on_dust = 1
-    my_chemistry.three_body_rate = 4
+
+    if primordial_chemistry > 1:
+        my_chemistry.H2_self_shielding = 2
+        my_chemistry.h2_on_dust = 1
+        my_chemistry.three_body_rate = 4
+
     grackle_dir = "/home/aemerick/code/grackle-emerick/"
     my_chemistry.grackle_data_file = os.sep.join( #['/home/aemerick/code/grackle-emerick/input/CloudyData_UVB=HM2012.h5'])
         [grackle_dir, "input","CloudyData_UVB=HM2012_shielded.h5"])
@@ -109,6 +112,7 @@ def cooling_cell(density = 12.2,
         fc["H2II"][:] = tiny_number * fc["density"]
         fc["HM"][:] = tiny_number * fc["density"]
         fc["de"][:] = tiny_number * fc["density"]
+        fc['H2_self_shielding_length'][:] = 1.8E-6
     if my_chemistry.primordial_chemistry > 2:
         fc["DI"][:] = 2.0 * 3.4e-5 * fc["density"]
         fc["DII"][:] = tiny_number * fc["density"]
@@ -120,7 +124,6 @@ def cooling_cell(density = 12.2,
     fc["x-velocity"][:] = 0.0
     fc["y-velocity"][:] = 0.0
     fc["z-velocity"][:] = 0.0
-    fc['H2_self_shielding_length'][:] = 1.8E-6
 
     fc["energy"][:] = initial_temperature / \
         fc.chemistry_data.temperature_units
@@ -174,7 +177,10 @@ def cooling_cell(density = 12.2,
 
         yt.save_as_dataset({}, outname + '.h5', data)
 
-    H2_fraction = (data['H2I'] + data['H2II']) / data['density']
+    if my_chemistry.primordial_chemistry > 1:
+        H2_fraction = (data['H2I'] + data['H2II']) / data['density']
+    else:
+        H2_fraction = np.zeros(np.size(data['density']))
 
     if save_H2_fraction:
         #np.savetxt(outname + ".dat", [data['time'], H2_fraction])
@@ -194,10 +200,17 @@ def cooling_cell(density = 12.2,
 
 def _parallel_loop(i, k27, LW):
 
-    data = cooling_cell(k27_factor = k27, LW_factor = LW, save_output = False,
-                 save_H2_fraction = False, return_result = True)
+    primordial_chemistry = 1
 
-    H2_fraction = (data['H2I'] + data['H2II']) / data['density']
+    data = cooling_cell(k27_factor = k27, LW_factor = LW, save_output = False,
+                        save_H2_fraction = False, primordial_chemistry = primordial_chemistry,
+                        return_result = True)
+
+    if primordial_chemistry > 1:
+        H2_fraction = (data['H2I'] + data['H2II']) / data['density']
+    else:
+        H2_fraction = np.zeros(np.size(data['density']))
+
     T           = (data['temperature'])
 
     str_i = "%00005i"%(i)
@@ -218,7 +231,10 @@ def _parallel_loop_star(args):
 
 def cooling_cell_grid(k27_factors = None, LW_factors = None,
                       fmin = 0.1, fmax = 10000.0, npoints = 100,
-                      nproc = 1):
+                      nproc = 1, outname = None):
+
+    if outname is None:
+        outname = "all_parallel_runs.dat"
 
     if k27_factors is None:
         k27_factors = np.logspace(np.log10(fmin),
@@ -261,7 +277,7 @@ def cooling_cell_grid(k27_factors = None, LW_factors = None,
             for r in results.get():
                 str_i = r.keys()[0]
 
-                f = open("all_runs_parallel.dat","a")
+                f = open(outname,"a")
                 f.write("%8.8E %8.8E %8.8E %8.8E\n"%(  r[str_i]['k27'],
                                                        r[str_i]['LW'], r[str_i]['H2_fraction'],
                                                        r[str_i]['T']))
@@ -279,11 +295,11 @@ if __name__ == "__main__":
     #             save_output = False, save_H2_fraction=True)
     import time
 
-    npoints = 48
+    npoints = 16
     nproc   = 4
 
     start = time.time()
-    cooling_cell_grid(npoints = npoints, nproc = nproc)
+    cooling_cell_grid(npoints = npoints, nproc = nproc, outname = str(sys.argv[1]))
     end = time.time()
 
     dt = end - start
