@@ -1011,8 +1011,11 @@ def generate_derived_fields(ds):
     print nfields, "mass fraction fields defined"
     nfields = _number_density_function_generator(metals)
     print nfields, "number density fields defined"
-    nfields = _ionization_state_generator(metals)
-    print nfields, "ionization state fields defined"
+
+    if not (ionization._ion_table is None):
+        nfields = _ionization_state_generator(metals)
+        print nfields, "ionization state fields defined"
+
     nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
     print nfields, "abundance ratio fields defined"
     nfields = _abundance_function_generator(metals)
