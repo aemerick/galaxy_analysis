@@ -1,4 +1,4 @@
-SKIP_ABUNDANCES = False
+SKIP_ABUNDANCES = True
 
 import yt
 import numpy as np
@@ -354,11 +354,14 @@ def _parallel_loop_star(combined):
     return _parallel_loop(*combined)
 
 def generate_all_stats(outfile = 'gas_abundances.h5',
-                        dir = './abundances/', overwrite=False, nproc = 1):
+                        dir = './abundances/', overwrite=False, nproc = 1,
+                        output_interval = None):
     """
     For all data files, generate gas abundance statistics for all
     element fractions and abundance ratios (as defined below). This is
     an expensive operation.
+
+
     """
 
     if not os.path.exists(dir):
@@ -370,10 +373,14 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         hf = h5py.File(hdf5_filename, 'w')
         hf.close()
 
+    # set to some large number if needed and not set
+    if (nproc > 1) and (output_interval is None):
+        output_interval = 9999
+
     hf = dd.io.load(hdf5_filename)
 
-    ds_list = np.sort( glob.glob('./DD???2/DD???2')  +\
-                       glob.glob('./DD???4/DD???4'))
+    ds_list = np.sort( glob.glob('./DD???0/DD???0') + glob.glob('./DD???2/DD???2') + glob.glob('./DD???4/DD???4') +\
+                       glob.glob('./DD???6/DD???6') + glob.glob('./DD???8/DD???8'))
 
     print "WARNING: Only doing limited number of outputs for ease of use"
 
@@ -438,6 +445,16 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
                 g[k] = gas_data[k]
 
             del(gal)
+
+
+        # save field names
+        if not ('species' in hf.keys()):
+            hf['species']          = species
+        if not ('metal_species' in hf.keys()):
+            hf['metal_species']    = metal_species
+        if not ('abundance_fields' in hf.keys()):
+            hf['abundance_fields'] = abundance_fields
+
     else: # parallel
 
         # select out data sets that already exist in output
@@ -447,11 +464,34 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
         # construct the pool, and map the results to a holder
         #   pool splits computation among processors
 
+        def _check_if_fields_saved(dsname,dataset):
+
+            if not all( [y in dataset.keys() for y in ['species','metal_species','abundance_fields']]):
+
+              gal = Galaxy(dsname)
+              abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                      select_denom = ['Fe','H','O','Mg','N'])
+              species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
+              metal_species = utilities.species_from_fields(gal.ds.field_list)
+
+              # save field names
+              if not ('species' in dataset.keys()):
+                  dataset['species']          = species
+              if not ('metal_species' in dataset.keys()):
+                  dataset['metal_species']    = metal_species
+              if not ('abundance_fields' in dataset.keys()):
+                  dataset['abundance_fields'] = abundance_fields
+
+              del(gal)
+              return
+
+
         #
         # do this in a loop, so we can save progressively once a full set of processors is complete
         #   saves you if there is a crash (kinda). This way we do better memory management if
         #   operating on many large datasets.
         #
+        iter_count = 0
         for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
 
             sub_list = list(sub_list)
@@ -467,27 +507,26 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             # gather results and add to output
             for r in results.get():
                 hf[r.keys()[0]] = r[r.keys()[0]]
+
+            # save output!
+            if not (iter_count % output_interval):
+                _check_if_fields_saved(ds_list[0].split('/')[1], hf)
+                dd.io.save(hdf5_filename,hf)
+
             del(results)
+            iter_count = iter_count + 1
 
 
         # define these fields (which are defined in the Pool funtion but don't want to
         # deal with passing this back) ------
         if len(ds_list) > 0:
-            gal = Galaxy(ds_list[0].split('/')[1])
-            abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                      select_denom = ['Fe','H','O','Mg','N'])
-            species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
-            metal_species = utilities.species_from_fields(gal.ds.field_list)
-            del(gal)
 
-    # save field names
-    if not ('species' in hf.keys()):
-        hf['species']          = species
-    if not ('metal_species' in hf.keys()):
-        hf['metal_species']    = metal_species
-    if not ('abundance_fields' in hf.keys()):
-        hf['abundance_fields'] = abundance_fields
+            _check_if_fields_saved(ds_list[0].split('/')[1], hf)
 
+
+    #
+    # Output
+    #
     dd.io.save(hdf5_filename, hf)
 
     return
@@ -812,7 +851,8 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 12)
+    generate_all_stats(overwrite=False, nproc = 18,
+                       output_interval        =  5)
 
 #    plot_time_evolution(abundance=True, plot_type = 'Fe')
 #    plot_time_evolution(abundance=True, plot_type = 'H')
