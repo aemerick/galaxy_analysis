@@ -216,7 +216,6 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
                            marker = markers[s], color = colors[s],
                            transform = ax.transAxes)
 
-                print s, particle_x[pp[s]]
 
         if axi == 0:
             if f == 'N_over_O_filtered':
