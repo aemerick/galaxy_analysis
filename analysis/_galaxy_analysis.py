@@ -888,7 +888,7 @@ class Galaxy(object):
         # and finally add up the mass in stars
         mdict['stars'] = {}
         for s in ['H','He'] + self.species_list:
-            if self._has_particles:
+            if self._has_particles and ('io','particle_' + s + '_fraction') in self.ds.derived_field_list:
                 mdict['stars'][s] = np.sum( (self.df['birth_mass'].value *
                                              self.df['particle_' + s + '_fraction'])[self.df['particle_type'] == 11])
             else:
@@ -1105,11 +1105,13 @@ class Galaxy(object):
                                               ('io','metallicity_fraction')],
                                               mode = 'disk', accumulate = False, pt = 11)
 
-        abundance_fields = ['Fe_over_H', 'C_over_Fe', 'O_over_Fe', 'Mg_over_Fe',
+        _abundance_fields = ['Fe_over_H', 'C_over_Fe', 'O_over_Fe', 'Mg_over_Fe',
                             'O_over_Fe']
+        abundance_fields  = []
 
-        for i, a in enumerate( abundance_fields):
-            abundance_fields[i] = ('io','particle_' + a)
+        for a in _abundance_fields:
+            if ('io','particle_' + a) in self.ds.derived_field_list:
+                abundance_fields += [('io','particle_' + a)]
 
         junk = self.compute_particle_profile(abundance_fields, mode = 'disk', pt = 11,
                                              xtype = 'radial', accumulate = False)
@@ -1271,7 +1273,7 @@ class Galaxy(object):
 
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
-                            'radius' : 600.0 * yt.units.pc,
+                            'radius' : 800.0 * yt.units.pc,
                             'height' : 200.0 * 2 * yt.units.pc, # 200 pc above and below
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
@@ -1359,6 +1361,17 @@ class Galaxy(object):
                 return # don't need to re-make this
 
         self.boundary_mass_flux = {}
+
+        if self.ds.parameters['StoreDomainBoundaryMassFlux'] == 0:
+            for e in self.species_list:
+                self.boundary_mass_flux[e + '_Density'] = 0.0
+            _fields = ['HI_Density','HII_Density','H2I_Density','H2II_Density', 'El_Density',
+                       'HeI_Density','HeII_Density','HeIII_Density','HM_Density', "Metal_Density"]
+
+            for f in _fields:
+                self.boundary_mass_flux[f] = 0.0
+
+            return
 
         conv = 1.0
         if APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES: # obnoxius on purpose, see note at top
