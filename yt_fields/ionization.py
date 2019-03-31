@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.interpolate import griddata
 
-_ion_table = np.genfromtxt("/home/aemerick/code/galaxy_analysis/data/lt00HM12_h1_he2_c3_c4_o4_o6_ne8_mg2_si4", names = True)
+
+_ion_table = np.genfromtxt("/mnt/home/emerick/code/galaxy_analysis/yt_fields/lt00HM12_h1_he2_c3_c4_o4_o6_ne8_mg2_si4", names = True)
 
 def get_ion_fraction(n, T, ion):
 
