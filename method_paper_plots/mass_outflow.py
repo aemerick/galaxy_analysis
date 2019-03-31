@@ -24,13 +24,18 @@ def obtain_mprod(data_list, fieldname):
 
     return all_data
 
-def obtain_outflow_rates(data_list, outflow_field, elements):
+def obtain_outflow_rates(data_list, outflow_field, elements, phase = None):
     _temp_dict = {}
     all_data = {}
 
     for i,k in enumerate(data_list):
-        _temp_dict[k] = dd.io.load(k,
-                             '/gas_profiles/outflow/sphere')
+        print i,k
+        if phase is None:
+            _temp_dict[k] = dd.io.load(k,
+                                 '/gas_profiles/outflow/sphere')
+        else:
+            _temp_dict[k] = dd.io.load(k, '/gas_profiles/outflow/sphere')[phase]
+
         if outflow_field == 'Total Tracked Metals':
             all_data[k] = np.zeros(np.shape(_temp_dict[k][ ('gas', elements[0] + '_Mass')]))
             for x in elements:
@@ -89,7 +94,7 @@ def obtain_sfr(data_list, times, smooth_sfr = True):
 
     return sfr
 
-def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
+def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0, phase = None,
                                method = 'fraction', outdir = './'):
     """
     Default to plotting the following:
@@ -117,7 +122,7 @@ def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
         index = (axi,axj)
 
         field_name = e + '_Mass'
-        all_data = obtain_outflow_rates(data_list, field_name, elements)
+        all_data = obtain_outflow_rates(data_list, field_name, elements, phase = phase)
         M_prod   = obtain_mprod(data_list, e)
 
         binned_y = 1.0 * all_data # np.array( [all_data[k] for k in all_data.keys()] )
@@ -177,7 +182,7 @@ def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0,
 
     return
 
-def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
+def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0, phase = None,
                                    outdir = './'):
 
     data_list, times = utilities.select_data_by_time(dir = work_dir,
@@ -194,8 +199,9 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    all_data   = obtain_outflow_rates(data_list, 'cell_mass', elements)
-    metal_data = obtain_outflow_rates(data_list, 'Total Tracked Metals', elements)
+
+    all_data   = obtain_outflow_rates(data_list, 'cell_mass', elements, phase = phase)
+    metal_data = obtain_outflow_rates(data_list, 'Total Tracked Metals', elements, phase = phase)
     metal_mass = obtain_metal_mass(data_list)
     stellar_mass = obtain_stellar_mass(data_list) # total mass in stars produced at a time, NOT M_* of galaxy
     sfr        = obtain_sfr(data_list, times)
@@ -224,7 +230,11 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     plt.tight_layout()
     ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig(outdir + 'total_mass_outflow.png')
+
+    outname = outdir + 'total_mass_outflow'
+    if not (phase is None):
+        outname += '_' + phase
+    fig.savefig(outname + '.png')
     plt.close()
 
     #
@@ -255,7 +265,10 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     plt.tight_layout()
     #ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig(outdir + 'total_mass_loading.png')
+    outname = outdir + 'total_mass_loading'
+    if not (phase is None):
+        outname += '_' + phase
+    fig.savefig(outname + '.png')
     plt.close()
 
     #
@@ -288,7 +301,10 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     plt.tight_layout()
     ax.legend(loc='upper right')
     plt.minorticks_on()
-    fig.savefig(outdir + 'metal_mass_loading.png')
+    outname = outdir + 'metal_mass_loading'
+    if not (phase is None):
+        outname += '_' + phase
+    fig.savefig(outname + '.png')
     plt.close()
 
     #
@@ -323,7 +339,10 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     plt.tight_layout()
     ax.legend(loc='best')
     plt.minorticks_on()
-    fig.savefig(outdir + 'metal_mass_loading_sfr.png')
+    outname = outdir + 'metal_mass_loading_sfr'
+    if not (phase is None):
+        outname += '_' + phase
+    fig.savefig(outname + '.png')
     plt.close()
 
     return
@@ -336,4 +355,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         work_dir = sys.argv[1]
 
-    plot_basic_outflow_and_loading(work_dir = work_dir)
+#    plot_basic_outflow_and_loading(work_dir = work_dir)
+    for phase in ['CNM','WNM','WIM','HIM']:
+        plot_basic_outflow_and_loading(work_dir = work_dir, phase = phase)
+
+
+
