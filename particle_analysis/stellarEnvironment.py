@@ -1,7 +1,7 @@
 import yt
 import numpy as np
 from galaxy_analysis.plot.plot_styles import *
-fsize = 14
+fsize = 22
 
 import matplotlib.pyplot as plt
 from collections import Iterable, OrderedDict
@@ -27,7 +27,7 @@ from galaxy_analysis.utilities import utilities as utilities
 MAX_NUM = 700
 
 
-GLOBAL_DR = 10.0 * yt.units.pc  # fix this
+GLOBAL_DR = 20.0 * yt.units.pc  # fix this
 
 
 # function to do this for a single data set
