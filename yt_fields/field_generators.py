@@ -22,6 +22,17 @@ from galaxy_analysis.yt_fields import ionization
 
 from onezone import data_tables, radiation
 
+
+
+GRACKLE_IMPORTED = True
+try:
+    import pygrackle
+    from pygrackle.grackle_wrapper import \
+         calculate_cooling_time
+except:
+    GRACKLE_IMPORTED = False
+
+
 SE_table = data_tables.StellarEvolutionData()
 
 FIELDS_DEFINED = False
@@ -716,6 +727,95 @@ def generate_stellar_model_fields(ds):
 
     return
 
+
+def _grackle_fields(ds):
+    """
+    Fields that require use of pygrackle
+    """
+
+    cdata                       = pygrackle.chemistry_data()
+    cdata.use_grackle           = 1
+
+    enzo_to_grackle             = { 'MultiSpecies' : 'primordial_chemistry',
+                                    'MetalCooling' : 'metal_cooling',
+                                    'self_shielding_method' : 'self_shielding_method',
+#
+#                                   The below is broken in pygrackle - not sure of prob
+#                                    'H2_self_shielding' : 'H2_self_shielding',
+                                    'grackle_data_file' : 'grackle_data_file',
+                                    'DensityUnits' : 'density_units',
+                                    'LengthUnits' : 'length_units',
+                                    'TimeUnits'   : 'time_units',
+                                    'ComovingCoordinates': 'comoving_coordinates',
+                                    'with_radiative_cooling' : 'with_radiative_cooling',
+                                    'UVbackground' : 'UVbackground'}
+
+    for k in enzo_to_grackle:
+        setattr(cdata, enzo_to_grackle[k], ds.parameters[k])
+
+    cdata.a_units = 1.0
+    cdata.a_value = 1.0
+    cdata.velocity_units = cdata.length_units / cdata.time_units
+    #cdata.energy_units = (cdata.length_units / cdata.time_units)**2.0
+    cdata.initialize()
+
+    def _H2_self_shielding_length(field, data):
+        return data['dx'].convert_to_units('cm')
+    ds.add_field(('gas','H2_self_shielding_length'), function = _H2_self_shielding_length, units='cm')
+
+    def _cooling_time(field, data):
+
+        #
+        # This checks if yt is doing its fake-data error checking and
+        # gives dummy result... a bit of a hack.... 
+        #
+        # compute field in grackle grid-by-grid
+        field_list      = data.ds.derived_field_list + data.ds.field_list
+        flat_fields = {}
+
+        fc = pygrackle.FluidContainer(cdata,10) # dummy container for now
+        for f1, f2, conv in pygrackle.fluid_container._needed_fields(fc):
+            if f2 not in field_list:
+                raise pygrackle.fluid_container.FieldNotFound(f2)
+            else:
+                flat_fields[f2[1]] = np.zeros(np.size( data['Density']))
+
+        for f1, f2,conv in pygrackle.fluid_container._needed_fields(fc):
+            flat_fields[f2[1]] = ((1.0*data[f2]).value).flatten() / conv
+
+        flat_fields[f2[1]] = np.zeros(np.size( data['Density'].flatten()))
+        flat_fields['cooling_time'] = np.zeros(np.size(flat_fields[f2[1]]))
+
+        # compute a new FC every 8192 zones
+        imin = 0
+        imax = 0
+        di   = 8192
+        ncells = np.size(flat_fields['cooling_time'])
+        while imax < ncells:
+            imin = 1*imax
+            imax = np.min( [imax + di, ncells] )
+            fc   = pygrackle.FluidContainer(cdata, imax - imin)
+
+            for f1, f2, conv in pygrackle.fluid_container._needed_fields(fc):
+                fc[f1][:] = flat_fields[f2[1]][imin:imax]
+            fc.calculate_cooling_time()
+
+
+            flat_fields['cooling_time'][imin:imax] = fc['cooling_time']
+
+        flat_fields['cooling_time'] = flat_fields['cooling_time'] * cdata.time_units
+
+        return flat_fields['cooling_time'].reshape( np.shape(data['Density'].value)) * yt.units.s
+
+    def _neg_cooling_time(field,data):
+        return -1.0 * data['cooling_time']
+
+    ds.add_field(('gas','cooling_time'), function = _cooling_time, units = 's')
+    ds.add_field(('gas','neg_cooling_time'), function = _neg_cooling_time, units = 's')
+
+    return
+
+
 def _additional_helper_fields(fields):
 
     nfields = 0
@@ -1030,8 +1130,11 @@ def generate_derived_fields(ds):
 
     generate_stellar_model_fields(ds)
 
+
     nfields = _additional_helper_fields(fields)
     print nfields, "additional helper fields defined"
+
+    #generate_grackle_fields(ds)
 
     FIELDS_DEFINED = True
     return
@@ -1071,8 +1174,19 @@ def load_and_define(name):
     ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
 
     generate_particle_filters(ds)
-    
+    #generate_grackle_fields(ds)
+
     return ds
+
+def generate_grackle_fields(ds):
+
+    if not GRACKLE_IMPORTED:
+        print "Grackle's python wrapper (pygrackle) was not imported successfully"
+
+    if ds.parameters['use_grackle']:
+        _grackle_fields(ds)
+
+    return
 
 def generate_gradient_fields(ds):
     """
