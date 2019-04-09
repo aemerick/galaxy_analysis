@@ -1273,7 +1273,7 @@ class Galaxy(object):
 
 
         self.disk_region = {'normal' : np.array([0.0, 0.0, 1.0]),
-                            'radius' : 800.0 * yt.units.pc,
+                            'radius' : 650.0 * yt.units.pc,
                             'height' : 200.0 * 2 * yt.units.pc, # 200 pc above and below
                             'center' : self.ds.domain_center,
                             'dr'     : 25.0 * yt.units.pc,
