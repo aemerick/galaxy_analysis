@@ -10,6 +10,7 @@ import os
 import yt
 
 # some general plot styles for consistency
+from galaxy_analysis.analysis import Galaxy
 from galaxy_analysis.plot import plot_styles as ps
 from galaxy_analysis.utilities import utilities
 from galaxy_analysis.static_data import anum_to_asym
@@ -66,14 +67,16 @@ def compute_local_environment(filename = './mixing_events.in',
             diff[diff<0] = 1.0E10
             index[i] = int(np.argmin(diff))
 
-    mix_data['avg_n'] = np.zeros(np.size(mix_data['time']))
-    mix_data['vol_avg_n'] = np.zeros(np.size(mix_data['time']))
-    mix_data['max_n'] = np.zeros(np.size(mix_data['time']))
-    mix_data['min_n'] = np.zeros(np.size(mix_data['time']))
-    mix_data['local_mass']         = np.zeros(np.size(mix_data['time']))
-    mix_data['local_volume']       = np.zeros(np.size(mix_data['time']))
-    mix_data['avg_T']  = np.zeros(np.size(mix_data['time']))
-    mix_data['vol_avg_T'] = np.zeros(np.size(mix_data['time']))
+    for field in ['avg_n','vol_avg_n','max_n','min_n','local_mass','local_volume','avg_T','vol_avg_T','N_massive_stars']:
+        mix_data[field] = np.zeros(np.size(mix_data['time']))
+#    mix_data['avg_n'] = np.zeros(np.size(mix_data['time']))
+#    mix_data['vol_avg_n'] = np.zeros(np.size(mix_data['time']))
+#    mix_data['max_n'] = np.zeros(np.size(mix_data['time']))
+#    mix_data['min_n'] = np.zeros(np.size(mix_data['time']))
+#    mix_data['local_mass']         = np.zeros(np.size(mix_data['time']))
+#    mix_data['local_volume']       = np.zeros(np.size(mix_data['time']))
+#    mix_data['avg_T']  = np.zeros(np.size(mix_data['time']))
+#    mix_data['vol_avg_T'] = np.zeros(np.size(mix_data['time']))
     for i in np.arange(np.size(mix_data['time'])):
         # now loop through and compute
         if int(index[i]) == -9999:
@@ -84,6 +87,7 @@ def compute_local_environment(filename = './mixing_events.in',
 
         print dsname
         ds   = yt.load(dsname)
+        gal  = Galaxy(dsname.split('/')[0])
         data = ds.all_data()
 
         center  = np.array([mix_data['x'][i],
@@ -95,6 +99,7 @@ def compute_local_environment(filename = './mixing_events.in',
         r       = np.min(data['dx']) * 4
 
         sp = ds.sphere(center, r)
+        large_sp = gal.ds.sphere(center, 50.0*yt.units.pc)
 
 
         v  = sp['cell_volume']
@@ -111,18 +116,27 @@ def compute_local_environment(filename = './mixing_events.in',
         mix_data['local_mass'][i]         = np.sum(m.to('Msun'))
         mix_data['local_volume'][i]       = np.sum(v.to('pc**3'))
 
+        t_o   = large_sp['creation_time'].to('Myr')
+        death = t_o + large_sp[('io','particle_model_lifetime')].to('Myr')
+        bm     = large_sp['birth_mass']
+        tnow = ds.current_time.to('Myr')
+        N_SN_stars = np.size( bm[ (bm > 8.0)*(bm<25.0)*((death - tnow) < 10.0*yt.units.Myr)*((death-tnow) > -5.0*yt.units.Myr)])
+
+        mix_data['N_massive_stars'][i]    = N_SN_stars
+
 
     dd.io.save(outfile + '.h5', mix_data)
 
     outf = open(outfile,'w')
 
-    outf.write("r_cyl z r_sph E51 M_ej M_Metal n_m n_v n_min n_max T_m T_v local_mass local_volume time Anum Element\n")
+    outf.write("r_cyl z r_sph E51 M_ej M_Metal n_m n_v n_min n_max T_m T_v local_mass local_volume N_SN_stars time Anum Element\n")
     for i in np.arange(np.size(mix_data['time'])):
-        outf.write("%.3f %.3f %.3f %.3E %.3E %.3E %.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E %.2f %2i %2s\n"%(
+        outf.write("%.3f %.3f %.3f %.3E %.3E %.3E %.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E %5i %.2f %2i %2s\n"%(
                     mix_data['r_cyl'][i], mix_data['z'][i], mix_data['r_sph'][i],
                     mix_data['E_ej'][i], mix_data['M_ej'][i], mix_data['M_metal'][i],
                     mix_data['avg_n'][i], mix_data['vol_avg_n'][i], mix_data['min_n'][i], mix_data['max_n'][i],
                     mix_data['avg_T'][i], mix_data['vol_avg_T'][i], mix_data['local_mass'][i], mix_data['local_volume'][i],
+                    mix_data['N_massive_stars'][i],
                     mix_data['time'][i], mix_data['Anum'][i], mix_data['element'][i]))
     outf.close()
 
@@ -142,7 +156,8 @@ def get_all_data(mixing_filename = './mixing_events.in', directory = './'):
 
     return all_data
 
-def plot_average(cut_field = None, field_cuts = []):
+def plot_average(cut_field = None, field_cuts = [],
+                 annotation = None, show_legend = False):
 
 
     mix_data  = load_mixing_file('./mixing_events.in')
@@ -213,14 +228,16 @@ def plot_average(cut_field = None, field_cuts = []):
 
         val = np.average( average['CGM'][-4:-1] )
 
-        annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
+        if annotation is None:
+            annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
+
         xytext = (0.02,0.94)
         ax.annotate(annotation, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
                     textcoords = 'axes fraction')
-        annotation = r"f$_{\rm outflow}$ = %0.3f"%(val)
+        annotation2 = r"f$_{\rm outflow}$ = %0.3f"%(val)
         xytext = (0.02,0.86)
-        ax.annotate(annotation, xy=xytext, xytext=xytext,
+        ax.annotate(annotation2, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
                     textcoords = 'axes fraction')
 
@@ -247,12 +264,14 @@ def plot_average(cut_field = None, field_cuts = []):
         ax.plot(t, fullbox_average['CGM'],   color = 'black', ls = '-', lw = 3, label = 'CGM')
         ax.plot(t, fullbox_average['Disk'] , color = 'black', ls = '--', label = 'Disk', lw = 3)
 
-        ax.set_ylim(0.0,1.1)
-        ax.set_xlim(0.0, np.max( [t[-1], 150.0]))
-        ax.plot( ax.get_xlim(), [1.0,1.0], lw = 1, color = 'black', ls = '-')
+        ax.set_ylim(0.0,   1.0)
+        ax.set_xlim(0.0, 150.0)
+#        ax.plot( ax.get_xlim(), [1.0,1.0], lw = 1, color = 'black', ls = '-')
 
         plt.minorticks_on()
-        ax.legend(loc='upper right', ncol=2)
+
+        if show_legend:
+            ax.legend(loc='upper right', ncol=2)
 
         ax.set_xlabel('Time (Myr)')
         ax.set_ylabel('Fraction of Enrichment Metal')
@@ -260,7 +279,7 @@ def plot_average(cut_field = None, field_cuts = []):
 
         val = np.average( average['CGM'][-4:-1] )
 
-        annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
+#        annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
         xytext = (0.02,0.94)
         ax.annotate(annotation, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
@@ -458,7 +477,15 @@ if __name__ == "__main__":
 
         elif sys.argv[1] == 'average':
 
-            plot_average()
+            annotation   = None
+            show_legend  = False
+
+            if len(sys.argv) >= 3:
+                annotation = sys.argv[2]
+            elif len(sys.argv) >= 4:
+                show_legend = bool( sys.argv[3] )
+
+            plot_average(annotation = annotation, show_legend = show_legend)
 
 
         else:
