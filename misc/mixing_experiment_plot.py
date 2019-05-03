@@ -122,10 +122,10 @@ if __name__ == "__main__":
     else:
         ds_list = np.sort(glob.glob('DD????'))
 
-    if len(sys.argv) == 5:
+    if len(sys.argv) >= 5:
         di   = int(sys.argv[4])
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) >= 6:
         nproc = int(sys.argv[5])
 
     if ds_list is None:
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None]
-            reduced_nproc = np.min( [lne(sub_list), nproc] )
+            reduced_nproc = np.min( [len(sub_list), nproc] )
 
             pool    = Pool(reduced_nproc)
             results = pool.map_async(_parallel_loop, sub_list)
