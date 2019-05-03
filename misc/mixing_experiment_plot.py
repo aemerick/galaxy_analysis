@@ -61,7 +61,7 @@ def plot_field(dsname, mass_field):
 
     if axis == 2:
         extent = [-dist[0],dist[0],-dist[1],dist[1]]
-        fsize  = (6,6)
+        fsize  = (8,8)
     elif axis == 0 or axis == 1:
         extent = [-dist[1],dist[1],-dist[2],dist[2]]
         proj_data = proj_data.T
@@ -73,10 +73,37 @@ def plot_field(dsname, mass_field):
     #pp.axes.set_xticks([-600,-400,-200,0,200,400,600])
     pp.axes.yaxis.set_visible(False)
     pp.axes.xaxis.set_visible(False)
+    pp.axes.set_frame_on(False)
     pp.figure.set_size_inches(fsize)
+    pp.figure.patch.set_facecolor('black')
 
-    pp.save(dsname + "_" + mass_field + "_disk_fraction.png")
 
+    # annotate the size
+    anncoord = (0.9,0.1)
+    dim = np.shape(proj_data)
+    x  = 0.5
+    di = 250.0 / ( 1.8 )
+    pp.axes.plot( [dim[0]*x, dim[0]*x + di],
+                  [-dim[1]*0.825]*2, lw = 3, color = "white")
+
+    pp.axes.annotate('250 pc',
+                     xy=anncoord, xycoords='axes fraction',
+                     xytext=anncoord, textcoords='axes fraction', color = "white",
+                     # arrowprops=dict(facecolor='black', shrink=0.05),
+                     horizontalalignment='right', verticalalignment='top')
+
+    start = 220.0
+    anncoord2 = (0.225,0.96)
+    pp.axes.annotate("%.1f Myr"%(gal.ds.current_time.to('Myr').value - start),
+                    xy=anncoord2, xycoords='axes fraction',
+                    xytext=anncoord2, textcoords='axes fraction', color = "white",
+                # arrowprops=dict(facecolor='black', shrink=0.05),
+                    horizontalalignment='right', verticalalignment='top')
+
+
+#    pp.figure.savefig("./mixing_plots/" + dsname + "_" + mass_field + "_disk_fraction.png")
+    outname = "./mixing_plots/" + dsname + "_" + mass_field + "_disk_fraction.png"
+    plt.savefig(outname, bbox_inches="tight", pad_inches = 0.0)
     return
 
 
@@ -84,6 +111,7 @@ if __name__ == "__main__":
 
     mass_field = "Na_Mass"
     nproc      = 1
+    ds_list    = None
 
     if len(sys.argv) >= 2:
         mass_field = str(sys.argv[1])
@@ -91,6 +119,8 @@ if __name__ == "__main__":
     if len(sys.argv) >= 4:
         imin = int(sys.argv[2])
         imax = int(sys.argv[3])
+    else:
+        ds_list = np.sort(glob.glob('DD????'))
 
     if len(sys.argv) == 5:
         di   = int(sys.argv[4])
@@ -98,12 +128,13 @@ if __name__ == "__main__":
     if len(sys.argv) == 6:
         nproc = int(sys.argv[5])
 
-    ds_list = ["DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+    if ds_list is None:
+        ds_list = ["DD%0004i"%(i) for i in np.arange(imin,imax,di)]
 
     if nproc > 1:
 
         def _parallel_loop(dsname):
-            plot_field(dsname, mass_field):
+            plot_field(dsname, mass_field)
             return
 
         for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
