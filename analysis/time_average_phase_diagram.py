@@ -295,6 +295,8 @@ def grackle_cooling_time():
 
     pd = time_average_phase_diagram(300+42, 315+42, ds_list = ds_list
 
+    return
+
 def n_T_example():
 
     imin, imax = 101, 282
