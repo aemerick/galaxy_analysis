@@ -220,7 +220,7 @@ def plot_average(cut_field = None, field_cuts = [],
         ax.plot( ax.get_xlim(), [1.0,1.0], lw = 1, color = 'black', ls = '-')
 
         plt.minorticks_on()
-        ax.legend(loc='upper right', ncol=2)
+        ax.legend(loc='best', ncol=3)
 
         ax.set_xlabel('Time (Myr)')
         ax.set_ylabel('Fraction of Enrichment Metal')
@@ -271,7 +271,7 @@ def plot_average(cut_field = None, field_cuts = [],
         plt.minorticks_on()
 
         if show_legend:
-            ax.legend(loc='upper right', ncol=2)
+            ax.legend(loc='best', ncol=3)
 
         ax.set_xlabel('Time (Myr)')
         ax.set_ylabel('Fraction of Enrichment Metal')
@@ -482,8 +482,10 @@ if __name__ == "__main__":
 
             if len(sys.argv) >= 3:
                 annotation = sys.argv[2]
-            elif len(sys.argv) >= 4:
-                show_legend = bool( sys.argv[3] )
+            if len(sys.argv) >= 4:
+                show_legend = (sys.argv[3] == "True") or (sys.argv[3] == "true") or (sys.argv[3] == "TRUE")
+
+            print "show_legend", show_legend
 
             plot_average(annotation = annotation, show_legend = show_legend)
 
