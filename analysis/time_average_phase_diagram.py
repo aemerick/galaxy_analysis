@@ -286,6 +286,15 @@ def spatial_example():
 
     return
 
+
+def grackle_cooling_time():
+
+    ds_list = np.sort(glob.glob('DD????/DD????'))
+
+    fg.generate_grackle_fields(ds)
+
+    pd = time_average_phase_diagram(300+42, 315+42, ds_list = ds_list
+
 def n_T_example():
 
     imin, imax = 101, 282
