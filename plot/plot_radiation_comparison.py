@@ -64,7 +64,7 @@ def panel_plot(datasets = {}, fields = ['number_density','Temperature','ion_frac
 
     axi = axj = 0
     plots = [ [None,None,None], [None,None,None], [None,None,None] ]
-    print np.shape(axes)
+    print(np.shape(axes))
     for k in datasets:
         for field in fields:
             ax = axes[axi][axj]

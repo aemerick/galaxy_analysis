@@ -28,15 +28,15 @@ def load_data(work_dir = './', tmin = 0.0, tmax = np.inf):
             _all_data[k]  = dd.io.load(k, '/observables')
             _all_meta_data[k]  = dd.io.load(k, '/meta_data')
         except:
-            print 'skipping data entry ', i, k
+            print('skipping data entry ', i, k)
 
     # gather all data so it can be readily plotted
     all_data = {}
     all_meta_data = {}
-    for k in _all_data[ _all_data.keys()[0] ].keys():
+    for k in list(_all_data[ list(_all_data.keys())[0] ].keys()):
         all_data[k]      = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
 
-    for k in _all_meta_data[ _all_meta_data.keys()[0] ].keys():
+    for k in list(_all_meta_data[ list(_all_meta_data.keys())[0] ].keys()):
         all_meta_data[k] = utilities.extract_nested_dict_asarray(_all_meta_data, [k], self_contained=True)
 
 
@@ -47,7 +47,7 @@ def plot_data(work_dir = './', data, meta_data, times):
     # Adjust things for now - scaling r to 1/2 of original
     #
     norm = (2.0)**2
-    for k in all_data.keys():
+    for k in list(all_data.keys()):
         if 'SD' in k:
             all_data[k] = all_data[k] * norm
 

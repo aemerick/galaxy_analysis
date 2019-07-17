@@ -1,12 +1,12 @@
 
-from analysis._galaxy_analysis import *
+from .analysis._galaxy_analysis import *
 
-import star_analysis
+from . import star_analysis
 
-import misc
+from . import misc
 
-import particle_analysis
+from . import particle_analysis
 
-import yt_fields
+from . import yt_fields
 
-import utilities
+from . import utilities

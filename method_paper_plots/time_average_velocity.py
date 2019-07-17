@@ -16,7 +16,7 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
 #   override with global
     for k in phase_colors:
-        if k in color_dict.keys():
+        if k in list(color_dict.keys()):
             phase_colors[k] = color_dict[k]
 
     labels = {'cold' : 'Cold' , 'warm' : 'Warm', 'hot' : 'Hot',
@@ -30,9 +30,9 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
         x,avg,min,max,std = compute_time_average(['gas_profiles','velocity','halo',phase], tmin = t_min, tmax = t_max,
                                                  dir = workdir, x_field = 'vbins')
-        print np.min(x), np.max(x)
+        print(np.min(x), np.max(x))
         x, avg = utilities.simple_rebin(x, avg, dv) # re-bin in 10 km/s
-        print np.min(x), np.max(x)
+        print(np.min(x), np.max(x))
         plot_histogram(ax, x, avg, color = phase_colors[phase], lw = line_width,
                                   ls = '-', label = labels[phase])
         if sum is None:

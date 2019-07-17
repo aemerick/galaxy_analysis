@@ -17,7 +17,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
     if os.path.isfile(wdir + '/' + filename):
         with h5py.File(wdir + '/' + filename, 'r') as hf:
             times = hf['times']
-            pid   = hf['particles'].keys() # get all particle ID's
+            pid   = list(hf['particles'].keys()) # get all particle ID's
 
         orbit_data = dd.io.load(wdir + '/' + filename)
     else:
@@ -52,7 +52,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
         if len(data_files) > len(times):
             num_new = len(data_files) - len(times)
             for p in pid:
-                for k in orbit_data['particles'][p].keys():
+                for k in list(orbit_data['particles'][p].keys()):
                     orbit_data['particles'][p][k] =\
                           orbit_data['particles'][p][k].append( np.ones(num_new) * (-999))
 
@@ -63,7 +63,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
         all_times[:np.size(times)] = times
 
     for i,d in enumerate(dnames):
-        print data_files[i]
+        print(data_files[i])
         ds  = yt.load( data_files[i] )
         data = ds.all_data()
         t   = ds.current_time.convert_to_units("Myr").value
@@ -97,7 +97,7 @@ def plot_orbit_evolution(wdir = '.', filename = 'orbit.h5',
     data  = dd.io.load(wdir + '/' + filename)
 
     times = data['times']
-    pid   = data['particles'].keys()
+    pid   = list(data['particles'].keys())
 
     plot_times = np.arange(np.min(times), np.max(times) + dt*0.5, dt)
     n_particles = np.size(pid)

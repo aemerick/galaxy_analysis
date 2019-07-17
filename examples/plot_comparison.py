@@ -99,7 +99,7 @@ for k in add_to_ls:
 color_dict = {'lm' : ps.purple, 'lm_noRT' : ps.purple, 'lm_nowind' : ps.purple,
               'mm' : ps.magenta  , 'mm_3pc' : ps.magenta  , 'hm' : ps.orange, 'lm_xx' : ps.blue}
 
-for k in PERT_DATA_PATHS.keys() + STAR_IC.keys():
+for k in list(PERT_DATA_PATHS.keys()) + list(STAR_IC.keys()):
 
     if '3pc' in k:
         color_dict[k] = 'black'
@@ -383,42 +383,42 @@ color_dict['ion_no-otrad-sn'] = plasma(0.5); ls_dict['ion_no-otrad-sn'] = '-.'
 
 
 ALL_DATA = {}
-for s in DATA_PATHS.keys():
+for s in list(DATA_PATHS.keys()):
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
-for s in feedback_comparisons.keys():
+for s in list(feedback_comparisons.keys()):
     ALL_DATA[s] = np.sort(glob.glob(feedback_comparisons[s] + '/DD*.h5'))
 
-for s in IC_comparisons.keys():
+for s in list(IC_comparisons.keys()):
     ALL_DATA[s] = np.sort(glob.glob(IC_comparisons[s] + '/DD*.h5'))
 
-for s in PERT_DATA_PATHS.keys():
+for s in list(PERT_DATA_PATHS.keys()):
     ALL_DATA[s] = np.sort(glob.glob(PERT_DATA_PATHS[s] + '/DD*.h5'))
 
-for s in STAR_IC.keys():
+for s in list(STAR_IC.keys()):
     ALL_DATA[s] = np.sort(glob.glob(STAR_IC[s] + '/DD*.h5'))
 
-for s in run11_IC.keys():
+for s in list(run11_IC.keys()):
     ALL_DATA[s] = np.sort(glob.glob(run11_IC[s] + '/DD*.h5'))
 
-for s in run15_IC.keys():
+for s in list(run15_IC.keys()):
     ALL_DATA[s] = np.sort(glob.glob(run15_IC[s] + '/DD*.h5'))
 
-for s in run11_feedback.keys():
+for s in list(run11_feedback.keys()):
     ALL_DATA[s] = np.sort(glob.glob(run11_feedback[s] + '/DD*.h5'))
 
-for s in run11_stampede_feedback.keys():
+for s in list(run11_stampede_feedback.keys()):
     ALL_DATA[s] = np.sort(glob.glob(run11_stampede_feedback[s] + '/DD*.h5'))
 
-for s in run15_feedback.keys():
+for s in list(run15_feedback.keys()):
     ALL_DATA[s] = np.sort(glob.glob(run15_feedback[s] + '/DD*.h5'))
 
-for s in comparison_sim.keys():
+for s in list(comparison_sim.keys()):
     ALL_DATA[s] = np.sort(glob.glob(comparison_sim[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):
 
     if data is None and (t is None or sfr is None):
-        print "If supplying no data set, must supply both time array and sfr array"
+        print("If supplying no data set, must supply both time array and sfr array")
         raise ValueError
 
     if not data is None:
@@ -443,12 +443,12 @@ def plot_stellar_abundance(sim_names = None, species = 'metallicity'):
     This is done by passing either
     """
     if sim_names is None:
-        sim_names = DATA_PATHS.keys()
+        sim_names = list(DATA_PATHS.keys())
     fig,ax = plt.subplots()
 
     for s in sim_names:
         # always load most recent file in every case
-        print s
+        print(s)
         data = dd.io.load(ALL_DATA[s][-1])
 
         t_first = time_first_star(data)
@@ -504,7 +504,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
     """
 
     if sim_names is None:
-        sim_names = DATA_PATHS.keys()
+        sim_names = list(DATA_PATHS.keys())
 
     # do some checking to match desired species with dict names
     if species == 'total':
@@ -541,7 +541,7 @@ def plot_mass_loading(sim_names = None, species = 'total', z = 0.25, mass_loadin
                 xdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/outflow/sphere')
                 ixdata = dd.io.load(ALL_DATA[s][i], '/gas_profiles/inflow/sphere')
             except:
-                print "outflow rates load failed for " + ALL_DATA[s][i]
+                print(("outflow rates load failed for " + ALL_DATA[s][i]))
                 continue
 
             t[i]  = dd.io.load(ALL_DATA[s][i], '/meta_data/Time')
@@ -622,7 +622,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 
 
     if sim_names is None:
-        sim_names = DATA_PATHS.keys()
+        sim_names = list(DATA_PATHS.keys())
 
     fig,ax = plt.subplots()
 
@@ -631,7 +631,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 
     for s in sim_names:
         # always load most recent file in every case
-        print s
+        print(s)
         data = dd.io.load(ALL_DATA[s][-1])
 
         t_first = time_first_star(data)
@@ -664,7 +664,7 @@ def plot_mass(sim_names = None, species = 'HI'):
                     fname = ('gas', species + '_mass')
 
                 if not (fname in tempdata):
-                    print "Breaking for field ", fname, " in plot mass evolution"
+                    print(("Breaking for field ", fname, " in plot mass evolution"))
                     break
 
                 mass[i] = np.sum(tempdata[fname])
@@ -703,7 +703,7 @@ def plot_mass(sim_names = None, species = 'HI'):
 def plot_sfr(sim_names = None, sampling = None):
 
     if sim_names is None:
-        sim_names = DATA_PATHS.keys()
+        sim_names = list(DATA_PATHS.keys())
 
     fig,ax = plt.subplots()
 
@@ -757,7 +757,7 @@ def plot_sfr(sim_names = None, sampling = None):
 def plot_snr(sim_names = None):
 
     if sim_names is None:
-        sim_names = DATA_PATHS.keys()
+        sim_names = list(DATA_PATHS.keys())
 
     fig,ax = plt.subplots()
 
@@ -820,7 +820,7 @@ if __name__ == '__main__':
     plot_sfr(sim_names = all_s, sampling = 1)
     plot_sfr(sim_names = all_s, sampling = 100)
     plot_snr(sim_names = all_s)
-    print "done with sfr"
+    print("done with sfr")
 
     if True:
         plot_mass(sim_names = all_s, species = 'HI')
@@ -847,14 +847,14 @@ if __name__ == '__main__':
 
     if False:
         for species in ['total', 'metals', 'O', 'N', 'Fe', 'Sr']:
-            print 'mass outflow for ' + species
+            print(('mass outflow for ' + species))
             plot_mass_loading(sim_names = all_s, species = species, z = 0.1)
             plot_mass_loading(sim_names = all_s, species = species, z = 0.25)
             plot_mass_loading(sim_names = all_s, species = species, z = 0.5)
             plot_mass_loading(sim_names = all_s, species = species, z = 1.0)
 
         species = 'total'
-        print 'mass loading for ' + species
+        print(('mass loading for ' + species))
         plot_mass_loading(sim_names = all_s, species = species, z = 0.1, mass_loading = True)
         plot_mass_loading(sim_names = all_s, species = species, z = 0.25, mass_loading = True)
         plot_mass_loading(sim_names = all_s, species = species, z = 0.5, mass_loading = True)

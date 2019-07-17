@@ -28,7 +28,7 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 #    ldata = {dsarray[0]: dd.io.load(datafile, "/" + dsarray[0])}
     data  = load_distribution_data(datafile, dsarray[0], phase, field, centers = cname)
     time_series = {}
-    for k in data.keys():
+    for k in list(data.keys()):
         if k == 'hist':
             continue
         time_series[k] = np.zeros(np.size(dsarray))
@@ -38,7 +38,7 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 
         data  = load_distribution_data(datafile, dsname, phase, field, centers = cname)
 
-        for k in data.keys():
+        for k in list(data.keys()):
 
             if np.size(data[k]) > 1: # cannot handle > 1D data for now
                 continue
@@ -65,13 +65,13 @@ def resolution_study(abundance_filename,
         labels = {'3pcH2' : '3.6 pc', '6pcH2' : '7.2 pc' , 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.' , 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/abundances/', '6pcH2' : '../6pc_H2/abundances/', 'Fiducial' : ''}
-        for k in dirs.keys():
+        for k in list(dirs.keys()):
             dirs[k] = work_dir + dirs[k]
     else:
         dirs = {}
         labels = {}
         lstyle = {}
-        for k in comparison.keys():
+        for k in list(comparison.keys()):
             dirs[k] = work_dir + comparison[0]
             labels[k] = comparison[1]
             lstyle[k] = comparison[2]
@@ -84,9 +84,9 @@ def resolution_study(abundance_filename,
     #   a time evolution of
     #
     time_data = {}
-    for k in labels.keys():
+    for k in list(labels.keys()):
         f = h5py.File(dirs[k] + abundance_filename,'r')
-        dsarray = np.sort([str(x) for x in f.keys() if 'DD' in x])
+        dsarray = np.sort([str(x) for x in list(f.keys()) if 'DD' in x])
         f.close()
         time_data[k] = {}
         time_data[k]['times'] = np.array([float(x.strip('DD')) for x in dsarray])
@@ -148,17 +148,17 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
             outname = outname + '_fit'
         outname = outname + '.png'
 
-    print outname
+    print(outname)
     fig, ax = plt.subplots(1)
     fig.set_size_inches(8,8)
 
     gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
     masses = {}
-    for k in gasdata.keys():
+    for k in list(gasdata.keys()):
         try:
             masses[k] = gasdata[k]['Total']
         except:
-            print k
+            print(k)
 
     if not 'over' in element:
         centers = 'bins'
@@ -167,7 +167,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
         centers = 'abins'
         field = element
     disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
-    print disk_data.keys()
+    print(list(disk_data.keys()))
     disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
     xbins = disk_data['bins']
     xcent = disk_data['centers']
@@ -297,11 +297,11 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
 
     gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
     masses = {}
-    for k in gasdata.keys():
+    for k in list(gasdata.keys()):
         try:
             masses[k] = gasdata[k]['Total']
         except:
-          print k
+          print(k)
 
 #    disk_mass = masses['Disk']
 #    for k in masses.keys():
@@ -315,7 +315,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
         index = (axi,axj)
 
         field = element + '_Fraction'
-        print element, axi, axj
+        print(element, axi, axj)
         disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
         disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
         xbins = disk_data['bins']
@@ -472,7 +472,7 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     return
 
 def get_element_list(file_name, dsname):
-    keys = dd.io.load(file_name, '/' + '/'.join([dsname,'CNM','mass_fraction'])).keys()
+    keys = list(dd.io.load(file_name, '/' + '/'.join([dsname,'CNM','mass_fraction'])).keys())
 
     x = [y.split('_over_')[0] for y in keys if '_over_Fe' in y]
     x = x + ['Fe']
@@ -589,7 +589,7 @@ def fit_multifunction_PDF(bins, y, data):
 #        raise ValueError
 
     min_error = np.inf
-    for k in success.keys():
+    for k in list(success.keys()):
 
         if success[k]:
             rdict[k]['name'] = k
@@ -746,7 +746,7 @@ def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
                        arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-        print e, fit_dict['name'], fit_dict['popt'], np.sqrt(-0.5 * fit_dict['popt'][0]), np.sum(chisqr) / (1.0*np.size(fit_dict['norm_y'][select]))
+        print(e, fit_dict['name'], fit_dict['popt'], np.sqrt(-0.5 * fit_dict['popt'][0]), np.sum(chisqr) / (1.0*np.size(fit_dict['norm_y'][select])))
         ci = ci + 1
         if ci >= np.size(colors):
             ci = 0
@@ -841,7 +841,7 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
                     N = fit_dict['fit_function'].N
                 else:
                     N = 0
-                print phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N)
+                print(phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N))
 
             ci = ci + 1
             if ci >= np.size(colors):
@@ -944,7 +944,8 @@ def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator =
 #                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-            print phase, e, # fit_dict['name'], fit_dict['popt']
+            print(phase, e, end=' ')
+# fit_dict['name'], fit_dict['popt']
             ci = ci + 1
             if ci >= np.size(colors):
                 ci = 0
@@ -1029,7 +1030,7 @@ if __name__ == '__main__':
 
 
     for dsname in all_ds:
-        print "Beginning on " + dsname
+        print("Beginning on " + dsname)
 
 #        if individual_fail:
 #            data = {dsname : all_data[dsname]}

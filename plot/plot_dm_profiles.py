@@ -23,7 +23,7 @@ for i in np.arange(len(labels)):
     labels[i] = r'v$_{\rm c,max}$ = ' + labels[i] + r' km s$^{-1}$'
 
 
-print labels
+print(labels)
 
 def overplot_radius(ax, gal, color = 'black', ls = '--',
                               virial = False, rtype = 'b'):

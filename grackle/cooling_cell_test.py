@@ -136,7 +136,7 @@ def cooling_cell(density = 12.2,
     # let gas cool at constant density
 
     #if verbose:
-    print "Beginning Run"
+    print("Beginning Run")
     data = evolve_constant_density(
             fc, final_time=final_time, H2_converge = H2_converge,
             safety_factor=safety_factor, verbose = verbose)
@@ -247,10 +247,10 @@ def cooling_cell_grid(k27_factors = None, LW_factors = None,
                                                LW_factor  = y, save_H2_fraction = True)
 
         for i,k27 in enumerate(k27_factors):
-            print (i)*np.size(LW_factors)
+            print((i)*np.size(LW_factors))
 
             temp_cell = lambda y : call_cell(k27,y)
-            map(temp_cell, LW_factors)
+            list(map(temp_cell, LW_factors)) # this may not work anymore - AE python 2 to 3
     else:
 
         LW_mesh, k27_mesh = np.meshgrid(LW_factors, k27_factors)
@@ -258,24 +258,24 @@ def cooling_cell_grid(k27_factors = None, LW_factors = None,
         k27_mesh = k27_mesh.flatten()
         LW_mesh  = LW_mesh.flatten()
 
-        for sub_list in itertools.izip_longest(*(iter( np.arange(np.size(k27_mesh))),) * nproc):
+        for sub_list in itertools.zip_longest(*(iter( np.arange(np.size(k27_mesh))),) * nproc):
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None]
             reduced_nproc = np.min( [len(sub_list), nproc])
 
-            print "running for ", sub_list
+            print("running for ", sub_list)
 
             imin,imax = sub_list[0], (sub_list[-1] + 1)
 
             pool = Pool(reduced_nproc)
             results = pool.map_async(_parallel_loop_star,
-                                     itertools.izip(sub_list,
+                                     zip(sub_list,
                                                     k27_mesh[imin:imax], LW_mesh[imin:imax]))
             pool.close()
             pool.join()
 
             for r in results.get():
-                str_i = r.keys()[0]
+                str_i = list(r.keys())[0]
 
                 f = open(outname,"a")
                 f.write("%8.8E %8.8E %8.8E %8.8E\n"%(  r[str_i]['k27'],
@@ -304,4 +304,4 @@ if __name__ == "__main__":
 
     dt = end - start
     eff = dt / (1.0*nproc)
-    print "This run of %i models on %i processors took %.3E s - Eff = %.1E"%(npoints*npoints, nproc, dt, eff)
+    print("This run of %i models on %i processors took %.3E s - Eff = %.1E"%(npoints*npoints, nproc, dt, eff))

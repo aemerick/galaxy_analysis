@@ -81,10 +81,10 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     age      = ds.current_time.convert_to_units('Myr') - birth
 
     model_wind_ejecta = {} # total_wind_ejecta
-    for k in all_stars[0].wind_ejecta_masses().keys():
+    for k in list(all_stars[0].wind_ejecta_masses().keys()):
         model_wind_ejecta[k] = np.array([x.wind_ejecta_masses()[k] for x in all_stars])
     model_sn_ejecta = {}
-    for k in all_stars[0].sn_ejecta_masses.keys():
+    for k in list(all_stars[0].sn_ejecta_masses.keys()):
         model_sn_ejecta[k] = np.array([x.sn_ejecta_masses[k] for x in all_stars])
 
     # correct for AGB stars that haven't died
@@ -95,26 +95,26 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     time_select = birth > time_cut
 
-    for k in model_wind_ejecta.keys():
+    for k in list(model_wind_ejecta.keys()):
         model_wind_ejecta[k][AGB]        = 0.0
         model_sn_ejecta[k][ (pt == 11) ] = 0.0
         model_wind_ejecta[k][select] = model_wind_ejecta[k][select]*factor[select]
 
     total_model_ejecta = {}
-    for k in model_wind_ejecta.keys():
+    for k in list(model_wind_ejecta.keys()):
         total_model_ejecta[k] = np.sum(model_sn_ejecta[k][time_select]) + np.sum(model_wind_ejecta[k][time_select])
 
 
     # construct the indivdual mode dictionary
     separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'Total' : {}}
-    for k in model_wind_ejecta.keys():
+    for k in list(model_wind_ejecta.keys()):
         separate_mode_ejecta['SNII'][k] = np.sum(model_sn_ejecta[k][bm > 8.0])
         separate_mode_ejecta['SNIa'][k] = np.sum(model_sn_ejecta[k][bm < 8.0])
         separate_mode_ejecta['SWind'][k] = np.sum(model_wind_ejecta[k][bm > 8.0])
         separate_mode_ejecta['AGB'][k]   = np.sum(model_wind_ejecta[k][bm < 8.0])
         separate_mode_ejecta['Total'][k] = np.sum( [separate_mode_ejecta[x][k] for x in ['AGB','SWind','SNII','SNIa'] ])
-    for k in separate_mode_ejecta.keys():
-        separate_mode_ejecta[k]['Total Tracked Metals'] = np.sum( [separate_mode_ejecta[k][x] for x in separate_mode_ejecta[k].keys() if (not x in ['m_tot','m_metal','H','He'])] )
+    for k in list(separate_mode_ejecta.keys()):
+        separate_mode_ejecta[k]['Total Tracked Metals'] = np.sum( [separate_mode_ejecta[k][x] for x in list(separate_mode_ejecta[k].keys()) if (not x in ['m_tot','m_metal','H','He'])] )
 
     if os.path.exists(str(ds) + '_galaxy_data.h5'):
         dd_data = dd.io.load(str(ds) + '_galaxy_data.h5')
@@ -123,7 +123,7 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     # now do this for the individual abundances on grid:
     grid_masses = {}
-    for k in model_wind_ejecta.keys():
+    for k in list(model_wind_ejecta.keys()):
         if k is 'm_tot' or k is 'm_metal':
             continue
 
@@ -141,13 +141,13 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     #print grid_masses
     #print outflow_masses
 
-    print grid_masses.keys()
-    print "Element Total_on_Grid Total_Outflow Sum_Injected Total_model_mass Percent_error"
-    for k in grid_masses.keys():
+    print(list(grid_masses.keys()))
+    print("Element Total_on_Grid Total_Outflow Sum_Injected Total_model_mass Percent_error")
+    for k in list(grid_masses.keys()):
         okey = k + '_Density'
         error =100 *  (outflow_masses[okey] + grid_masses[k] - total_model_ejecta[k] ) / total_model_ejecta[k]
-        print "%2s     %8.8E %8.8E %8.8E %8.8E %4.4f"%(k,grid_masses[k], outflow_masses[okey], grid_masses[k] + outflow_masses[okey],
-                                                 total_model_ejecta[k], error)
+        print("%2s     %8.8E %8.8E %8.8E %8.8E %4.4f"%(k,grid_masses[k], outflow_masses[okey], grid_masses[k] + outflow_masses[okey],
+                                                 total_model_ejecta[k], error))
 
     return all_stars, model_sn_ejecta, model_wind_ejecta, total_model_ejecta
 
@@ -194,18 +194,18 @@ def check_wind_ejecta(ds, data):
 
     error_mass = error[model_wind_ejecta>0]
     all = 1.0 * np.size(error_mass)
-    print np.size( error_mass[ (np.abs(error_mass) < 0.05) ])/all
-    print np.size( error_mass[ (np.abs(error_mass) < 0.10) ])/all
-    print np.size( error_mass[ (np.abs(error_mass) < 0.15) ])/all
-    print np.size( error_mass[ (np.abs(error_mass) < 0.20) ])/all
-    print np.size( error_mass[ (np.abs(error_mass) < 0.25) ])/all
+    print(np.size( error_mass[ (np.abs(error_mass) < 0.05) ])/all)
+    print(np.size( error_mass[ (np.abs(error_mass) < 0.10) ])/all)
+    print(np.size( error_mass[ (np.abs(error_mass) < 0.15) ])/all)
+    print(np.size( error_mass[ (np.abs(error_mass) < 0.20) ])/all)
+    print(np.size( error_mass[ (np.abs(error_mass) < 0.25) ])/all)
 
     #error_mass = error_mass[birth[model_wind_ejecta>0] > 110]
     #error_mass = error_mass[error_mass>0]
 
 
-    print np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass)
-    print error_mass
+    print(np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass))
+    print(error_mass)
     select = (age>1)
     bm = bm[select]
     pm = pm[select]
@@ -220,10 +220,10 @@ def check_wind_ejecta(ds, data):
     model_wind_ejecta = model_wind_ejecta[select]
     actual_wind_ejecta = actual_wind_ejecta[select]
     total_wind_ejecta = total_wind_ejecta[select]
-    print "BM   PM   Percent_error    Model_wind    actual_wind    lifetime_wind"
+    print("BM   PM   Percent_error    Model_wind    actual_wind    lifetime_wind")
     for i in np.arange(np.size(error_mass)):
-        print "%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i]*100,model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i])
-    print np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass)
+        print("%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i]*100,model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i]))
+    print(np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass))
 
    
 
@@ -338,7 +338,7 @@ def compute_SNII_error(ds, data, uselog = True):
     ax.plot([np.average(pos_error),np.average(pos_error)], [0,np.max(hist)], color = 'black' ,ls = '--', lw = 3)
     ax.annotate("Energy Error = %0.2f percent"%(100*energy_error), xy=(0.5,0.9*np.max(hist)),
                                            xytext=(0.5,0.9*np.max(hist)))
-    print energy_error
+    print(energy_error)
     ax.set_ylim([0,np.max(hist)])
     ax.set_xlabel('Error in Ejected Mass')
     ax.set_ylabel('Counts')
@@ -359,7 +359,7 @@ if __name__=="__main__":
         try:
             ds = yt.load(name_list[-1])
         except:
-            print "Could not load ", name_list[-1], " trying the next one"
+            print("Could not load ", name_list[-1], " trying the next one")
             ds = yt.load(name_list[-2])
     else:
         name = 'DD%0004i'%( int(sys.argv[1]))
@@ -372,11 +372,11 @@ if __name__=="__main__":
         try:
             check_wind_ejecta(ds,data)
         except:
-            print "failing in wind ejecta"
+            print("failing in wind ejecta")
         try:
             error, fig, ax = compute_SNII_error(ds,data, uselog=True)
         except:
-            print "failing in SNII check"
+            print("failing in SNII check")
 #    ds0 = yt.load('./../lowres/DD0035/DD0035')
 #    d0  = ds0.all_data()
 

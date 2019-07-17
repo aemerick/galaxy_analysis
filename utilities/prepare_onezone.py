@@ -205,11 +205,11 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
 
     # open up the first file, check which species we are dealing with
     gal    = dd.io.load(all_files[0])
-    raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
+    raw_fields = list(gal['gas_profiles'][mode]['sphere'].keys())
     fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) )  ]
     fields = [x for x in fields if (len(x[1]) > 1)]
     fields = [x[1] for x in fields if ((not ('_p0_' in x[1])) and (not ('_p1_' in x[1])) and (not x[1] == 'a'))]
-    print fields
+    print(fields)
     ele    = copy.copy(fields)
     ele    = [x.replace('_Mass','') for x in ele]
     ele    = [x.replace('_total','') for x in ele]
@@ -217,7 +217,7 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     ele    = [x.replace('cell', 'm_tot') for x in ele]
     ele    = [x.replace('metal', 'm_metal') for x in ele]
 
-    print ele
+    print(ele)
 
     centers_rvir = gal['gas_profiles'][mode]['sphere']['centers_rvir']
     centers      = gal['gas_profiles'][mode]['sphere']['centers']
@@ -347,7 +347,7 @@ def save_script(onez, outname = 'onez_param_file.py'):
     # organize the output parameters slightly
     for x in ['config.units','config.zone','config.stars','config.io']:
 
-        for k in onez.keys():
+        for k in list(onez.keys()):
             if x in k:
                 f.write(k + "          = " + str(onez[k]) + "\n")
 
@@ -395,19 +395,19 @@ if __name__=="__main__":
             analysis_to_use = ds_files[-1] + '_galaxy_data.h5'
         else:
             if len(gal_files) < 1:
-                print "Need to allow for generating the analysis file, or have files already generated"
+                print("Need to allow for generating the analysis file, or have files already generated")
                 raise ValueError
 
             # if we aren't generating file, use the latest one made
-            print "Warning: Not using most up to date output dump"
+            print("Warning: Not using most up to date output dump")
             analysis_to_use = gal_files[-1]
 
     else:
-        print "Currently, requires data dump to function - None found"
+        print("Currently, requires data dump to function - None found")
         raise ValueError 
 
         if len(gal_files) < 1:
-            print "No data dumps or analysis files found - what are you doing?"
+            print("No data dumps or analysis files found - what are you doing?")
             raise ValueError
 
         analysis_to_use = gal_files[-1]

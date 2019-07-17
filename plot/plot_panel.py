@@ -16,7 +16,7 @@ import itertools
 def panel_plot(dsname):
 
     if not os.path.isfile(dsname + '/' + dsname):
-        print dsname + " does not exist"
+        print(dsname + " does not exist")
         return
 
     gal = Galaxy(dsname)
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     else:
         ds_list = ["DD%0004i"%(i) for i in np.arange(dsmin,dsmax,dsi)]
 
-        for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+        for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None]
             reduced_nproc = np.min( [len(sub_list), nproc] )

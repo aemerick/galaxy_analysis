@@ -32,7 +32,7 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
         dirs = {}
         labels = {}
         lstyle = {}
-        for k in comparison.keys():
+        for k in list(comparison.keys()):
             dirs[k]   = work_dir + comparison[k][0]
             labels[k] = comparison[k][1]
             lstyle[k] = comparison[k][2]
@@ -46,12 +46,12 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
 
     all_data = {}
 
-    for sim in comparison.keys():
+    for sim in list(comparison.keys()):
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
                                                          tmin=0.0,tmax= 1000.0)
         all_data[sim] = {}
         all_data[sim]['times'] = times
-        for k in gather_keys.keys():
+        for k in list(gather_keys.keys()):
 
             all_data[sim][k] = utilities.extract_nested_dict_aslist(None, gather_keys[k], data_list, False)
 
@@ -65,8 +65,8 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
             sfr_average[i] = np.average(  all_data[sim]['SFR'][  (all_data[sim]['SFR_time'] > t_o) * (all_data[sim]['SFR_time'] < t_max)])
             #all_data[sim]['SFR_time']-all_data[sim]['SFR_time'][0]
         all_data[sim]['sfr_average'] = 1.0 * sfr_average
-        print "---", np.size(all_data[sim]['SFR']), np.size(all_data[sim]['SFR_time'])
-        print "---", np.shape(all_data[sim]['SFR_time']), np.shape(sfr_average)
+        print("---", np.size(all_data[sim]['SFR']), np.size(all_data[sim]['SFR_time']))
+        print("---", np.shape(all_data[sim]['SFR_time']), np.shape(sfr_average))
         all_data[sim]['SFR_fit'] = lambda x: np.interp(x,
                                                       (all_data[sim]['SFR_time'] - all_data[sim]['SFR_time'][0])/1.0E6 ,
                                                        all_data[sim]['sfr_average']
@@ -76,7 +76,7 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for sim in comparison.keys():
+    for sim in list(comparison.keys()):
         #t = all_data[sim]['times'] - all_data[sim]['times'][0]
         t = all_data[sim]['times'] - all_data[sim]['times'][0]
 
@@ -99,7 +99,7 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
         #ax.plot(xc-xc[0], rebiny, lw = line_width,  ls = ':', color = color[sim], label = sim)
         #plot_histogram(ax, newx-newx[0], rebiny, lw = line_width,  ls = ':', color = color[sim])#, label = sim)
 
-        print np.size(Mdot[:,2]), np.size(rebiny)
+        print(np.size(Mdot[:,2]), np.size(rebiny))
 
     # plot this so it shows up on diagram
     ax.plot([-10,-1],[0,0],lw=line_width,ls='-',color='black', label = r'0.25 R$_{\rm vir}$')
@@ -124,14 +124,14 @@ def plot_mass_loading_comparison(work_dir = './', output_dir = None,
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for sim in comparison.keys():
+    for sim in list(comparison.keys()):
         #t = all_data[sim]['times'] - all_data[sim]['times'][0]
         t = all_data[sim]['times'] - all_data[sim]['times'][0]
 
         outflow  = all_data[sim]['mass_outflow'] #[('gas','cell_mass')]
         Mdot     = np.array([x[('gas','cell_mass')] for x in outflow])
         SFR_func      = all_data[sim]['SFR_fit']
-        print np.size(Mdot[:,rbin]), np.size(t)
+        print(np.size(Mdot[:,rbin]), np.size(t))
         yplot = Mdot[:,rbin] / SFR_func(t)
 
         bin_edges=utilities.bin_edges(np.round(t*1.0))

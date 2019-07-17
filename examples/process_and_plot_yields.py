@@ -33,7 +33,7 @@ def process_yield_data(dname, norm_data = None):
     if not (norm_data is None):
         norm_data = dd.io.load(norm_data, '/gas_meta_data/masses')
 
-    for k in data.keys():
+    for k in list(data.keys()):
         yield_dict[k] = np.zeros(len(ele))
 
         if not (norm_data is None):

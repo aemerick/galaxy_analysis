@@ -52,7 +52,7 @@ def phase_plots(ds, to_plot = 'all', region = None):
     if region is None:
         region = ds.all_data()
 
-    print cbar_lim
+    print(cbar_lim)
 
     for name in pdict:
         pdef = pdict[name]
@@ -74,7 +74,7 @@ def phase_plots(ds, to_plot = 'all', region = None):
             pp.set_ylim(plim[pdef[1]][0], plim[pdef[1]][1])
 
         # set color map limits
-        print cbar_lim[pdef[2]], pdef[2]
+        print((cbar_lim[pdef[2]], pdef[2]))
         if not (cbar_lim[pdef[2]] is None):
             pp.set_zlim( pdef[2], cbar_lim[pdef[2]][0], cbar_lim[pdef[2]][1])
 
@@ -136,9 +136,9 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
                                width = width, weight_field = 'density', data_source = data_source)
         pp.set_buff_size(2048)
 
-        print fields
+        print(fields)
         for f in fields:
-            print f
+            print(f)
             pp.set_cmap(f, ga.static_data.CMAPS[f])
             pp.set_unit(f, field_units[f].units)
             pp.set_zlim(f, cbar_lim[f][0], cbar_lim[f][1])
@@ -249,7 +249,7 @@ def make_plots(ds_list, fields, axis = ['x', 'z'], n_jobs = None):
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
 
-    print "Starting to make %i plots for each of %i datasets with %i processors"%(len(fields) * len(axis), len(ds_list), n_jobs)
+    print(("Starting to make %i plots for each of %i datasets with %i processors"%(len(fields) * len(axis), len(ds_list), n_jobs)))
 
     Parallel(n_jobs = n_jobs)(\
             delayed(_parallel_loop)(dsname,fields,axis) for dsname in ds_list)

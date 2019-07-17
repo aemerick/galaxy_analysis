@@ -38,7 +38,7 @@ def get_ions():
     return [x[1:] for x in fields if ( not (x == 'nh')) and ( not (x=='T'))]
 
 def list_ions():
-    print get_ions()
+    print(get_ions())
     return
 
 def get_elements(ions):

@@ -56,8 +56,8 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
    exclude = ['Total','HI','HeI','HeII','HII','H2','Metals', 'H', 'He','Total Tracked Metals']
 
    masses = data['gas_meta_data']['masses']
-   print masses.keys()
-   all_fields  = masses['FullBox'].keys()
+   print(list(masses.keys()))
+   all_fields  = list(masses['FullBox'].keys())
    species     = [x for x in all_fields if (not (x in exclude))]
    ordered_species = utilities.sort_by_anum(species)
    ordered_species = ['Total Tracked Metals'] + ordered_species
@@ -182,7 +182,7 @@ def species_bar_graph(name, data, fraction = True, ISM_bar = False, outname = No
 
    if show_individual_amounts:
        # put code here to add amounts to each field
-       print "cannot include individual amounts yet"
+       print("cannot include individual amounts yet")
    #
    #
    #

@@ -7,7 +7,7 @@ import numpy as np
 import glob as glob
 import os, sys
 
-print yt.enable_parallelism() , " ------------------------"
+print(yt.enable_parallelism() , " ------------------------")
 
 
 def plot_time_average_PD(wdir, t_min, t_max, nbin = 100,

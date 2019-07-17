@@ -12,7 +12,7 @@ ALLOW_SAMPLE_ERROR = True
 try:
     from onezone import imf as onez_imf
 except:
-    print "Could not load onezone imf module - cannot do imf sampling error"
+    print("Could not load onezone imf module - cannot do imf sampling error")
     ALLOW_SAMPLE_ERROR = False
 
 __all__ = ['compute_IMF', 'IMF', 'scaled_IMF']

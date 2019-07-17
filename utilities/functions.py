@@ -41,7 +41,7 @@ class general_functions():
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in kwargs.keys():
+        if 'p0' in list(kwargs.keys()):
             self.p0 = kwargs['p0']
 
         if method == 'curve_fit': # use scipy curve fitting
@@ -57,8 +57,8 @@ class general_functions():
                                                          *args, **kwargs)
         elif method == 'KS':
             # optimize the fit by minimizing distance between CDF
-            if not 'p0' in kwargs.keys():
-                print "Must supply initial guess if using KS method"
+            if not 'p0' in list(kwargs.keys()):
+                print("Must supply initial guess if using KS method")
                 raise ValueError
             else:
                 del kwargs['p0']
@@ -160,7 +160,7 @@ class gaussian(general_functions):
         return fx
 
     def print_parameters(self):
-        print "mu (mean of data) and sigma (standard deviation of data)"
+        print("mu (mean of data) and sigma (standard deviation of data)")
 
 class gaussian_powerlaw(general_functions):
     def __init__(self):
@@ -206,7 +206,7 @@ class gaussian_powerlaw(general_functions):
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in kwargs.keys():
+        if 'p0' in list(kwargs.keys()):
             self.p0 = kwargs['p0']
 
         min_error = np.inf
@@ -240,7 +240,7 @@ class gaussian_powerlaw(general_functions):
 
         if none_successful:
             self.popt = None ; self.pcov = None; self.st = None
-            print "No fit found for the " + self.name
+            print("No fit found for the " + self.name)
             raise RuntimeError
         else:
             self.popt = optimal_popt
@@ -306,7 +306,7 @@ class lognormal_powerlaw(general_functions):
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in kwargs.keys():
+        if 'p0' in list(kwargs.keys()):
             self.p0 = kwargs['p0']
 
         min_error = np.inf
@@ -370,7 +370,7 @@ class lognormal(general_functions):
         return np.log10( self._f(x, *args))
 
     def print_parameters(self):
-        print "mu (mean of logged data) and sigma (standard deviaion of logged data)"
+        print("mu (mean of logged data) and sigma (standard deviaion of logged data)")
 
 
 by_name = {'log-normal' : lognormal,

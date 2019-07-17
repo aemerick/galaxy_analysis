@@ -88,7 +88,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
 
 
     if not os.path.isfile(dsname + '/' + dsname):
-        print dsname + " does not exist"
+        print(dsname + " does not exist")
         return
 
     gal = Galaxy(dsname)
@@ -148,7 +148,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
         all_plots[f].set_buff_size(buff)
 
         all_plots[f].set_cmap(f, cmaps[f])
-        if f in unit.keys():
+        if f in list(unit.keys()):
             all_plots[f].set_unit(f, unit[f])
         all_plots[f].set_zlim(f, zlim[f][0], zlim[f][1])
         all_plots[f].set_log(f, log[f])
@@ -210,7 +210,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
                     fontsize = 16, transform = ax.transAxes)
 
         #if img_axes[f] == 'z':
-        for s in pp.keys():
+        for s in list(pp.keys()):
             if np.size( particle_x[pp[s]]) > 0:
                 ax.scatter(particle_x[pp[s]], particle_y[pp[s]], s = ps[s],
                            marker = markers[s], color = colors[s],
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     else:
         ds_list = ["DD%0004i"%(i) for i in np.arange(dsmin,dsmax,dsi)]
 
-        for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+        for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None]
             reduced_nproc = np.min( [len(sub_list), nproc] )

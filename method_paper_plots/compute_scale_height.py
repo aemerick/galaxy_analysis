@@ -51,7 +51,7 @@ _RBINS = np.arange(0,601,20)*yt.units.pc
 def _parallel_loop(dsname):
 
 #    for dsname in ds_list:
-    print dsname,
+    print(dsname, end=' ')
     d  = {dsname : {}}
     ds = yt.load(dsname + '/' + dsname)
 
@@ -90,10 +90,10 @@ def compute_all_data(nproc = 28):
         numold = np.size(old_times)
         it = 1*numold
 
-    already_computed = np.sort([x for x in all_data.keys() if 'DD' in x])
+    already_computed = np.sort([x for x in list(all_data.keys()) if 'DD' in x])
     ds_list = [x.split('/')[0] for x in ds_list if (not (x.split('/')[0] in already_computed))]
 
-    for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+    for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
         sub_list = list(sub_list)
         sub_list = [s for s in sub_list if s is not None] # remove None values
         reduced_nproc = np.min( [len(sub_list), nproc] )  # only run on needed processors
@@ -105,14 +105,14 @@ def compute_all_data(nproc = 28):
 
         # gather results and add to output
         for r in results.get():
-            print r.keys()[0], r[r.keys()[0]].keys(), it
+            print(list(r.keys())[0], list(r[list(r.keys())[0]].keys()), it)
 
-            all_data[r.keys()[0]] = {}
-            for k in r[r.keys()[0]].keys():
-                all_data[r.keys()[0]][k] = r[r.keys()[0]][k]
+            all_data[list(r.keys())[0]] = {}
+            for k in list(r[list(r.keys())[0]].keys()):
+                all_data[list(r.keys())[0]][k] = r[list(r.keys())[0]][k]
 #            all_data[r.keys()[0]]['scale_height'] = r[r.keys()[0]]['scale_height']
 #            all_data[r.keys()[0]]['phases'] = r[r.keys()[0]]['phases']
-            all_data['times'][it] = r[r.keys()[0]]['times']
+            all_data['times'][it] = r[list(r.keys())[0]]['times']
             it = it +1
         del(results)
 
@@ -128,7 +128,7 @@ def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM
     """
 
     data = dd.io.load('scale_height_data.h5')
-    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
+    data_list = np.sort(np.array([x for x in list(data.keys()) if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -167,8 +167,8 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
     """
 
     data = dd.io.load('scale_height_data.h5')
-    print np.sort(data.keys())
-    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
+    print(np.sort(list(data.keys())))
+    data_list = np.sort(np.array([x for x in list(data.keys()) if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -181,7 +181,7 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
     plot_histogram(ax, data['xbins'], data['DD0001']['scale_height'],
                       lw = line_width, color = 'black', label = 'Initial Conditions', ls = '--')
 
-    ds_o = data.keys()[np.argmin(np.abs(data['times'] - t_o))] # name of initial dataset
+    ds_o = list(data.keys())[np.argmin(np.abs(data['times'] - t_o))] # name of initial dataset
 
     plot_histogram(ax, data['xbins'], data[ds_o]['scale_height'],
                       lw = line_width, color = plasma(0.0), label = '0 Myr', ls = '-')
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         plot_all_data()
     else:
         if len(sys.argv) < 4:
-            print "if passing arguments need to pass at least 3, t_o, dt, and then at least 1 time to plot (prefereably more)"
+            print("if passing arguments need to pass at least 3, t_o, dt, and then at least 1 time to plot (prefereably more)")
             raise ValueError
         # assume all args are provided:
         times = np.array([float(x) for x in sys.argv[3:]])

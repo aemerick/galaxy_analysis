@@ -198,11 +198,11 @@ def plot_panel(A = 'Fe', B = 'Fe', C = 'H', color = True):
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
     elements = elements + ['alpha']
     age = data['Time'] - data['creation_time'] # age of all particles in this data set
 
@@ -267,11 +267,11 @@ def plot_spatial_profiles(field = 'metallicity', abundance = False,
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
     elements = elements + ['alpha']
 
     if spatial_type == 'cylindrical_radius':
@@ -381,11 +381,11 @@ def plot_MDF(plot_base = ['H','Fe']):
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
     elements = elements + ['alpha']
 
     for base in plot_base:
@@ -441,11 +441,11 @@ def plot_time_evolution():
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
     elements = elements + ['alpha']
 
 
@@ -460,7 +460,7 @@ def plot_time_evolution():
             for e in elements:
                 if (base == e):
                     continue
-                print "plotting " + e + "/" + base + " time evolution"
+                print("plotting " + e + "/" + base + " time evolution")
                 index = (i,j)
 
                 t  = data['statistics'][time_type]['bins']
@@ -515,11 +515,11 @@ def plot_mass_fraction_time_evolution():
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
 #    elements = elements + ['alpha']
 
 
@@ -531,7 +531,7 @@ def plot_mass_fraction_time_evolution():
 
         i,j = 0,0
         for e in elements:
-            print "plotting " + e + "mass fraction time evolution"
+            print("plotting " + e + "mass fraction time evolution")
             index = (i,j)
 
             t  = data['mass_fraction_statistics'][time_type]['bins']
@@ -580,19 +580,19 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
     filename = workdir + '/abundances/abundances/abundances.h5'
 
     hdf5_data   = h5py.File(filename, 'r')
-    dfiles = hdf5_data.keys()
+    dfiles = list(hdf5_data.keys())
     dfile  = dfiles[-1]  # do this with most recent data file
 
     data = dd.io.load(filename, '/' + str(dfile))
-    elements = utilities.sort_by_anum([x for x in data['abundances'].keys() if (not 'alpha' in x)])
+    elements = utilities.sort_by_anum([x for x in list(data['abundances'].keys()) if (not 'alpha' in x)])
     elements = elements + ['alpha'] + ['H']
     age = data['Time'] - data['creation_time'] # age of all particles in this data set
 
     # --------------------
     check_elements = [x for x in [X,A,B,C] if (not (x in elements))]
     if len(check_elements) > 0:
-        print check_elements, " not in elements list"
-        print "available: ", elements
+        print(check_elements, " not in elements list")
+        print("available: ", elements)
         raise ValueError
 
     sep = 0.02

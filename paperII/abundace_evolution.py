@@ -31,7 +31,7 @@ def load_abundance_data(data, data_list,
             elif '_over_' in field:
                 ft = 'abundance'
             else:
-                print "Cannot properly determing field type for " + field
+                print("Cannot properly determing field type for " + field)
                 raise RunTimeError
 
         elif hasattr(field_types, 'keys') :
@@ -57,7 +57,7 @@ def load_abundance_data(data, data_list,
                                                         np.log10(time_data[field][phase]['Q1'])
                 elif property == 'mean_median_distance':
                     for p in ['median','mean']:
-                        if not p in time_data[field][phase].keys():
+                        if not p in list(time_data[field][phase].keys()):
                             field_path = [phase,ft,field,p]
                             time_data[field][phase][p] = utilities.get_property(field_path,
                                                                                 file_list = data.filename,
@@ -143,7 +143,7 @@ def plot_stellar_separation(time, data, galaxy,
         labels = {}
 
     for k in phases + [field] + [property]:
-        if not (k in labels.keys()):
+        if not (k in list(labels.keys())):
             labels[k] = k
 
     if figdim is None:
@@ -155,7 +155,7 @@ def plot_stellar_separation(time, data, galaxy,
     else:
         nrow, ncol = figdim
 
-    data_list = np.array(np.sort([x for x in data.keys() if 'DD' in x]))
+    data_list = np.array(np.sort([x for x in list(data.keys()) if 'DD' in x]))
     data_list = data_list[:len(time)]
 
     time_data = load_abundance_data(data, data_list, [field], [property],
@@ -208,7 +208,7 @@ def plot_stellar_separation(time, data, galaxy,
         ax.annotate("Median Dist. = %.2f"%(np.median(np.abs(distance[select]))), xy=xy,xytext=xy)
         xy = (200.0, ax.get_ylim()[1] - 0.7)
         q1, q3 = np.percentile(np.abs(distance[select]), [25,75])
-        print q3, q1, q3-q1, np.size(distance[select][distance[select]<0])/(1.0*np.size(distance[select])), np.size(distance[select][distance[select]>0])
+        print(q3, q1, q3-q1, np.size(distance[select][distance[select]<0])/(1.0*np.size(distance[select])), np.size(distance[select][distance[select]>0]))
         ax.annotate("IQR = %.2f"%(q3-q1), xy=xy,xytext=xy)
 
 
@@ -254,7 +254,7 @@ def plot_abundace_resolution_study():
     for sim in simulations:
         data = h5py.File(simulations[sim])
 
-        data_list = np.sort([x for x in data.keys() if 'DD' in x])
+        data_list = np.sort([x for x in list(data.keys()) if 'DD' in x])
         times     = np.array([float(x.strip('DD')) for x in data_list])
 
         all_time_data[sim] = load_abundance_data(data, data_list,
@@ -317,7 +317,7 @@ def plot_abundance_evolution(time, data,
     else:
         nrow, ncol = figdim
 
-    data_list = np.array(np.sort([x for x in data.keys() if 'DD' in x]))
+    data_list = np.array(np.sort([x for x in list(data.keys()) if 'DD' in x]))
     data_list = data_list[:len(time)]
 
 
@@ -327,7 +327,7 @@ def plot_abundance_evolution(time, data,
     time_data = load_abundance_data(data, data_list, fields, property_list,
                                     phases = phases, field_types = field_types)
 
-    print "DATA LOADING TOOK %2.2E"%(cpu_time.time()- start)
+    print("DATA LOADING TOOK %2.2E"%(cpu_time.time()- start))
 
     fig, ax = plt.subplots(nrow,ncol)
     fig.set_size_inches(5*ncol, 5*nrow)
@@ -345,7 +345,7 @@ def plot_abundance_evolution(time, data,
                 yval = time_data[field][phase][property] # - time_data[field]['CNM'][property]
 
 
-                if phase in line_styles.keys():
+                if phase in list(line_styles.keys()):
                     ls = line_styles[phase]
                 else:
                     ls = '-'
@@ -399,7 +399,7 @@ if __name__ == "__main__":
 
     #time = np.arange(0.0, 10.0*(len( [x for x in data.keys() if 'DD' in x])-1) + 0.1, 10.0)
 
-    time = [float(x.strip('DD')) for x in np.sort(data.keys()) if 'DD' in x]
+    time = [float(x.strip('DD')) for x in np.sort(list(data.keys())) if 'DD' in x]
 
     galaxy = Galaxy('DD0619')
 

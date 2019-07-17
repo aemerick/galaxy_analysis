@@ -14,9 +14,9 @@ work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/fi
 
 data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                  tmin=0.0,tmax=1000)
-print data_list[0], times[0]
-print data_list[-1], times[-1]
-print times[-1] - times[0]
+print(data_list[0], times[0])
+print(data_list[-1], times[-1])
+print(times[-1] - times[0])
 all_data = {}
 
 # gather metallicities for:
@@ -42,7 +42,7 @@ for i, dname in enumerate(data_list):
     temp_inflow  = dd.io.load( dname, '/gas_profiles/inflow/sphere')
     all_data['outflow'][i] = temp_outflow['mass_profile'][('gas','metal_mass')] / temp_outflow['mass_profile'][('gas','cell_mass')]
     all_data['inflow'][i] = temp_inflow['mass_profile'][('gas','metal_mass')]  / temp_inflow['mass_profile'][('gas','cell_mass')]
-for k in all_data.keys():
+for k in list(all_data.keys()):
     all_data[k] = np.array(all_data[k])
 
 ### now plot ###

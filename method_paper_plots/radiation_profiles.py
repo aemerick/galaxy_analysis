@@ -166,8 +166,8 @@ def plot(work_dir = './', t_min = 300.0, t_max = 350.0, xmax = 600.0,
         plt.close()
 
     if len(fields) > 0:
-        print "Failure in radiation plots. Currently no defined methods to plot:"
-        print fields
+        print("Failure in radiation plots. Currently no defined methods to plot:")
+        print(fields)
 
     return
 

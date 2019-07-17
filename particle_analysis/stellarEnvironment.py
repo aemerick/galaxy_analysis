@@ -77,7 +77,7 @@ def stellar_environment(ds, data, dead_only = True, write_to_file = True,
     else:
         loop_indexes = np.arange(np.size(pid)) # all stars
 
-    print np.size(pid), np.size(loop_indexes)
+    print(np.size(pid), np.size(loop_indexes))
 
     for i in loop_indexes:
 
@@ -131,7 +131,7 @@ def stellar_environment(ds, data, dead_only = True, write_to_file = True,
 def _parallel_loop(dsname):
 
     groupname = dsname.rsplit('/')[1]
-    print "starting computation on ", groupname
+    print("starting computation on ", groupname)
     gal = Galaxy(groupname)
 
     dictionary = {groupname : {}}
@@ -142,12 +142,12 @@ def _parallel_loop(dsname):
     # generalized function to loop through all mask types and compute stats
     data  = stellar_environment(gal.ds, gal.df)
 
-    for k in data.keys():
+    for k in list(data.keys()):
         g[k] = data[k]
 
     del(gal)
 
-    print "ending computation on ", groupname
+    print("ending computation on ", groupname)
 
     return dictionary
 
@@ -222,24 +222,24 @@ def compute_stats_all_datasets(overwrite = False,
             # generalized function to loop through all mask types and compute stats
             data  = stellar_environment(gal.ds, gal.df, dR = dR)
 
-            for k in data.keys():
+            for k in list(data.keys()):
                 g[k] = data[k]
 
             if write_to_text:
-                for PID in g.keys():
+                for PID in list(g.keys()):
                     if PID == 'Time':
                         continue
                     _write(file, g[PID], PID, g['Time'])
 
             del(gal)
 
-            print "ending computation on ", groupname
+            print("ending computation on ", groupname)
 
     else: # parallel
 
         # select out data sets that already exist in output
         if not overwrite:
-            ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in hf.keys() ]))]
+            ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in list(hf.keys()) ]))]
 
         # construct the pool, and map the results to a holder
         #   pool splits computation among processors
@@ -250,7 +250,7 @@ def compute_stats_all_datasets(overwrite = False,
         #   operating on many large datasets.
         #
 
-        for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+        for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
 
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None] # remove None values
@@ -264,13 +264,13 @@ def compute_stats_all_datasets(overwrite = False,
 
             # gather results and add to output
             for r in results.get():
-                hf[r.keys()[0]] = r[r.keys()[0]]
+                hf[list(r.keys())[0]] = r[list(r.keys())[0]]
 
             if write_to_text:
                 for dsname in sub_list:
                     k = dsname.split('/')[1]
 
-                    for PID in hf[k].keys():
+                    for PID in list(hf[k].keys()):
                         if PID == 'Time':
                             continue
 

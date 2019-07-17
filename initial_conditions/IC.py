@@ -75,8 +75,8 @@ def _find_bin(x, array):
     """
 
     if x < array[0] or x > array[-1]:
-        print "search value out of bounds on array"
-        print x, array[0], array[-1]
+        print("search value out of bounds on array")
+        print(x, array[0], array[-1])
 
         return -1
 
@@ -87,9 +87,9 @@ def _find_bin(x, array):
     if x < array[index] and index > 0:
         index = index - 1
     if x < array[index] and index > 0:
-        print i+2, array[i+2], x
-        print i, array[i], x
-        print "Failure finding bin"
+        print(i+2, array[i+2], x)
+        print(i, array[i], x)
+        print("Failure finding bin")
 
     return index
 
@@ -167,7 +167,7 @@ class particleIC(object):
         start = time.time()
         self.write_IC()
         end = time.time()
-        print "write out took ", end - start
+        print("write out took ", end - start)
        
         return
 
@@ -229,7 +229,7 @@ class particleIC(object):
                              x[i], y[i], self.z[i]))
 
 
-        print "wrote IC's for %i particles to "%(self.number_of_particles) + outfile
+        print("wrote IC's for %i particles to "%(self.number_of_particles) + outfile)
 
         return
 
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     IC = particleIC(M_star, a, b, rmax, zmax, Z = 0.1 * 0.0183)
     IC.generate()
     end = time.time()
-    print "generation took ", end - start
+    print("generation took ", end - start)
 
     # now plot these
     fig, ax = plt.subplots(1,3)
@@ -354,4 +354,4 @@ if __name__ == "__main__":
     plt.savefig("particle_IC_profile.png")
     plt.close(fig)
 
-    print np.min(IC.M), np.max(IC.M)
+    print(np.min(IC.M), np.max(IC.M))

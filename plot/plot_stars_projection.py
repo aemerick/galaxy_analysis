@@ -185,18 +185,18 @@ def plot(dsname, wdir = './', width = 1000.0, dt = 5.0*yt.units.Myr, fields = al
     pp['SN']                 = in_image * recent_death * massive_star
     #pp['other_stars']        = in_image * alive * (np.logical_not(pp['massive_star_winds']))
 
-    for k in proj.plots.keys():
+    for k in list(proj.plots.keys()):
         image = proj.plots[k]
 
     #
     # Now select and annotate the points we want
     #
-        for s in pp.keys():
+        for s in list(pp.keys()):
             if np.size(px[pp[s]].value) > 0:
-                print np.size(px[pp[s]]), 'Particles in ', s, px[pp[s]], py[pp[s]]
+                print(np.size(px[pp[s]]), 'Particles in ', s, px[pp[s]], py[pp[s]])
                 image.axes.scatter(px[pp[s]].value,py[pp[s]].value, s = ps[s], marker = markers[s], color = colors[s])
             else:
-                print 'No particles in ', s
+                print('No particles in ', s)
 
 #    proj.refresh()
 #    proj.hide_axes()
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 
         for dsi in np.arange(start, fin, di):
             dsname = "DD%0004i"%(dsi)
-            print "Plotting for ", dsname
+            print("Plotting for ", dsname)
             plot(dsname)
     else:
         plot(all_ds[0].split('/')[0])

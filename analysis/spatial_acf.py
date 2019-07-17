@@ -62,12 +62,12 @@ bins   = np.arange(0.0, rmax+dr, dr)
 #acf, bins = ACF_scargle(x, y, dy = 0.0000001, n_omega = 2**12, omega_max = np.pi/5.0) #, bins = bins)
 acf, err, bins = ACF_EK(x,y,dy=1.0E-8, bins = bins)
 
-print acf
-print bins
+print(acf)
+print(bins)
 simple_plot(0.5*(bins[1:]+bins[:-1]), acf, 'Fe_Fraction_acf.png')
 
-print '----------------------------------------------------------'
-print '----------------------------------------------------------'
+print('----------------------------------------------------------')
+print('----------------------------------------------------------')
 
 
 x      = sphere['spherical_radius'].convert_to_units('pc').value
@@ -80,9 +80,9 @@ acf, err, bins = ACF_EK(x, y, dy = 0.00001, bins = bins)
 
 simple_plot(0.5*(bins[1:]+bins[:-1]), acf, 'Fe_over_H_acf.png')
 
-print acf
-print bins
+print(acf)
+print(bins)
 
-print "-------------------------------------------------------------------"
-print "-------------------------------------------------------------------"
+print("-------------------------------------------------------------------")
+print("-------------------------------------------------------------------")
 

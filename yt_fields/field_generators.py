@@ -640,7 +640,7 @@ def generate_stellar_model_fields(ds):
                   'R' : 'cm'}
 
     overload_type = {} # when generating stars, default is use type from simulation
-    for k in units.keys():
+    for k in list(units.keys()):
         overload_type[k] = None # keep simulation type when making stars for all fields
 
     overload_type['lifetime'] = 11 # lifetime field will now be the lifetime of the original MS star
@@ -1104,27 +1104,27 @@ def generate_derived_fields(ds):
     # make new functions to do correct units for species fields
     _density_function_generator(metals + ['Metal'])
 
-    print "tracer species present: ", metals
+    print("tracer species present: ", metals)
     nfields = _mass_function_generator(metals)
-    print nfields, "mass fields defined"
+    print(nfields, "mass fields defined")
     nfields = _mass_fraction_function_generator(metals)
-    print nfields, "mass fraction fields defined"
+    print(nfields, "mass fraction fields defined")
     nfields = _number_density_function_generator(metals)
-    print nfields, "number density fields defined"
+    print(nfields, "number density fields defined")
 
     if not (ionization._ion_table is None):
         nfields = _ionization_state_generator(metals)
-        print nfields, "ionization state fields defined"
+        print(nfields, "ionization state fields defined")
 
     nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
-    print nfields, "abundance ratio fields defined"
+    print(nfields, "abundance ratio fields defined")
     nfields = _abundance_function_generator(metals)
 
     if ds.parameters['NumberOfParticles'] > 0:
         if ('io','particle_' + metals[0] + '_fraction') in ds.field_list:
 
             nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
-            print nfields, "particle abundance ratio fields defined"
+            print(nfields, "particle abundance ratio fields defined")
             _particle_abundance_function_generator(metals, ds)
 
 
@@ -1132,7 +1132,7 @@ def generate_derived_fields(ds):
 
 
     nfields = _additional_helper_fields(fields)
-    print nfields, "additional helper fields defined"
+    print(nfields, "additional helper fields defined")
 
     #generate_grackle_fields(ds)
 
@@ -1181,7 +1181,7 @@ def load_and_define(name):
 def generate_grackle_fields(ds):
 
     if not GRACKLE_IMPORTED:
-        print "Grackle's python wrapper (pygrackle) was not imported successfully"
+        print("Grackle's python wrapper (pygrackle) was not imported successfully")
 
     if ds.parameters['use_grackle']:
         _grackle_fields(ds)

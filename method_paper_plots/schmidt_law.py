@@ -31,11 +31,11 @@ def _load_data(work_dir, tmin = 0.0, tmax = np.inf):
         try:
             _all_data[k] = dd.io.load(k, '/observables')
         except:
-            print 'skipping data entry ', i, k
+            print('skipping data entry ', i, k)
 
     # gather all data so it can be readily plotted
     all_data = {}
-    for k in _all_data[ _all_data.keys()[0] ].keys():
+    for k in list(_all_data[ list(_all_data.keys())[0] ].keys()):
         all_data[k] = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
 
     return all_data, times
@@ -274,6 +274,6 @@ if __name__ == '__main__':
     if len(sys.argv) > 4:
         tmin = float(sys.argv[4])
 
-    print obs_method, total_gas
+    print(obs_method, total_gas)
     schmidt_law(work_dir = work_dir, obs_method = obs_method, total_gas = total_gas,
                 tmin = tmin)

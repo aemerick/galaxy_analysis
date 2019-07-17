@@ -85,7 +85,7 @@ def compute_local_environment(filename = './mixing_events.in',
             dsname = all_files[int(index[i])].strip('_galaxy_data.h5')
             dsname = dsname + '/' + dsname
 
-        print dsname
+        print(dsname)
         ds   = yt.load(dsname)
         gal  = Galaxy(dsname.split('/')[0])
         data = ds.all_data()
@@ -176,12 +176,12 @@ def plot_average(cut_field = None, field_cuts = [],
         fullbox_average = {}
         individual_result = {}
 
-        for e in all_data.keys():
+        for e in list(all_data.keys()):
             individual_result[e] = {}
 
         for field in phases:
-            average[field] = np.zeros(np.size(all_data[ all_data.keys()[0] ][field]))
-            fullbox_average[field] = np.zeros(np.size(all_data[ all_data.keys()[0] ][field]))
+            average[field] = np.zeros(np.size(all_data[ list(all_data.keys())[0] ][field]))
+            fullbox_average[field] = np.zeros(np.size(all_data[ list(all_data.keys())[0] ][field]))
 
         average['CGM'] = np.zeros(np.size(average['Disk']))
         fullbox_average['CGM'] = np.zeros(np.size(average['Disk']))
@@ -189,18 +189,18 @@ def plot_average(cut_field = None, field_cuts = [],
         for f in phases + ['CGM']:
 
             if f == 'CGM':
-                for e in all_data.keys():
+                for e in list(all_data.keys()):
                     average[f] += (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
                     fullbox_average[f] += (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
                     individual_result[e][f] = (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
             else:
-                for e in all_data.keys():
+                for e in list(all_data.keys()):
                     average[f] += all_data[e][f] / all_data[e]['Disk']
                     fullbox_average[f] += (all_data[e][f] / all_data[e]['FullBox'])
                     individual_result[e][f] = all_data[e][f] / all_data[e]['FullBox']
 
-            average[f] = average[f] / (1.0 * np.size(all_data.keys()))
-            fullbox_average[f] = fullbox_average[f] / (1.0 * np.size(all_data.keys()))
+            average[f] = average[f] / (1.0 * np.size(list(all_data.keys())))
+            fullbox_average[f] = fullbox_average[f] / (1.0 * np.size(list(all_data.keys())))
 
         t = all_data[e]['time']
 
@@ -314,7 +314,7 @@ def plot_average(cut_field = None, field_cuts = [],
         f.close()
 
 
-        for e in all_data.keys():
+        for e in list(all_data.keys()):
 
             f = open(e + "_enrichment_evolution.dat","w")
             f.write(header)
@@ -422,7 +422,7 @@ def load_mixing_file(filename = './mixing_events.in'):
     if os.path.isfile("./event_data_table.dat"):
         d2 = np.genfromtxt("./event_data_table.dat", names = True)
         for name in d2.dtype.names:
-            if not (name in data.keys()):
+            if not (name in list(data.keys())):
                 data[name] = d2[name]
 
     return data
@@ -441,7 +441,7 @@ def plot_from_mixing_file(filename = './mixing_file',
     for i in np.arange(np.size(data['x'])):
 
         if annotate:
-            if 'n_m' in data.keys():
+            if 'n_m' in list(data.keys()):
                 annotation = "<n> = %2.2E  -  <T> = %2.2E  -   E = %.1E  -  r_cyl = %.1f"%(data['n_m'][i],
                                                                    data['T_m'][i],
                                                                    data['E_ej'][i],
@@ -458,7 +458,7 @@ def plot_from_mixing_file(filename = './mixing_file',
             x = data['M_ej'][i]
         else:
             x = 1.0
-            print "WARNING: Requested normalization not recognized", norm
+            print("WARNING: Requested normalization not recognized", norm)
 
         enrichment_evolution(data['element'][i], t0 = data['time'][i] + 0.1,
                              normalization = x,
@@ -485,7 +485,7 @@ if __name__ == "__main__":
             if len(sys.argv) >= 4:
                 show_legend = (sys.argv[3] == "True") or (sys.argv[3] == "true") or (sys.argv[3] == "TRUE")
 
-            print "show_legend", show_legend
+            print("show_legend", show_legend)
 
             plot_average(annotation = annotation, show_legend = show_legend)
 
