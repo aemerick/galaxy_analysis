@@ -29,16 +29,16 @@ import deepdish as dd
 # --------- internal imports --------------
 from galaxy_analysis.utilities import utilities as util
 #from ..utilities import utilities
-from ..static_data import LABELS,\
-                        FIELD_UNITS,\
-                        IMAGE_COLORBAR_LIMITS,\
-                        PLOT_LIMITS,\
-                        UNITS,\
-                        ISM, CUT_REGION, ISM_FILTER
+from galaxy_analysis.static_data import LABELS,\
+                          FIELD_UNITS,\
+                          IMAGE_COLORBAR_LIMITS,\
+                          PLOT_LIMITS,\
+                          UNITS,\
+                          ISM, CUT_REGION, ISM_FILTER
 
 from galaxy_analysis import particle_analysis as pa
 
-from ..particle_analysis import particle_types as pt
+from galaxy_analysis.particle_analysis import particle_types as pt
 #from ..particle_analysis import IMF
 
 # need to have better API
@@ -46,10 +46,10 @@ from ..particle_analysis import particle_types as pt
 # from ..particle_analysis.sfhFromParticles import sfhFromParticles
 # from ..particle_analysis.sn_rate          import snr
 
-from ..yt_fields import field_generators as fg
+from galaxy_analysis.yt_fields import field_generators as fg
 
-from ..misc import process_boundary_flux
-from ..misc import dm_halo as dmprof
+from galaxy_analysis.misc import process_boundary_flux
+from galaxy_analysis.misc import dm_halo as dmprof
 
 _hdf5_compression = 'lzf'
 

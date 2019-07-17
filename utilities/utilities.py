@@ -205,7 +205,7 @@ def select_data_by_time(dir = '.', tmin = None, tmax = None,
         data_list = data_list[  times >= tmin ]
         times     = times[times>=tmin]
     else:
-	data_list = data_list[(times<tmax)*(times>=tmin)]
+        data_list = data_list[(times<tmax)*(times>=tmin)]
         times     = times[(times<tmax)*(times>=tmin)]
 
     return data_list, times
