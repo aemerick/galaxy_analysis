@@ -241,13 +241,13 @@ def nested_haskey(x, keys):
     else:
         return False
 
-def filter_dict(field, dictionary, level = 2):
+def filter_dict(field, dict, level = 2):
     """
     Filter through nested dictionarys like one would do with
     arrays. Only works if sub-dictionaries all have same
     kwargs as desired by 'field'
     """
-    return [(x,dictionary[x][field]) for x in dictionary.keys]
+    return [(x,dict[x][field]) for x in dict.keys()]
 
 def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained = True):
     """
@@ -292,7 +292,7 @@ def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained 
     """
     if self_contained: # data sets are all contained in overarching dictionary
         if loop_keys is None:
-            loop_keys = list(dict.keys())
+            loop_keys = dict.keys()
 
         return [extract_nested_dict( dict[k], key_list) for k in loop_keys]
     else:
@@ -485,7 +485,7 @@ def compute_weighted_stats(x, w, return_dict = True):
     d['max']      = np.max(_x)
 
     if hasattr(x, 'value'):
-        for k in list(d.keys()):
+        for k in d.keys():
             d[k] = d[k] * x.unit_quantity
 
     return d

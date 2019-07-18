@@ -28,8 +28,8 @@ def compute_velocity_dispersion(data, types = None, fields = None, filter = None
                        'phi': 'particle_velocity_spherical_phi'}
 
     if types is None and fields is None:
-        fields = list(types_to_fields.values())
-        keys   = list(types_to_fields.keys())
+        fields = types_to_fields.values()
+        keys   = types_to_fields.keys()
     elif fields is None:
         fields = [ types_to_fields[x] for x in types ]
         keys   = types

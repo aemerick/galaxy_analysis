@@ -164,7 +164,7 @@ def plot_surface_density_profiles(directory = './', normalize = False):
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
 
     da = dd.io.load(all_output[-1])
-    fields = [k[1] for k in list(da['gas_profiles']['surface_density']['disk'].keys()) if k != 'xbins']
+    fields = [k[1] for k in da['gas_profiles']['surface_density']['disk'].keys() if k != 'xbins']
 
     ls = ['-','--',':']
     color = ['black',ps.purple,ps.blue,ps.orange]
@@ -250,7 +250,7 @@ def plot_mass_profiles(directory = './', normalize = False):
     all_output = np.sort(glob.glob(directory + '/DD*.h5'))
 
     da = dd.io.load(all_output[-1])
-    fields = [k[1] for k in list(da['gas_profiles']['accumulation']['sphere'].keys()) if k != 'xbins']
+    fields = [k[1] for k in da['gas_profiles']['accumulation']['sphere'].keys() if k != 'xbins']
 
     ls = ['-','--',':']
     color = ['black',ps.purple,ps.blue,ps.orange]

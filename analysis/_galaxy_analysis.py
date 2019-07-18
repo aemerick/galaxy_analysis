@@ -222,7 +222,7 @@ class Galaxy(object):
         """
 
         def _verify_and_add(x, name):
-            if name in list(self._output_data_dict.keys()):
+            if name in self._output_data_dict.keys():
                 return self._output_data_dict[name]
             else:
                 return x
@@ -235,9 +235,9 @@ class Galaxy(object):
         self.particle_profiles  = _verify_and_add(self.particle_profiles, 'particle_profiles')
         self.observables        = _verify_and_add(self.observables, 'observables')
 
-        if 'R_vir' in list(self.meta_data.keys()):
+        if 'R_vir' in self.meta_data.keys():
             self.R_vir = self.meta_data['R_vir']
-        if 'M_vir' in list(self.meta_data.keys()):
+        if 'M_vir' in self.meta_data.keys():
             self.M_vir = self.meta_data['M_vir']
 
         return
@@ -297,7 +297,7 @@ class Galaxy(object):
 
         # do this for the entire halo, everything except the disk
         self.gas_profiles['velocity']['halo'] = {}
-        for k in list(CUT_REGION.keys()):  # loop through all cut regions
+        for k in CUT_REGION.keys():  # loop through all cut regions
             data  = self.halo_sphere.cut_region(CUT_REGION[k] + "&" + local_cr['not_disk'] ) # phase + geometric cut
             test  = self.halo_sphere.cut_region(CUT_REGION[k])
             test2 = self.halo_sphere.cut_region(local_cr['not_disk'])
@@ -328,9 +328,9 @@ class Galaxy(object):
 
     def calculate_radiation_profiles(self, fields = None, mode = 'disk'):
 
-        if not ('radiation' in list(self.gas_profiles.keys())):
+        if not ('radiation' in self.gas_profiles.keys()):
             self.gas_profiles['radiation'] = {}
-        if not (mode in list(self.gas_profiles['radiation'].keys())):
+        if not (mode in self.gas_profiles['radiation'].keys()):
             self.gas_profiles['radiation'][mode] = {}
 
         # want to make radial profiles of G_o, Q_0, Q_1, F_LW, F_PE, Gamma_PE
@@ -432,14 +432,14 @@ class Galaxy(object):
         if not outflow:
             prof_type = 'inflow'
 
-        if not prof_type in list(self.gas_profiles.keys()):
+        if not prof_type in self.gas_profiles.keys():
             self.gas_profiles[prof_type] = {}
 
-        if not mode in list(self.gas_profiles[prof_type].keys()):
+        if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
 
         if not (phase is None):
-            if not (phase in list(self.gas_profiles[prof_type][mode].keys())):
+            if not (phase in self.gas_profiles[prof_type][mode].keys()):
                 self.gas_profiles[prof_type][mode][phase] = {}
 
             self.gas_profiles[prof_type][mode][phase].update(profile)
@@ -541,10 +541,10 @@ class Galaxy(object):
         # save and store profiles here?
         #
         prof_type = 'accumulation'
-        if not prof_type in list(self.gas_profiles.keys()):
+        if not prof_type in self.gas_profiles.keys():
             self.gas_profiles[prof_type] = {}
 
-        if not mode in list(self.gas_profiles[prof_type].keys()):
+        if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
         
         self.gas_profiles[prof_type][mode].update( profiles )
@@ -657,10 +657,10 @@ class Galaxy(object):
         #
         prof_type = 'surface_density'
         mode = 'disk'
-        if not prof_type in list(self.gas_profiles.keys()):
+        if not prof_type in self.gas_profiles.keys():
             self.gas_profiles[prof_type] = {}
 
-        if not mode in list(self.gas_profiles[prof_type].keys()):
+        if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
         
         self.gas_profiles[prof_type][mode].update( profiles )
@@ -831,7 +831,7 @@ class Galaxy(object):
                   'HI':'H_p0_mass', 'HII': 'H_p1_mass'}
 
         def _sum_tracked_metals(d): # sum tracked metals species only
-            return np.sum([d[k] for k in list(d.keys()) if (not any([k in ['Metals','Total','H','H2','He','HI','HeI','HeII','HeIII','H2I','H2II','HII']]))])
+            return np.sum([d[k] for k in d.keys() if (not any([k in ['Metals','Total','H','H2','He','HI','HeI','HeII','HeIII','H2I','H2II','HII']]))])
 
         # do this for the disk ISM regions
         for crtype in cut_region_names:
@@ -937,7 +937,7 @@ class Galaxy(object):
 
         fields = list(self.gas_sequestering['Disk'].keys())
         x      = copy.deepcopy(self.gas_sequestering)
-        for region in list(self.gas_sequestering.keys()):
+        for region in self.gas_sequestering.keys():
             for s in fields:
                 x[region][s] /= self.gas_sequestering['FullBox'][s]
 
@@ -1181,10 +1181,10 @@ class Galaxy(object):
         # save profiles
         #
         prof_type = mode
-        if not prof_type in list(self.particle_profiles.keys()):
+        if not prof_type in self.particle_profiles.keys():
             self.particle_profiles[prof_type] = {}
 
-        if not xtype in list(self.particle_profiles[prof_type].keys()):
+        if not xtype in self.particle_profiles[prof_type].keys():
             self.particle_profiles[prof_type][xtype] = {}
 
         weight = weight_field
@@ -1193,7 +1193,7 @@ class Galaxy(object):
         elif weight is None and not accumulate:
             weight = "average"
 
-        if not weight in list(self.particle_profiles[prof_type][xtype].keys()):
+        if not weight in self.particle_profiles[prof_type][xtype].keys():
             self.particle_profiles[prof_type][xtype][weight] = {}
 
         self.particle_profiles[prof_type][xtype][weight].update( profiles )
@@ -1354,7 +1354,7 @@ class Galaxy(object):
 
         # BoundarMassFluxFieldNumbers stores field number which is connected
         # to field name via data label
-        num_flux = len( [x for x in list(self.ds.parameters.keys()) if 'BoundaryMassFluxFieldNumbers' in x])
+        num_flux = len( [x for x in self.ds.parameters.keys() if 'BoundaryMassFluxFieldNumbers' in x])
 
         if hasattr(self, 'boundary_mass_flux'):
             if len(list(self.boundary_mass_flux.keys())) == num_flux:

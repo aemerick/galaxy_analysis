@@ -640,7 +640,7 @@ def generate_stellar_model_fields(ds):
                   'R' : 'cm'}
 
     overload_type = {} # when generating stars, default is use type from simulation
-    for k in list(units.keys()):
+    for k in units.keys():
         overload_type[k] = None # keep simulation type when making stars for all fields
 
     overload_type['lifetime'] = 11 # lifetime field will now be the lifetime of the original MS star

@@ -44,11 +44,11 @@ def _create_region(ds, region_type, prop):
         region = ds.all_data()
 
     elif region_type == 'Disk' or region_type == 'disk':
-        if not 'center' in list(prop.keys()):
+        if not 'center' in prop.keys():
             prop['center'] = ds.domain_center
-        if not 'normal' in list(prop.keys()):
+        if not 'normal' in prop.keys():
             prop['normal'] = [0,0,1]
-        if (not 'radius' in list(prop.keys())) or (not 'height' in list(prop.keys())):
+        if (not 'radius' in prop.keys()) or (not 'height' in prop.keys()):
             print("If using disk region, must include radius and height")
             raise ValueError
 
@@ -56,9 +56,9 @@ def _create_region(ds, region_type, prop):
                          prop['radius'], prop['height'])
 
     elif (region_type == 'sphere' or region_type == 'Sphere'):
-        if not 'center' in list(prop.keys()):
+        if not 'center' in prop.keys():
             prop['center'] = ds.domain_center
-        if not 'radius' in list(prop.keys()):
+        if not 'radius' in prop.keys():
             print("If using sphere, must include radius")
             raise ValueError
 

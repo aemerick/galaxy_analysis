@@ -205,7 +205,7 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
 
     # open up the first file, check which species we are dealing with
     gal    = dd.io.load(all_files[0])
-    raw_fields = list(gal['gas_profiles'][mode]['sphere'].keys())
+    raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
     fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) )  ]
     fields = [x for x in fields if (len(x[1]) > 1)]
     fields = [x[1] for x in fields if ((not ('_p0_' in x[1])) and (not ('_p1_' in x[1])) and (not x[1] == 'a'))]
@@ -347,7 +347,7 @@ def save_script(onez, outname = 'onez_param_file.py'):
     # organize the output parameters slightly
     for x in ['config.units','config.zone','config.stars','config.io']:
 
-        for k in list(onez.keys()):
+        for k in onez.keys():
             if x in k:
                 f.write(k + "          = " + str(onez[k]) + "\n")
 

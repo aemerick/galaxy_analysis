@@ -31,7 +31,7 @@ def plot_metal_retention(workdir = './', outdir = './'):
     data_list, times = utilities.select_data_by_time(dir = workdir,
                                                      tmin=0.0,tmax= 650.0)
     all_data['times'] = times
-    for k in list(gather_keys.keys()):
+    for k in gather_keys.keys():
         all_data[k] = utilities.extract_nested_dict_asarray(None, gather_keys[k], data_list, False)
 
     fig, ax = plt.subplots()

@@ -16,7 +16,7 @@ def plot(workdir = './', t_min = 250.0, t_max = 350.0,
 
 #   override with global
     for k in phase_colors:
-        if k in list(color_dict.keys()):
+        if k in color_dict.keys():
             phase_colors[k] = color_dict[k]
 
     labels = {'cold' : 'Cold' , 'warm' : 'Warm', 'hot' : 'Hot',

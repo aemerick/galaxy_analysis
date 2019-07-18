@@ -69,7 +69,7 @@ for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
     pool.join()
 
     for r in results.get():
-        fulldict[ list(r.keys())[0] ] = r[list(r.keys())[0]]
+        fulldict[ r.keys()[0] ] = r[r.keys()[0]]
     del(results)
 
 f = open("low_eV_luminosity_%0004i_%0004i.dat"%(dsimin,dsimax),'w')

@@ -65,7 +65,7 @@ def _set_abundance_dictionary():
          79 :  0.92, 80 :  1.17, 81 : 0.90,
          82 :  1.75, 83 :  0.65}
 
-    for anum in list(x.keys()):
+    for anum in x.keys():
         x[anum_to_asym[anum]] = x[anum]
 
     #
@@ -108,7 +108,7 @@ def _set_molecular_weight_dictionary():
          82 : 207.2, 83 : 208.98040}
 
     # double up with element names
-    for anum in list(x.keys()):
+    for anum in x.keys():
         x[anum_to_asym[anum]] = x[anum]
 
     # make anum = 0 general metals

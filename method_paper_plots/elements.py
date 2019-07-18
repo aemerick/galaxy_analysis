@@ -18,7 +18,7 @@ import multiprocessing
 import deepdish as dd
 
 temp = dd.io.load('DD0100_galaxy_data.h5', '/gas_meta_data/masses/CNM')
-elements = utilities.sort_by_anum([x for x in list(temp.keys()) if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
+elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
 
 print(np.size(elements), '-----------')
 

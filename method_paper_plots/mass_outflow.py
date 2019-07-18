@@ -108,7 +108,7 @@ def plot_species_outflow_panel(work_dir = './', t_min = 0.0, t_max = 1000.0, pha
     xpos = dd.io.load(data_list[0], '/gas_profiles/outflow/sphere')
     xpos = xpos['centers_rvir']
     temp = dd.io.load(data_list[0], '/gas_meta_data/masses/CNM')
-    elements = utilities.sort_by_anum([x for x in list(temp.keys()) if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
+    elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
 
     fig, ax = plt.subplots(4, 4, sharex=True, sharey=True)
     fig.set_size_inches(16,16)
@@ -191,7 +191,7 @@ def plot_basic_outflow_and_loading(work_dir = './', t_min = 0.0, t_max = 1000.0,
     xpos = dd.io.load(data_list[0], '/gas_profiles/outflow/sphere')
     xpos = xpos['centers_rvir']
     temp = dd.io.load(data_list[0], '/gas_meta_data/masses/CNM')
-    elements = utilities.sort_by_anum([x for x in list(temp.keys()) if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
+    elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
 
     #
     # Mass Outflow Plot

@@ -32,14 +32,14 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, 
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
     
         comparison = {}
-        for k in list(labels.keys()):
+        for k in labels.keys():
             comparison[k] = (dirs[k],labels[k],lstyle[k])
 
     else:
         dirs = {}
         labels = {}
         lstyle = {}
-        for k in list(comparison.keys()):
+        for k in comparison.keys():
             dirs[k]   = work_dir + comparison[k][0]
             labels[k] = comparison[k][1]
             lstyle[k] = comparison[k][2]
@@ -50,7 +50,7 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, 
     
 
     all_data = {}
-    for k in list(comparison.keys()):
+    for k in comparison.keys():
         all_data[k] = {}
 
 #        if k == 'final_sndriving':
@@ -84,8 +84,8 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, 
     if colors is None:
         colors = {}
         i = 0
-        for k in list(comparison.keys()):
-            if not (k in list(colors.keys())):
+        for k in comparison.keys():
+            if not (k in colors.keys()):
                 colors[k] = 'C%1i'%(i)
                 i = i + 1
     
@@ -95,7 +95,7 @@ def plot_mass_resolution(work_dir = './', output_dir = None, comparison = None, 
     lstyle['M_H2I'] = '-.'
     lstyle['M_star'] = ':'
     
-    for k in list(comparison.keys()):
+    for k in comparison.keys():
 
 
         for field,color in [('M_total','black'), ('M_HI','C0'), ('M_H2I','C1'), ('M_star','C3')]:

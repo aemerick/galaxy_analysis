@@ -90,7 +90,7 @@ def compute_all_data(nproc = 28):
         numold = np.size(old_times)
         it = 1*numold
 
-    already_computed = np.sort([x for x in list(all_data.keys()) if 'DD' in x])
+    already_computed = np.sort([x for x in all_data.keys() if 'DD' in x])
     ds_list = [x.split('/')[0] for x in ds_list if (not (x.split('/')[0] in already_computed))]
 
     for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
@@ -108,7 +108,7 @@ def compute_all_data(nproc = 28):
             print(list(r.keys())[0], list(r[list(r.keys())[0]].keys()), it)
 
             all_data[list(r.keys())[0]] = {}
-            for k in list(r[list(r.keys())[0]].keys()):
+            for k in r[list(r.keys())[0]].keys():
                 all_data[list(r.keys())[0]][k] = r[list(r.keys())[0]][k]
 #            all_data[r.keys()[0]]['scale_height'] = r[r.keys()[0]]['scale_height']
 #            all_data[r.keys()[0]]['phases'] = r[r.keys()[0]]['phases']
@@ -128,7 +128,7 @@ def plot_phase_comparison(t_o = 46, t = 300, dt = 20, phases = ['CNM','WNM','WIM
     """
 
     data = dd.io.load('scale_height_data.h5')
-    data_list = np.sort(np.array([x for x in list(data.keys()) if 'DD' in x]))
+    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)
@@ -168,7 +168,7 @@ def plot_all_data(t_o = 46, dt = 20, t = [150,300,500]):
 
     data = dd.io.load('scale_height_data.h5')
     print(np.sort(list(data.keys())))
-    data_list = np.sort(np.array([x for x in list(data.keys()) if 'DD' in x]))
+    data_list = np.sort(np.array([x for x in data.keys() if 'DD' in x]))
 
     fig,ax = plt.subplots()
     fig.set_size_inches(8,8)

@@ -81,7 +81,7 @@ def get_model_yields(ds, data, AllStars = None, sum_only = True, overload_type =
     # now extract all of the yields into a dictionary of arrays
     total_wind_ejecta = {}
     model_sn_ejecta   = {}
-    for k in list(AllStars[0].wind_ejecta_masses().keys()):
+    for k in AllStars[0].wind_ejecta_masses().keys():
         total_wind_ejecta[k] = np.array([x.wind_ejecta_masses()[k] for x in AllStars.stars_iterable])
         model_sn_ejecta[k]   = np.array([x.sn_ejecta_masses()[k] for x in AllStars.stars_iterable])
 
@@ -103,20 +103,20 @@ def get_model_yields(ds, data, AllStars = None, sum_only = True, overload_type =
     factor[factor > 1.0] = 1.0
 
     model_wind_ejecta = dict(total_wind_ejecta)
-    for k in list(total_wind_ejecta.keys()):
+    for k in total_wind_ejecta.keys():
         model_wind_ejecta[k][AGB] = 0.0 # stars that will go AGB, but have not yet
         model_sn_ejecta[k][ pt == 11] = 0.0 # stars that have not died yet
 
         model_wind_ejecta[k][select] = model_wind_ejecta[k][select]*factor[select]
 
     all_ejecta = {}
-    for k in list(model_wind_ejecta.keys()):
+    for k in model_wind_ejecta.keys():
         all_ejecta[k] = model_sn_ejecta[k] + model_wind_ejecta[k]
 
     # just return the total in each species and type, not arrays
     # of all stars
     if sum_only:
-        for k in list(model_wind_ejecta.keys()):
+        for k in model_wind_ejecta.keys():
             all_ejecta[k] = np.sum(all_ejecta[k])
             model_wind_ejecta[k] = np.sum(model_wind_ejecta[k])
             model_sn_ejecta[k]   = np.sum(model_sn_ejecta[k])

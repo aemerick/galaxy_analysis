@@ -41,7 +41,7 @@ class general_functions():
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in list(kwargs.keys()):
+        if 'p0' in kwargs.keys():
             self.p0 = kwargs['p0']
 
         if method == 'curve_fit': # use scipy curve fitting
@@ -57,7 +57,7 @@ class general_functions():
                                                          *args, **kwargs)
         elif method == 'KS':
             # optimize the fit by minimizing distance between CDF
-            if not 'p0' in list(kwargs.keys()):
+            if not 'p0' in kwargs.keys():
                 print("Must supply initial guess if using KS method")
                 raise ValueError
             else:
@@ -206,7 +206,7 @@ class gaussian_powerlaw(general_functions):
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in list(kwargs.keys()):
+        if 'p0' in kwargs.keys():
             self.p0 = kwargs['p0']
 
         min_error = np.inf
@@ -306,7 +306,7 @@ class lognormal_powerlaw(general_functions):
         functions. If 'KS' is used, the data CDF is integrated using numpy trapz, but it would
         possibly be better to provide the CDF computed separately, using `data_cdf' argument.
         """
-        if 'p0' in list(kwargs.keys()):
+        if 'p0' in kwargs.keys():
             self.p0 = kwargs['p0']
 
         min_error = np.inf

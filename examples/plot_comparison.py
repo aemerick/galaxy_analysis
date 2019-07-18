@@ -383,36 +383,36 @@ color_dict['ion_no-otrad-sn'] = plasma(0.5); ls_dict['ion_no-otrad-sn'] = '-.'
 
 
 ALL_DATA = {}
-for s in list(DATA_PATHS.keys()):
+for s in DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(DATA_PATHS[s] + '/DD*.h5'))
-for s in list(feedback_comparisons.keys()):
+for s in feedback_comparisons.keys():
     ALL_DATA[s] = np.sort(glob.glob(feedback_comparisons[s] + '/DD*.h5'))
 
-for s in list(IC_comparisons.keys()):
+for s in IC_comparisons.keys():
     ALL_DATA[s] = np.sort(glob.glob(IC_comparisons[s] + '/DD*.h5'))
 
-for s in list(PERT_DATA_PATHS.keys()):
+for s in PERT_DATA_PATHS.keys():
     ALL_DATA[s] = np.sort(glob.glob(PERT_DATA_PATHS[s] + '/DD*.h5'))
 
-for s in list(STAR_IC.keys()):
+for s in STAR_IC.keys():
     ALL_DATA[s] = np.sort(glob.glob(STAR_IC[s] + '/DD*.h5'))
 
-for s in list(run11_IC.keys()):
+for s in run11_IC.keys():
     ALL_DATA[s] = np.sort(glob.glob(run11_IC[s] + '/DD*.h5'))
 
-for s in list(run15_IC.keys()):
+for s in run15_IC.keys():
     ALL_DATA[s] = np.sort(glob.glob(run15_IC[s] + '/DD*.h5'))
 
-for s in list(run11_feedback.keys()):
+for s in run11_feedback.keys():
     ALL_DATA[s] = np.sort(glob.glob(run11_feedback[s] + '/DD*.h5'))
 
-for s in list(run11_stampede_feedback.keys()):
+for s in run11_stampede_feedback.keys():
     ALL_DATA[s] = np.sort(glob.glob(run11_stampede_feedback[s] + '/DD*.h5'))
 
-for s in list(run15_feedback.keys()):
+for s in run15_feedback.keys():
     ALL_DATA[s] = np.sort(glob.glob(run15_feedback[s] + '/DD*.h5'))
 
-for s in list(comparison_sim.keys()):
+for s in comparison_sim.keys():
     ALL_DATA[s] = np.sort(glob.glob(comparison_sim[s] + '/DD*.h5'))
 
 def time_first_star(data = None, t = None, sfr = None):

@@ -35,7 +35,7 @@ def _load_data(work_dir, tmin = 0.0, tmax = np.inf):
 
     # gather all data so it can be readily plotted
     all_data = {}
-    for k in list(_all_data[ list(_all_data.keys())[0] ].keys()):
+    for k in _all_data[ _all_data.keys()[0] ].keys():
         all_data[k] = utilities.extract_nested_dict_asarray(_all_data, [k], self_contained = True)
 
     return all_data, times

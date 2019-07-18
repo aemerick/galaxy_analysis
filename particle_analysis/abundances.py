@@ -108,7 +108,7 @@ def plot_acf(h5file = 'star_abundances.h5', dir = './abundances/', ds_list = Non
     hf = h5py.File(dir + h5file, 'r')
 
     if ds_list is None:
-        ds_list = list(hf.keys())
+        ds_list = hf.keys()
 
 
     for dsname in ds_list:
@@ -119,7 +119,7 @@ def plot_acf(h5file = 'star_abundances.h5', dir = './abundances/', ds_list = Non
         ms = hf[dsname]['Mstars'].value
 
         abund    = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in list(abund.keys()) if ( (x != 'H') and (x != 'He'))])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He'))])
         nabundances = len(elements)
         outname = dir + dsname + '_abundances_acf.png'
         nrow, ncol = utilities.rowcoldict[nabundances]
@@ -179,7 +179,7 @@ def plot_time_evolution(h5file = 'star_abundances.h5', dir = './abundances/',
     hf = h5py.File(dir + h5file, 'r')
 
     if ds_list is None:
-        ds_list = list(hf.keys())
+        ds_list = hf.keys()
 
     if plot_type == 'standard':
         denom = 'Fe'
@@ -193,7 +193,7 @@ def plot_time_evolution(h5file = 'star_abundances.h5', dir = './abundances/',
         ms = hf[dsname]['Mstars'].value
 
         abund    = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in list(abund.keys()) if ( (x != 'H') and (x != 'He') and (not 'alpha' in x))])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if ( (x != 'H') and (x != 'He') and (not 'alpha' in x))])
         elements = elements + ['alpha']
         nabundances = len(elements)
 
@@ -272,7 +272,7 @@ def plot_abundances(h5file = 'star_abundances.h5', dir = './abundances/', plot_t
         denom2 = 'H'
 
     if ds_list is None: # do all
-        ds_list = list(hf.keys())
+        ds_list = hf.keys()
 
 
     for dsname in ds_list:
@@ -285,7 +285,7 @@ def plot_abundances(h5file = 'star_abundances.h5', dir = './abundances/', plot_t
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in list(abund.keys()) if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
         elements = elements + ['alpha']
         nabundances = len(elements)
 
@@ -412,7 +412,7 @@ def plot_MDF(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = '
         denom2 = 'H'
 
     if ds_list is None: # do all
-        ds_list = list(hf.keys())
+        ds_list =hf.keys()
 
 
     for dsname in ds_list:
@@ -425,7 +425,7 @@ def plot_MDF(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = '
         # always going to be N - 1
 
         abund = hf[dsname]['abundances']
-        elements = utilities.sort_by_anum([x for x in list(abund.keys()) if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
+        elements = utilities.sort_by_anum([x for x in abund.keys() if (x!= denom1) and (x!=denom2) and (not 'alpha' in x)])
         elements = elements + ['alpha']
         nabundances = len(elements)
 
@@ -572,22 +572,22 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             for e in elements:
                 stats = utilities.compute_stats( mass_fractions[e], return_dict = True)
                 g     = all.create_group(e)
-                for k in list(stats.keys()):
+                for k in stats.keys():
                     g.create_dataset(k, data = stats[k])
 
 #
             sg = hf.create_group(groupname + '/abundances')
-            for abundance in list(aratios.keys()):
+            for abundance in aratios.keys():
                 sg.create_dataset( abundance, data = aratios[abundance])
 
             # now compute statistics on the MS stars, and store them
             #
             statgroup = hf.create_group(groupname + '/statistics')
             all = statgroup.create_group('all_MS')
-            for abundance in list(aratios.keys()):
+            for abundance in aratios.keys():
                 stats = utilities.compute_stats(aratios[abundance], return_dict = True)
                 g = all.create_group(abundance)
-                for k in list(stats.keys()):
+                for k in stats.keys():
                     g.create_dataset(k, data = stats[k])
 
             #
@@ -596,7 +596,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             #
             aratios = compute_aratio(ds, data, ratios, particle_type = 'all')
             tracers = statgroup.create_group('all_particles')
-            for abundance in list(aratios.keys()):
+            for abundance in aratios.keys():
                 stats = utilities.compute_stats(aratios[abundance], return_dict = True)
                 g     = tracers.create_group(abundance)
 
@@ -616,7 +616,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                     stats['acf_error'] = acf_error
                     stats['acf_bins']  = acf_bins
 
-                for k in list(stats.keys()):
+                for k in stats.keys():
                     g.create_dataset(k, data = stats[k])
 
             mass_fractions      = compute_mass_fractions(ds, data, elements, particle_type = 'all')
@@ -641,7 +641,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             mf_stats_array_dict = {}
             for e in elements:
                 mf_stats_array_dict[e] = {}
-                for k in list(stats.keys()):
+                for k in stats.keys():
                     mf_stats_array_dict[e][k] = np.zeros(np.size(tbins)-1)
 
             for i in np.arange(np.size(tbins)-1):
@@ -654,15 +654,15 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
 
                     if np.size(age[selection]) > 1:
                         stats = utilities.compute_stats(mass_fractions[e][selection], return_dict = True) # +1 b/c index starts at 1
-                        for k in list(stats.keys()):
+                        for k in stats.keys():
                             mf_stats_array_dict[e][k][i] = stats[k]
                     else:
-                        for k in list(stats.keys()):
+                        for k in stats.keys():
                             mf_stats_array_dict[e][k][i] = None
 
             for e in elements:
                 g = hf[groupname + '/mass_fraction_statistics/cumulative/' + e]
-                for k in list(mf_stats_array_dict[e].keys()):
+                for k in mf_stats_array_dict[e].keys():
                     g.create_dataset(k, data = mf_stats_array_dict[e][k])
 
             for dt in [0.1, 1, 10]:
@@ -681,7 +681,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                 mf_stats_array_dict = {}
                 for e in elements:
                     mf_stats_array_dict[e] = {}
-                    for k in list(stats.keys()):
+                    for k in stats.keys():
                         mf_stats_array_dict[e][k] = np.zeros(np.size(tbins) - 1)
 
                 for i in np.arange(np.size(tbins)-1):
@@ -690,10 +690,10 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                             sub_g = g.create_group(e)
                         if hist[i] > 0:
                             stats = utilities.compute_stats(mass_fractions[e][index == i+1], return_dict = True) # +1 b/c index starts at$
-                            for k in list(stats.keys()):
+                            for k in stats.keys():
                                 mf_stats_array_dict[e][k][i] = stats[k]
                         else:
-                            for k in list(stats.keys()):
+                            for k in stats.keys():
                                 mf_stats_array_dict[e][k][i] = None
 
                 for e in elements:
@@ -713,7 +713,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                         mf_stats_array_dict[e]['acf'] = utilities.acf(interp_mean, nlags = len(tcent))
 
                     g = hf[groupname + '/mass_fraction_statistics/%iMyr/'%(dt) + e]
-                    for k in list(mf_stats_array_dict[e].keys()):
+                    for k in mf_stats_array_dict[e].keys():
                         g.create_dataset(k, data = mf_stats_array_dict[e][k])
 
 
@@ -740,29 +740,29 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             age      = t - t_form
 
             stats_array_dict = {}
-            for abundance in list(aratios.keys()):
+            for abundance in aratios.keys():
                 stats_array_dict[abundance] = {}
-                for k in list(stats.keys()):
+                for k in stats.keys():
                     stats_array_dict[abundance][k] = np.zeros(np.size(tbins) - 1)
             for i in np.arange(np.size(tbins)-1):
 
                 age = tbins[i] - t_form
                 selection = (age >= 0.0)*(age <= lifetime)
-                for abundance in list(aratios.keys()):
+                for abundance in aratios.keys():
                     if i == 0:
                         sub_g = g.create_group(abundance)
 
                     if np.size(age[selection]) > 1:
                         stats = utilities.compute_stats(aratios[abundance][selection], return_dict = True) # +1 b/c index starts at 1
-                        for k in list(stats.keys()):
+                        for k in stats.keys():
                             stats_array_dict[abundance][k][i] = stats[k]
                     else:
-                        for k in list(stats.keys()):
+                        for k in stats.keys():
                             stats_array_dict[abundance][k][i] = None
 
-            for abundance in list(aratios.keys()):
+            for abundance in aratios.keys():
                 g = hf[groupname + '/statistics/cumulative/' + abundance]
-                for k in list(stats_array_dict[abundance].keys()):
+                for k in stats_array_dict[abundance].keys():
                     g.create_dataset(k, data = stats_array_dict[abundance][k])
 
             # now bin by times (using various dt) to get instantaneous median and spread in SF
@@ -783,24 +783,24 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                 g.create_dataset('hist', data = np.array(hist))
 
                 stats_array_dict = {}
-                for abundance in list(aratios.keys()):
+                for abundance in aratios.keys():
                     stats_array_dict[abundance] = {}
-                    for k in list(stats.keys()):
+                    for k in stats.keys():
                         stats_array_dict[abundance][k] = np.zeros(np.size(tbins) - 1)
 
                 for i in np.arange(np.size(tbins)-1):
-                    for abundance in list(aratios.keys()):
+                    for abundance in aratios.keys():
                         if i == 0:
                             sub_g = g.create_group(abundance)
                         if hist[i] > 0:
                             stats = utilities.compute_stats(aratios[abundance][index == i+1], return_dict = True) # +1 b/c index starts at 1
-                            for k in list(stats.keys()):
+                            for k in stats.keys():
                                 stats_array_dict[abundance][k][i] = stats[k]
                         else:
-                            for k in list(stats.keys()):
+                            for k in stats.keys():
                                 stats_array_dict[abundance][k][i] = None
 
-                for abundance in list(aratios.keys()):
+                for abundance in aratios.keys():
                     # - - - - - Produce a gap-less, interpolated mean to compute the ACF
                     if False: # don't do this anymore
                         first        = np.where( np.logical_not(np.isnan( stats_array_dict[abundance]['mean'] )))[0][0]
@@ -817,7 +817,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                         stats_array_dict[abundance]['acf'] = utilities.acf(interp_mean, nlags = len(tcent))
 
                     g = hf[groupname + '/statistics/%iMyr/'%(dt) + abundance]
-                    for k in list(stats_array_dict[abundance].keys()):
+                    for k in stats_array_dict[abundance].keys():
                         g.create_dataset(k, data = stats_array_dict[abundance][k])
 
             # ------------ can do a correlation across time bins here too --------- 

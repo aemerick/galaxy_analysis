@@ -17,19 +17,19 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.', 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
         comparison = {}
-        for k in list(labels.keys()):
+        for k in labels.keys():
             comparison[k] = (dirs[k],labels[k],lstyle[k])
     else:
         dirs = {}
         labels = {}
         lstyle = {}
-	for k in list(comparison.keys()):
+	for k in comparison.keys():
             dirs[k]   = work_dir + comparison[k][0]
             labels[k] = comparison[k][1]
             lstyle[k] = comparison[k][2]
 
     all_data = {}
-    for k in list(labels.keys()):
+    for k in labels.keys():
         data_list = np.sort(glob.glob(dirs[k] + 'DD*_galaxy*.h5'))
         all_data[k] = dd.io.load( data_list[-1] )
 
@@ -39,14 +39,14 @@ def sfr_resolution(work_dir = './', output_dir = None, comparison = None, ylim =
     if colors is None:
         colors = {}
         i = 0
-        for k in list(comparison.keys()):
+        for k in comparison.keys():
             colors[k] = "C%1i"%(i)
             i = i + 1
 
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for k in list(comparison.keys()): # labels.keys():
+    for k in comparison.keys(): # labels.keys():
         x = (all_data[k]['time_data']['time'] - all_data[k]['time_data']['time'][0])/1.0E6
 
         plot_histogram(ax, x,

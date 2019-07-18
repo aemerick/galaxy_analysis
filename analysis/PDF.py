@@ -28,7 +28,7 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 #    ldata = {dsarray[0]: dd.io.load(datafile, "/" + dsarray[0])}
     data  = load_distribution_data(datafile, dsarray[0], phase, field, centers = cname)
     time_series = {}
-    for k in list(data.keys()):
+    for k in data.keys():
         if k == 'hist':
             continue
         time_series[k] = np.zeros(np.size(dsarray))
@@ -38,7 +38,7 @@ def gather_time_series(datafile, dsarray, phase, field, centers = None):
 
         data  = load_distribution_data(datafile, dsname, phase, field, centers = cname)
 
-        for k in list(data.keys()):
+        for k in data.keys():
 
             if np.size(data[k]) > 1: # cannot handle > 1D data for now
                 continue
@@ -65,13 +65,13 @@ def resolution_study(abundance_filename,
         labels = {'3pcH2' : '3.6 pc', '6pcH2' : '7.2 pc' , 'Fiducial' : 'Fiducial'}
         lstyle = {'3pcH2' : '--', '6pcH2' : '-.' , 'Fiducial' : '-'}
         dirs   = {'3pcH2' : '../3pc_H2/abundances/', '6pcH2' : '../6pc_H2/abundances/', 'Fiducial' : ''}
-        for k in list(dirs.keys()):
+        for k in dirs.keys():
             dirs[k] = work_dir + dirs[k]
     else:
         dirs = {}
         labels = {}
         lstyle = {}
-        for k in list(comparison.keys()):
+        for k in comparison.keys():
             dirs[k] = work_dir + comparison[0]
             labels[k] = comparison[1]
             lstyle[k] = comparison[2]
@@ -84,9 +84,9 @@ def resolution_study(abundance_filename,
     #   a time evolution of
     #
     time_data = {}
-    for k in list(labels.keys()):
+    for k in labels.keys():
         f = h5py.File(dirs[k] + abundance_filename,'r')
-        dsarray = np.sort([str(x) for x in list(f.keys()) if 'DD' in x])
+        dsarray = np.sort([str(x) for x in f.keys() if 'DD' in x])
         f.close()
         time_data[k] = {}
         time_data[k]['times'] = np.array([float(x.strip('DD')) for x in dsarray])
@@ -154,7 +154,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
 
     gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
     masses = {}
-    for k in list(gasdata.keys()):
+    for k in gasdata.keys():
         try:
             masses[k] = gasdata[k]['Total']
         except:
@@ -297,7 +297,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
 
     gasdata = dd.io.load(galaxy_file, '/gas_meta_data/masses')
     masses = {}
-    for k in list(gasdata.keys()):
+    for k in gasdata.keys():
         try:
             masses[k] = gasdata[k]['Total']
         except:
@@ -589,7 +589,7 @@ def fit_multifunction_PDF(bins, y, data):
 #        raise ValueError
 
     min_error = np.inf
-    for k in list(success.keys()):
+    for k in success.keys():
 
         if success[k]:
             rdict[k]['name'] = k

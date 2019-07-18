@@ -42,7 +42,7 @@ for i, dname in enumerate(data_list):
     temp_inflow  = dd.io.load( dname, '/gas_profiles/inflow/sphere')
     all_data['outflow'][i] = temp_outflow['mass_profile'][('gas','metal_mass')] / temp_outflow['mass_profile'][('gas','cell_mass')]
     all_data['inflow'][i] = temp_inflow['mass_profile'][('gas','metal_mass')]  / temp_inflow['mass_profile'][('gas','cell_mass')]
-for k in list(all_data.keys()):
+for k in all_data.keys():
     all_data[k] = np.array(all_data[k])
 
 ### now plot ###

@@ -72,7 +72,7 @@ def save_onezone_stats(stats_dict):
     f = open('onezone_element_stats.dat','w')
 
     f.write('#element avg min max std frac_min frac_max frac_std\n')
-    for k in list(stats_dict.keys()):
+    for k in stats_dict.keys():
         x = stats_dict[k]
         f.write("%-8s  %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E %5.5E\n"%(k,x['mean'],x['min'],x['max'],x['std'], x['min']/x['mean'], x['max']/x['mean'],x['std']/x['mean']))
 
@@ -93,7 +93,7 @@ def compute_all_data():
     onez_data_files = load_onezone_data()
 
     # construct dictionary from onez model statistics
-    elements = [x for x in list(simulation_data.keys()) if (not any([x in ['HI','HII','HeI','HeII','HeIII','Total Tracked Metals','H2','H2I']]))]
+    elements = [x for x in simulation_data.keys() if (not any([x in ['HI','HII','HeI','HeII','HeIII','Total Tracked Metals','H2','H2I']]))]
     for k in elements:
         if k == 'Total':
             continue

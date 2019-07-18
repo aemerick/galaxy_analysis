@@ -127,7 +127,7 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
                    'Disk'   : _disk}
 
     data = {}
-    for m in list(all_masks.keys()):
+    for m in all_masks.keys():
         data_source, mask = all_masks[m](galaxy)
         data[m] = compute_abundance_stats(galaxy.ds,
                                           data_source, mask, fraction_fields,
@@ -341,7 +341,7 @@ def _parallel_loop(dsname, fraction_fields):
                                       abundance_fields = abundance_fields)
 
     # make the stats group and the histogram group
-    for k in list(gas_data.keys()):
+    for k in gas_data.keys():
         g[k] = gas_data[k]
 
     del(gal)
@@ -427,7 +427,7 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
                 metal_species = utilities.species_from_fields(gal.ds.field_list)
 
             # don't recompute things unless overwrite is set
-            if groupname in list(hf.keys()) and (not overwrite):
+            if groupname in hf.keys() and (not overwrite):
                 continue
 
             hf[groupname] = {} # make an empty key for this group
@@ -441,32 +441,32 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
                                               abundance_fields = abundance_fields)
 
             # make the stats group and the histogram group
-            for k in list(gas_data.keys()):
+            for k in gas_data.keys():
                 g[k] = gas_data[k]
 
             del(gal)
 
 
         # save field names
-        if not ('species' in list(hf.keys())):
+        if not ('species' in hf.keys()):
             hf['species']          = species
-        if not ('metal_species' in list(hf.keys())):
+        if not ('metal_species' in hf.keys()):
             hf['metal_species']    = metal_species
-        if not ('abundance_fields' in list(hf.keys())):
+        if not ('abundance_fields' in hf.keys()):
             hf['abundance_fields'] = abundance_fields
 
     else: # parallel
 
         # select out data sets that already exist in output
         if not overwrite:
-            ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in list(hf.keys()) ]))]
+            ds_list = [x for x in ds_list if ( not any( [x.rsplit('/')[1] in y for y in hf.keys() ]))]
 
         # construct the pool, and map the results to a holder
         #   pool splits computation among processors
 
         def _check_if_fields_saved(dsname,dataset):
 
-            if not all( [y in list(dataset.keys()) for y in ['species','metal_species','abundance_fields']]):
+            if not all( [y in dataset.keys() for y in ['species','metal_species','abundance_fields']]):
 
               gal = Galaxy(dsname)
               abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
@@ -475,11 +475,11 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
               metal_species = utilities.species_from_fields(gal.ds.field_list)
 
               # save field names
-              if not ('species' in list(dataset.keys())):
+              if not ('species' in dataset.keys()):
                   dataset['species']          = species
-              if not ('metal_species' in list(dataset.keys())):
+              if not ('metal_species' in dataset.keys()):
                   dataset['metal_species']    = metal_species
-              if not ('abundance_fields' in list(dataset.keys())):
+              if not ('abundance_fields' in dataset.keys()):
                   dataset['abundance_fields'] = abundance_fields
 
               del(gal)
@@ -546,7 +546,7 @@ def plot_gas_fractions(dir = './abundances/', fname = 'gas_abundances.h5', overw
     nplots      = len(plot_fields)
     nrow, ncol  = utilities.rowcoldict[nplots]
 
-    ds_loop = np.sort([x for x in list(all_data.keys()) if 'DD' in x])
+    ds_loop = np.sort([x for x in all_data.keys() if 'DD' in x])
     ds_loop = [ds_loop[-1]]
 
     for dsname in ds_loop:
@@ -620,7 +620,7 @@ def plot_abundances(plot_type = 'standard', dir = './abundances/', fname = 'gas_
     nrow, ncol = utilities.rowcoldict[nplots]
 
     # only do most recent
-    ds_loop = np.sort([x for x in list(all_data.keys()) if 'DD' in x])
+    ds_loop = np.sort([x for x in all_data.keys() if 'DD' in x])
     ds_loop = [ds_loop[-1]]
 
     for dsname in ds_loop:
@@ -710,7 +710,7 @@ def plot_time_evolution(dir = './abundances/', fname = 'gas_abundances.h5',
     nrow, ncol = utilities.rowcoldict[nplots]
 
     # all_ds represents list of dataset names and kwargs to pull from
-    all_ds = np.sort([x for x in list(all_data.keys()) if 'DD' in x])
+    all_ds = np.sort([x for x in all_data.keys() if 'DD' in x])
 
     # gather times for all data sets
     times = utilities.extract_nested_dict_asarray(all_data, ['general','Time'], loop_keys = all_ds)
@@ -845,7 +845,7 @@ def collate_to_time_array(filepath = None):
         filepath = './gas_abundances.h5'
     data = dd.io.load(filepath)
     # make a new array to hold times
-    if (not ('time_evolution') in list(data.keys())):
+    if (not ('time_evolution') in data.keys()):
         data['time_evolution'] = {}
     return
 

@@ -28,13 +28,13 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
         dirs   = {'3pcH2' : '../3pc_H2/' , '6pcH2' : '../6pc_H2/', 'Fiducial' : work_dir}
         
         comparison = {}
-        for k in list(labels.keys()):
+        for k in labels.keys():
             comparison[k] = (dirs[k],labels[k],lstyle[k])
     else:
         dirs = {}
         labels = {}
         lstyle = {}
-        for k in list(comparison.keys()):
+        for k in comparison.keys():
             dirs[k]   = work_dir + comparison[k][0]
             labels[k] = comparison[k][1]
             lstyle[k] = comparison[k][2]
@@ -51,24 +51,24 @@ def plot_metal_retention_resolution(work_dir = './', output_dir = None, comparis
     if colors is None:
         colors = {}
         i = 0
-        for k in list(comparison.keys()):
-            if not (k in list(colors.keys())):
+        for k in comparison.keys():
+            if not (k in colors.keys()):
                 colors[k] = 'C%1i'%(i)
                 i = i + 1    
     
-    for sim in list(comparison.keys()):
+    for sim in comparison.keys():
         data_list, times = utilities.select_data_by_time(dir = dirs[sim],
                                                          tmin=0.0,tmax= 1000.0)
         all_data[sim] = {}
         all_data[sim]['times'] = times
-        for k in list(gather_keys.keys()):
+        for k in gather_keys.keys():
 
             all_data[sim][k] = utilities.extract_nested_dict_asarray(None, gather_keys[k], data_list, False)
 
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    for sim in list(all_data.keys()):
+    for sim in all_data.keys():
         total = all_data[sim]['FB TM'] + all_data[sim]['Outside Box TM']
 
 
