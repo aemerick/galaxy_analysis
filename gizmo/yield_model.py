@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import glob
 from galaxy_analysis.plot.plot_styles import *
 
+# globals since they are ifdefs in code:
+NUMBER_OF_AGE_BINS = 20
+AGE_BIN_START      = 0.1     # Myr
+AGE_BIN_END        = 14000.0 # Myr
 
 elements = ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
 
@@ -268,9 +272,9 @@ def compute_error(outfile = 'error.dat', overwrite=False):
 # Test out the chemical abundance stuff here 
 #
 
-    NBINS = 15 + 1
-    binstart = 0.0
-    binend   = np.log10(1400.0)
+    NBINS    = NUMBER_OF_AGE_BINS + 1
+    binstart = np.log10(AGE_BIN_START)
+    binend   = np.log10(AGE_BIN_END)
     bins     = np.logspace(binstart, binend, NBINS)[:-1]
 
 
