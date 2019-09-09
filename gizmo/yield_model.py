@@ -7,7 +7,7 @@ import glob
 from galaxy_analysis.plot.plot_styles import *
 
 # globals since they are ifdefs in code:
-NUMBER_OF_AGE_BINS = 20
+NUMBER_OF_AGE_BINS = 16
 AGE_BIN_START      = 0.1     # Myr
 AGE_BIN_END        = 14000.0 # Myr
 
@@ -266,25 +266,46 @@ def construct_yields(agebins, yieldtype = 'total'):
     return yields
 
 
+def get_bins(infile = "./gizmo.out", binfile = "age_bins.txt"):
+
+    count   = 0
+    logbins = True
+    for line in open(infile,'r'):
+        if "GALSF_FB_FIRE_AGE_TRACERS=" in line:
+            num_tracers = int(line.split("=")[1])
+
+        if "GALSF_FB_FIRE_AGE_TRACERS_CUSTOM" in line:
+            logbins = False
+
+        if count > 100:
+            break
+        count = count + 1
+
+
+    if logbins:
+        NBINS    = num_tracers + 1
+        binstart = np.log10(AGE_BIN_START)
+        binend   = np.log10(AGE_BIN_END)
+        bins     = np.logspace(binstart, binend, NBINS)[:-1]
+
+    else:
+        # read bins from file
+        bins     = np.genfromtxt(binfile)
+
+    return bins
+
 def compute_error(outfile = 'error.dat', overwrite=False):
 
 #
 # Test out the chemical abundance stuff here 
 #
 
-    NBINS    = NUMBER_OF_AGE_BINS + 1
-    binstart = np.log10(AGE_BIN_START)
-    binend   = np.log10(AGE_BIN_END)
-    bins     = np.logspace(binstart, binend, NBINS)[:-1]
+    bins = get_bins()
 
-
-    total_yields = construct_yields(bins/1000.0, yieldtype = 'total')
-
+    total_yields = construct_yields(bins/1000.0, # pass bins as Gyr
+                                    yieldtype = 'total')
     ds_list = np.sort(glob.glob('./snapshot_*.hdf5'))
 
-
-    #
-    #
     #
     nlines = 0
     open_mode = 'w'
