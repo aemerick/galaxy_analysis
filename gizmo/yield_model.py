@@ -4,15 +4,18 @@ import yt
 import os
 import matplotlib.pyplot as plt
 import glob
+
+# AE: Comment out below import unless you feel like
+#     installing a bunch of stuff:
 from galaxy_analysis.plot.plot_styles import *
 
-# globals since they are ifdefs in code:
-NUMBER_OF_AGE_BINS = 16
-AGE_BIN_START      = 0.1     # Myr
+
+
+# globals since they are ifdefs in code and I'm lazy:
+AGE_BIN_START      = 1.0     # Myr
 AGE_BIN_END        = 14000.0 # Myr
 
 elements = ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
-
 element_num = {}
 i = 0
 for e in elements:
@@ -23,16 +26,40 @@ def generate_metal_fields(ds, _agebins=None,
                               _elements=elements,
                               _yields=None,
                               ptype='PartType0'):
+    """
+    Generate derived fields mapping the age tracers to 
+    actual elemental abundances using the given set of
+    yields. yields must be a NxM array with N = the
+    number of age bins and M = the number of elements
+    (M = 11 for default FIRE). Each value here should be the
+    yield (in solar masses) per solar mass of star formation
+    in each age bin for each element.
+
+    The derived fields computing elemental mass loop through
+    all the age bin tracer fields.
+
+    Derived fields will be of form:
+        (ptype,"ELEMENTNAME_mass")
+        (ptype,"ELEMENTNAME_fraction")
+        (ptype,"ELEMENTNAME_actual_mass")
+
+    where 'ptype' is the passed particle type ("PartType0" or 
+    "PartType4" probably) and the "ELEMENTNAME_actual_mass" field
+    is the actual mass of that element in the yields followed in
+    the simulation (e.g. something like:
+       (ptype,"Metallicity_X")*(ptype,"particle_mass"), where X
+       is the metallicity number corresponding to that given element).
+    """
     
-    offset = 15 
-    #ptype = 'PartType0'
-    
+    offset = 15 # Metallicity_15 is the first age tracer field
+                #   -- 11 elements + 4 r-process... change if this changes
+
     def _metal_mass_test(_ptype, _ei):
         # test metals in bin zero 
     
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
-            for i in np.arange(np.size(_agebins)):
+            for i in np.arange(np.size(_agebins)-1):
                 fname    = 'Metallicity_%02i'%(offset + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
             
@@ -81,6 +108,11 @@ def _generate_star_metal_fields(ds,
                                 _elements=elements,
                                 _yields=None,
                                 ptype='PartType4'):
+
+    """
+    See above function. Computes surface abundances
+    of given star as derived from the age tracers
+    """
     
     offset = 15
     
@@ -89,7 +121,7 @@ def _generate_star_metal_fields(ds,
     
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
-            for i in np.arange(np.size(_agebins)):
+            for i in np.arange(np.size(_agebins)-1):
                 fname    = 'Metallicity_%02i'%(offset + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
             
@@ -110,16 +142,20 @@ def _generate_star_metal_fields(ds,
 
 
 #
-#
-#
-#
+# Extracted FIRE yield model:
+#   - Model is as-is from the code, but does not include any
+#     metallicity dependence (wind rates are fixed to a chosen
+#     metallicity, default is solar)
 #
 #
 
 def sn_rate(t):
-    # SN / Gyr  per solar msas of star formation
-    #    Changed output to /Gyr to keep same units as input t
-    
+    """
+    CCSNE rate
+
+    SN / Gyr  per solar msas of star formation
+        Changed output to /Gyr to keep same units as input t
+    """
     agemin = 0.003401   # Gyr
     agebrk = 0.010370   # Gyr
     agemax = 0.03753    # Gyr
@@ -133,11 +169,15 @@ def sn_rate(t):
         
         if (t > agemax):
             #RSNE=5.3E-8+1.6*np.exp(-0.5*((t-0.05)/0.01)*((t-0.05)/0.01)) # This is JUST SNIa
-            RSNE=0.0 # set to zero
+            RSNE=0.0 # set to zero for CCSNE
             
     return RSNE * 1000.0
 
 def snIa_rate(t):
+    """
+    SNIa rate (SN/Gyr)  - t in Gyr
+    """
+
     agemin = 0.003401   # Gyr
     agebrk = 0.010370   # Gyr
     agemax = 0.03753    # Gyr
@@ -148,11 +188,13 @@ def snIa_rate(t):
             
     return RSNE * 1000.0
 
-#def wind_rate(t):
-
 def wind_yields(i,element=None):
+    """
+    Yields (in fraction) per element with winds
+    """
     yields = [0.0, 0.36,0.016,0.0041,0.0118] + [0.0]*6
-    yields[0] = np.sum(yields)
+    yields[0] = np.sum(yields) # total yield
+
     # if element passed, use that - otherwise use yield indeces
     if not (element is None):
         if element == 'all':
@@ -161,7 +203,9 @@ def wind_yields(i,element=None):
     return yields[i]
 
 def wind_rate(t, Z = 1.0, GasReturnFraction = 1.0):
-    
+    """
+    Mass loss rate from stellar winds. Z is in solar.
+    """    
     p = 0.0
     if (t <= 0.001):
         p = 11.6846
@@ -180,9 +224,9 @@ def wind_rate(t, Z = 1.0, GasReturnFraction = 1.0):
     
     # assuming wind_rate is in Msun / Myr per solar mass of SF
     
-    wind_rate = p * GasReturnFraction * 1.4 * 0.291175
+    rate = p * GasReturnFraction * 1.4 * 0.291175
     
-    return wind_rate # might already be / Gyr
+    return rate # might already be / Gyr
 
 def snIa_yields(i, element = None):
     yields = [1.4,0.0,0.049,1.2E-6,0.143,0.0045,0.0086,0.156,0.087,0.012,0.743]
@@ -210,14 +254,12 @@ def snII_yields(i, element = None):
 
 def construct_yields(agebins, yieldtype = 'total'):
 
-    points = [0.003401, 0.010370, 0.03753]
+    points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10]
     
-    yields = np.zeros( (np.size(agebins), np.size(elements))) 
-    
-    #print( np.shape(yields))
+    yields = np.zeros( (np.size(agebins)-1 , np.size(elements))) 
     
     if yieldtype == 'snII' or yieldtype == 'total' or yieldtype == 'sn_only':
-        numsnII = np.zeros(np.size(agebins))
+        numsnII = np.zeros(np.size(agebins)-1)
         
         for i in np.arange(np.size(agebins) - 1):
             
@@ -226,16 +268,13 @@ def construct_yields(agebins, yieldtype = 'total'):
             else:
                 mint = agebins[i]
             maxt = agebins[i+1]
+
             numsnII[i] = integrate.quad( sn_rate, mint, maxt, points = points)[0]
             
-        numsnII[-1] = integrate.quad(sn_rate, agebins[-1], 14.0, points = points)[0]  
-        
-        #print(numsnII)
-        
         yields += np.outer(numsnII, snII_yields(-1, element = 'all'))
     
     if yieldtype == 'snIa' or yieldtype == 'total' or yieldtype == 'sn_only':    
-        numsnIa = np.zeros(np.size(agebins))
+        numsnIa = np.zeros(np.size(agebins)-1)
         
         for i in np.arange(np.size(agebins) - 1 ):
             
@@ -245,12 +284,11 @@ def construct_yields(agebins, yieldtype = 'total'):
                 mint = agebins[i]
             maxt = agebins[i+1]
             numsnIa[i] = integrate.quad( snIa_rate, mint, maxt, points = points)[0]
-        numsnIa[-1] = integrate.quad(snIa_rate, agebins[-1], 14.2, points = points)[0]
-        
+
         yields += np.outer(numsnIa, snIa_yields(-1, element = 'all'))        
  
     if yieldtype == 'winds' or yieldtype == 'total':    
-        wind_mass  = np.zeros(np.size(agebins))
+        wind_mass  = np.zeros(np.size(agebins)-1)
         windpoints = [0.001, 0.0035, 0.1]
         
         for i in np.arange(np.size(agebins) - 1 ):
@@ -261,13 +299,16 @@ def construct_yields(agebins, yieldtype = 'total'):
                 mint = agebins[i]
             maxt         = agebins[i+1]
             wind_mass[i] = integrate.quad(wind_rate, mint, maxt, points = windpoints)[0]
-        wind_mass[-1]      = integrate.quad(wind_rate, agebins[-1], 14.2, points = windpoints)[0]
+
         yields += np.outer(wind_mass, wind_yields(-1, element = 'all'))  
     return yields
 
 
 def get_bins(infile = "./gizmo.out", binfile = "age_bins.txt"):
-
+    """
+    Assuming gizmo.out is included in directory, generate
+    age bins. Requires age bin file if custom bins used
+    """
     count   = 0
     logbins = True
     for line in open(infile,'r'):
@@ -286,25 +327,43 @@ def get_bins(infile = "./gizmo.out", binfile = "age_bins.txt"):
         NBINS    = num_tracers + 1
         binstart = np.log10(AGE_BIN_START)
         binend   = np.log10(AGE_BIN_END)
-        bins     = np.logspace(binstart, binend, NBINS)[:-1]
+        bins     = np.logspace(binstart, binend, NBINS)
 
     else:
         # read bins from file
-        bins     = np.genfromtxt(binfile)
+        try:
+            bins     = np.genfromtxt(binfile)
+        except:
+            print("Custom bins. Problem loading binfile " + binfile)
+            raise ValueError
+
 
     return bins
 
-def compute_error(outfile = 'error.dat', overwrite=False):
+def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False):
+    """
+    Compute the error in the given age tracer model, defined
+    for each element (i) as:
 
-#
-# Test out the chemical abundance stuff here 
-#
+          (M_i_age - M_i_sim) / M_i_sim
 
+    where M_i_age is the mass of that element as derived from
+    convolving age tracers with extracted yield model from FIRE
+    and M_i_sim is the actual mass of that element in the simulation
+
+    """
+    
     bins = get_bins()
+
 
     total_yields = construct_yields(bins/1000.0, # pass bins as Gyr
                                     yieldtype = 'total')
-    ds_list = np.sort(glob.glob('./snapshot_*.hdf5'))
+
+
+    if limit_input:
+        ds_list = np.sort(glob.glob('./output/snapshot_*0.hdf5'))
+    else:
+        ds_list = np.sort(glob.glob('./output/snapshot_*.hdf5'))
 
     #
     nlines = 0
@@ -315,7 +374,7 @@ def compute_error(outfile = 'error.dat', overwrite=False):
         nlines = np.size(data[:,0])
 
         if nlines == (np.size(ds_list)):
-            print("not overwriting output")
+            print("Not overwriting output")
 
             if nlines > np.size(ds_list):
                 print("This file seems to exist for more data than available. Double check that you want to compute")
@@ -354,11 +413,16 @@ def compute_error(outfile = 'error.dat', overwrite=False):
 
         M_new_stars = 0.0 * yt.units.Msun
         if 'PartType4' in ptypes:
-            print("Number of new stars    ", np.size(data[('PartType4','Metallicity_00')]))
+            print("File %003i:  Number of new stars    %00005i"%(dsi, np.size(data[('PartType4','Metallicity_00')])))
             M_new_stars = data[('PartType4','particle_mass')].to('Msun')
             _generate_star_metal_fields(ds, _agebins = bins, _yields = total_yields)
+        else:
+            print("File %003i:  No star particles    "%(dsi))
 
-        f.write("%03i "%(dsi))
+        if ds.cosmological_simulation:
+            f.write("%03i %3.3f "%(dsi, ds.current_redshift))
+        else:
+            f.write("%03i %3.3f "%(dsi, 0.0000))
 
         tolerance = 1.0E-6 * yt.units.Msun
 
@@ -371,11 +435,10 @@ def compute_error(outfile = 'error.dat', overwrite=False):
             mtrue_mstar = 0.0 * yt.units.Msun
             if 'PartType4' in ptypes:
                 mstar = data[('all','PartType4_' + e + '_mass')]
-
                 mtrue_mstar = data[('PartType4','Metallicity_%02i'%(ei))].value * data[('PartType4','particle_mass')].to('Msun')
 
             mtrue = data[('all','PartType0_'+e+'_actual_mass')]
-            mtrue_total = np.max( [(np.sum(mtrue) + np.sum(mtrue_mstar) - mtrue_initial[e]) - tolerance, 0.0])
+            mtrue_total = np.max( [(np.sum(mtrue) + np.sum(mtrue_mstar) - mtrue_initial[e]), 0.0])
             m_total     = np.sum(m) + np.sum(mstar)
 
 #            if mtrue_total == 0.0:
@@ -383,9 +446,14 @@ def compute_error(outfile = 'error.dat', overwrite=False):
 #            else:
 #                error       = (m_total.value - mtrue_total) / mtrue_total
 
-            f.write("%5.5E %5.5E %5.5E "%(m_total, mtrue_total, np.sum(mstar)))
+            f.write("%5.5E %5.5E %5.5E %5.5E "%(m_total, mtrue_total, np.sum(mstar), np.sum(mtrue_mstar) ))
 
         f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+        del(ds)   # just in case
+        del(data) # just in case
+
 
     f.close()
 
@@ -400,7 +468,18 @@ def plot_error(infile = 'error.dat'):
     fig, ax = plt.subplots()
     fig.set_size_inches(6,6)
 
-    time = data[:,0] # Myr
+    time     = data[:,0] # Myr
+    redshift = data[:,1] # redshift
+
+    cosmological = False
+    if np.size(redshift[redshift>0]) > 0:
+        plot_x = redshift + 1
+        cosmological = True
+        HubbleParam  = 0.702
+    else:
+        plot_x = time
+        HubbleParam  = 1.0
+
 
     i = 0
     for ei, e in enumerate(elements):
@@ -410,23 +489,31 @@ def plot_error(infile = 'error.dat'):
         if (not(e == 'C')) and (not(e == 'O')) and (not(e == 'N')) and (not(e == 'Fe')) and (not(e=='Mg')):
             continue
 
-        mass   = data[:,1 + 3*ei]
-        mtrue  = data[:,2 + 3*ei]
+        mass   = data[:,2 + 4*ei]
+        mtrue  = data[:,3 + 4*ei] * HubbleParam
         error  = np.zeros(np.size(mtrue))
 
         error[mtrue>0]  = (mass[mtrue>0]-mtrue[mtrue>0])/mtrue[mtrue>0]
 
-        ax.plot(time, np.abs(error), lw = 3, ls = '-', label = e, color = 'C%i'%(i))
-#        ax.plot(time[error<0], np.abs(error[error<0]), lw = 3, ls = ':', color = 'C%i'%(i))
+        ax.plot(plot_x, np.abs(error), lw = 3, ls = '-', label = e, color = 'C%i'%(i))
+#        ax.plot(plot_x[error<0], np.abs(error[error<0]), lw = 3, ls = ':', color = 'C%i'%(i))
         i = i + 1
 
-    ax.set_xlim(0.0, np.max([np.max(time),50.0]))
-    ax.set_ylim(1.0E-6, 3.0)
+    if cosmological:
+        ax.set_xlim(15.0+1, 0.0 + 1)
+        ax.set_xlabel("1 + z")
+        ax.semilogx()
+    else:
+        ax.set_xlim(0.0, np.max([np.max(time),50.0]))
+        ax.set_xlabel("Time (Myr)")
+
+    ax.set_ylim(1.0E-4,1.0)
     ax.semilogy()
 
-    ax.set_xlabel("Time (Myr)")
-    ax.set_ylabel("Fraction Error")
+    ax.set_ylabel("Fractional Error")
     ax.legend(loc="best",ncol=3)
+
+    plt.minorticks_on()
 
     plt.tight_layout()
     fig.savefig("error.png")
