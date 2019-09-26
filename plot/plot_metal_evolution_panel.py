@@ -25,6 +25,15 @@ markers    = {'massive_star_winds' : '*',     'AGB_winds' : 'D', 'SN' : '*', 'ot
 ps         = {'massive_star_winds' :  75, 'AGB_winds' : 300, 'SN' : 300, 'other_stars' : 15}
 all_fields = ['number_density','Temperature','N_over_O_filtered','O_over_H_filtered', 'G_o', 'Q0_flux']
 
+
+plot_points = {'massive_star_winds' : True, 'AGB_winds' : False, 'SN' : False, 'other_stars' : False}
+
+colors['massive_star_winds']  = 'C1'
+markers['massive_star_winds'] = 'o'
+ps['massive_star_winds']      = 300
+
+use_noface = True
+
 tol      = 1.0E-25
 import matplotlib.colors as mpl_colors
 class MidpointNormalize(mpl_colors.Normalize):
@@ -68,22 +77,30 @@ def make_filtered_field(ds, fieldname, filter_fields = [], tolerance = tol):
     return
 
 
-def panel_plot(dsname, width = 1000.0, thickness = 20.0):
+def panel_plot(dsname, width = 1500.0, thickness = 50.0,
+                       particles_to_plot = ['massive_star_winds']):
+
+    if particles_to_plot is None:
+        particles_to_plot = ['massive_star_winds', 'AGB_winds', 'SN']
 
     cmaps = {'number_density' : 'viridis', 'Temperature' : 'RdYlBu_r',
-             'N_over_O_filtered' : 'PRGn', 'O_over_H_filtered' : 'cubehelix'}
+             'N_over_H_filtered' : 'algae',
+             'N_over_O_filtered' : 'PRGn', 'O_over_H_filtered' : 'algae'} # 'cubehelix'}
 
     unit  = {'number_density' : 'cm**(-3)', 'Temperature' : 'K'}
 
     zlim  = {'number_density' : (1.0E-3, 1.0E3), 'Temperature' : (100.0,1.0E7),
-             'N_over_O_filtered' : (-2,2), 'O_over_H_filtered' : (-5,1)}
+             'N_over_O_filtered' : (-2,2), 'O_over_H_filtered' : (-5,1),
+             'N_over_H_filtered' : (-5,1)}
 
 
     labels = {'number_density' : r'log(n [cm$^{-3}$])',
               'Temperature'     : r'log(T [K])',
+              'N_over_H_filtered'    : r'[N/H]',
               'N_over_O_filtered'    : r'[N/O]', 'O_over_H_filtered' : r'[O/H]'}
 
     log = {'number_density' : True, 'Temperature' : True,
+           'N_over_H_filtered' : False,
            'N_over_O_filtered' : False, 'O_over_H_filtered': False}
 
 
@@ -103,6 +120,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
 
 #    make_filtered_field(gal.ds, 'logNO', ['O_Fraction','N_Fraction'])
     make_filtered_field(gal.ds, 'O_over_H', ['O_Fraction'])
+    make_filtered_field(gal.ds, 'N_over_H', ['N_Fraction'])
     make_filtered_field(gal.ds, 'N_over_O', ['O_Fraction','N_Fraction'])
 
     dt = 5.0 * yt.units.Myr
@@ -126,6 +144,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
 
 
     fields = ["number_density","Temperature","N_over_O_filtered","O_over_H_filtered"]
+    fields = ["Temperature","N_over_O_filtered","O_over_H_filtered","N_over_H_filtered"]
 
 
     fig, axes, colorbars = get_multi_plot(4,1, colorbar="horizontal", bw=4)
@@ -171,7 +190,7 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
     pp['AGB_winds']          = in_image * recent_death * AGB
     pp['SN']                 = in_image * recent_death * massive_star
 
-    l = 0.5
+    l = 0.50 # domain center?
     scale = ds.domain_width[0].to('pc').value / width
     particle_x = scale*(data['particle_position_x'] - ds.domain_center[0]).value + l #.to('kpc').value
     particle_y = scale*(data['particle_position_y'] - ds.domain_center[1]).value + l #to('kpc').value
@@ -203,18 +222,26 @@ def panel_plot(dsname, width = 1000.0, thickness = 20.0):
             color = 'white'
         #if f == 'Temperature':
         #    color = 'black'
-            ax.plot( [0.07 + 0.05, 0.17 + 0.05], [0.05,0.05], color = color,
+            # 0.1 is fixed - always show length relatiev to total width
+            ax.plot( [0.07 + 0.05, (0.07 + 0.1) + 0.05], [0.05,0.05], color = color,
                  lw = 3, transform = ax.transAxes)
             xy = (0.07, 0.075)
             ax.text(xy[0], xy[1], "%.1f pc"%(width / 10.0), color = color,
                     fontsize = 16, transform = ax.transAxes)
 
         #if img_axes[f] == 'z':
-        for s in pp.keys():
+
+        for s in particles_to_plot:
             if np.size( particle_x[pp[s]]) > 0:
-                ax.scatter(particle_x[pp[s]], particle_y[pp[s]], s = ps[s],
-                           marker = markers[s], color = colors[s],
-                           transform = ax.transAxes)
+                if use_noface:
+                    ax.scatter(particle_x[pp[s]], particle_y[pp[s]], s = ps[s],
+                               marker = markers[s], color = colors[s],
+                               transform = ax.transAxes, facecolors = 'none')
+
+                else:
+                    ax.scatter(particle_x[pp[s]], particle_y[pp[s]], s = ps[s],
+                               marker = markers[s], color = colors[s],
+                               transform = ax.transAxes)
 
 
         if axi == 0:
