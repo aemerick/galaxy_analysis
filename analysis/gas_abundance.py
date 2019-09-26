@@ -1,4 +1,15 @@
-SKIP_ABUNDANCES = True
+SKIP_ABUNDANCES = False
+ABUNDANCE_DENOM = ['H','Fe','O','Mg']
+
+# do the following to limit computation a lot
+NONEQFIELDS     = None
+METALS          = ["N","O","Mg","Fe","Ba"]
+ABUNDANCES      = ["O_over_H", "O_over_Mg", "O_over_Fe",
+                   "Fe_over_H", "Fe_over_Mg", "Fe_over_O",
+                   "Mg_over_H", "Mg_over_O", "Mg_over_Fe",
+                   "N_over_Fe", "N_over_O", "N_over_H", "N_over_Mg",
+                   "Ba_over_H", "Ba_over_O", "Ba_over_Mg", "Ba_over_Fe"]
+# set to None to do all
 
 import yt
 import numpy as np
@@ -114,7 +125,7 @@ _mask_ls    = {'star_forming' : '-',
 
 
 def compute_stats_all_masks(galaxy, fraction_fields = None, 
-                                    abundance_fields = None):
+                                    abundance_fields = None, combine_fields = None):
 
     # define the standard masks, then compute things for all of them
     all_masks   = {'star_forming': _star_forming_region,
@@ -131,14 +142,14 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
         data_source, mask = all_masks[m](galaxy)
         data[m] = compute_abundance_stats(galaxy.ds,
                                           data_source, mask, fraction_fields,
-                                          abundance_fields)
+                                          abundance_fields, combine_fields=combine_fields)
 
     return data
 
 def compute_abundance_stats(ds, data_source, mask = None,
                                 fraction_fields = None,
                                 abundance_fields = None,
-                                mask_abundances = False,
+                                mask_abundances = False, combine_fields = None,
                                 unpoluted_threshold = -18):
     """
     Computes the mass and volume weighted distributions of metal
@@ -200,6 +211,18 @@ def compute_abundance_stats(ds, data_source, mask = None,
 
     if not (abundance_fields is None):
         all_fields = all_fields + abundance_fields
+
+    if not (combine_fields is None):
+
+        def _combined_field(field,data):
+            total = np.zeros(np.shape(data[combine_fields[0] + '_Fraction']))
+            for x in combine_fields:
+                total = total + data[x + '_Fraction']
+            return total
+        ds.add_field('combined', function = _combined_field, units ="")
+
+        all_fields = all_fields + ['combined']
+
 
     for field in all_fields:
 
@@ -314,8 +337,12 @@ def _parallel_loop(dsname, fraction_fields):
 #
 #
     # limit ourselves to Fe and H demoninators for now to speed up computation
-    abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                              select_denom = ['Fe','H','Ba','Mg','O','N'])
+    if ABUNDANCES is None:
+        abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                  select_denom = ABUNDANCE_DENOM)
+    else:
+        abundance_fields = ABUNDANCES
+#    abundance_fields = ['O_over_H']
     species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
     metal_species = utilities.species_from_fields(gal.ds.field_list)
 
@@ -330,6 +357,13 @@ def _parallel_loop(dsname, fraction_fields):
 #        if (groupname in existing_keys) and (not overwrite):
 #           return {groupname + '_skip_this_one' : {}} # g['skip_this_one_' + dsname]
 
+    combine_fields = None
+    combine_fname  = './combine_elements_gas_abundances.dat'
+    if os.path.isfile(combine_fname):
+        combine_fields = np.genfromtxt(combine_fname, dtype='str')
+
+    #print(combine_fields)
+
     dictionary = {groupname : {}}
     #hf[groupname] = {} # make an empty key for this group
     g = dictionary[groupname]
@@ -338,7 +372,7 @@ def _parallel_loop(dsname, fraction_fields):
     g['general']['Time']    = gal.ds.current_time.convert_to_units('Myr').value
     # generalized function to loop through all mask types and compute stats
     gas_data  = compute_stats_all_masks(gal, fraction_fields  = fraction_fields,
-                                      abundance_fields = abundance_fields)
+                                      abundance_fields = abundance_fields, combine_fields = combine_fields)
 
     # make the stats group and the histogram group
     for k in gas_data.keys():
@@ -401,8 +435,15 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
     metals = utilities.species_from_fields(ds.field_list)
 
     # additional fraction fields for the non-equillibrium chemistry species
-    fraction_fields = ['H_p0_fraction','H_p1_fraction','He_p0_fraction',
-                       'He_p1_fraction','He_p2_fraction','H2_fraction']
+    if NONEQFIELDS is None:
+        fraction_fields = ['H_p0_fraction','H_p1_fraction','He_p0_fraction',
+                           'He_p1_fraction','He_p2_fraction','H2_fraction']
+    else:
+        fraction_fields = NONEQFIELDS
+
+    if not (METALS is None):
+        metals = METALS
+
     for m in metals:
         fraction_fields += [m + '_Fraction']
 
@@ -421,8 +462,12 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             # if first loop, define the fields
             if i == 0:
                 # limit ourselves to Fe and H demoninators for now to speed up computation
-                abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                          select_denom = ['Fe','H','O','Mg','N'])
+                if ABUNDANCES is None:
+                    abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                          select_denom = ABUNDANCE_DENOM)
+                else:
+                    abundance_fields = ABUNDANCES
+
                 species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
                 metal_species = utilities.species_from_fields(gal.ds.field_list)
 
@@ -469,8 +514,11 @@ def generate_all_stats(outfile = 'gas_abundances.h5',
             if not all( [y in dataset.keys() for y in ['species','metal_species','abundance_fields']]):
 
               gal = Galaxy(dsname)
-              abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
-                                                                      select_denom = ['Fe','H','O','Mg','N'])
+              if ABUNDANCES is None:
+                  abundance_fields = utilities.abundance_ratios_from_fields(gal.ds.derived_field_list,
+                                                                        select_denom = ABUNDANCE_DENOM)
+              else:
+                  abundance_fields = ABUNDANCES
               species = utilities.species_from_fields(gal.ds.field_list,include_primordial=True)
               metal_species = utilities.species_from_fields(gal.ds.field_list)
 
