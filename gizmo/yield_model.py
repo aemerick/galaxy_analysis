@@ -11,10 +11,18 @@ import glob
 
 
 
-# globals since they are ifdefs in code and I'm lazy:
+# globals since these were ifdefs in an old version of the code
+# here for backwards compatability, but now these are
+# read from the gizmo parameter file if they are there
+# (only needed for when logbins used)
 AGE_BIN_START      = 1.0     # Myr
 AGE_BIN_END        = 14000.0 # Myr
 
+# in Gizmo output, first metal tracer field corresponding to
+# the age bins (0-14 are the 11 default species + 4 r-process)
+OFFSET             = 15
+
+# Hard-coded: list of elements in standard file model (in order)
 elements = ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
 element_num = {}
 i = 0
@@ -50,25 +58,18 @@ def generate_metal_fields(ds, _agebins=None,
        (ptype,"Metallicity_X")*(ptype,"particle_mass"), where X
        is the metallicity number corresponding to that given element).
     """
-    
-    offset = 15 # Metallicity_15 is the first age tracer field
-                #   -- 11 elements + 4 r-process... change if this changes
 
     def _metal_mass_test(_ptype, _ei):
-        # test metals in bin zero 
-    
+        # test metals in bin zero
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
             for i in np.arange(np.size(_agebins)-1):
-                fname    = 'Metallicity_%02i'%(offset + i)
+                fname    = 'Metallicity_%02i'%(OFFSET + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
-            
             mass_p = mass_p * yt.units.Msun
-          
             return mass_p
-        
         return temp
-    
+
     def _metal_fraction_test(_ptype, _e):
         def temp(field,data):
             Mp    = data[(_ptype,'particle_mass')].to('Msun')
@@ -113,16 +114,14 @@ def _generate_star_metal_fields(ds,
     See above function. Computes surface abundances
     of given star as derived from the age tracers
     """
-    
-    offset = 15
-    
+
     def _star_metal_mass_test(_ptype, _ei):
-        # test metals in bin zero 
-    
+        # test metals in bin zero
+
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
             for i in np.arange(np.size(_agebins)-1):
-                fname    = 'Metallicity_%02i'%(offset + i)
+                fname    = 'Metallicity_%02i'%(OFFSET + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
             
             mass_p = mass_p * yt.units.Msun
@@ -229,6 +228,7 @@ def wind_rate(t, Z = 1.0, GasReturnFraction = 1.0):
     return rate # might already be / Gyr
 
 def snIa_yields(i, element = None):
+    # ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
     yields = [1.4,0.0,0.049,1.2E-6,0.143,0.0045,0.0086,0.156,0.087,0.012,0.743]
     
     # if element passed, use that - otherwise use yield indeces
@@ -240,7 +240,7 @@ def snIa_yields(i, element = None):
     
 def snII_yields(i, element = None):
     # if element passed, use that - otherwise use yield indeces
-    
+    # ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
     yields = [2.0,3.87,0.133,0.0479,1.17,0.30,0.0987,0.0933,0.0397,0.00458,0.0741]
 
     if not (element is None):
@@ -254,7 +254,7 @@ def snII_yields(i, element = None):
 
 def construct_yields(agebins, yieldtype = 'total'):
 
-    points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10]
+    points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10, 1.0, 14.0]
     
     yields = np.zeros( (np.size(agebins)-1 , np.size(elements))) 
     
@@ -289,10 +289,10 @@ def construct_yields(agebins, yieldtype = 'total'):
  
     if yieldtype == 'winds' or yieldtype == 'total':    
         wind_mass  = np.zeros(np.size(agebins)-1)
-        windpoints = [0.001, 0.0035, 0.1]
-        
+        windpoints = [0.001, 0.0035, 0.1, 1.0, 14.0]
+
         for i in np.arange(np.size(agebins) - 1 ):
-            
+
             if i == 0:
                 mint = 0.0
             else:
@@ -304,29 +304,51 @@ def construct_yields(agebins, yieldtype = 'total'):
     return yields
 
 
-def get_bins(infile = "./gizmo.out", binfile = "age_bins.txt"):
+def get_bins(config_file = "./gizmo.out", param_file = "./params.txt-usedvalues",
+             binfile = "age_bins.txt", delimiter = '='):
     """
     Assuming gizmo.out is included in directory, generate
     age bins. Requires age bin file if custom bins used
     """
     count   = 0
     logbins = True
-    for line in open(infile,'r'):
-        if "GALSF_FB_FIRE_AGE_TRACERS=" in line:
-            num_tracers = int(line.split("=")[1])
+
+    if "GIZMO_config.h" in config_file:
+        delimiter = " "
+
+
+    for line in open(config_file,'r'):
+        if "GALSF_FB_FIRE_AGE_TRACERS"+delimeter in line:
+            num_tracers = int(line.split(delimiter)[1])
 
         if "GALSF_FB_FIRE_AGE_TRACERS_CUSTOM" in line:
             logbins = False
 
-        if count > 100:
+        if count > 100: # gizmo.out can be huge.....
             break
         count = count + 1
 
 
     if logbins:
+
+        age_bin_start = AGE_BIN_START
+        age_bin_end   = AGE_BIN_END
+
+        if os.path.isfile(param_file):
+            fname = param_file
+        elif 'gizmo.out' in config_file:
+            fname = param_file
+
+        for line in open(fname,'r'):
+            if "AgeTracerBinStart" in line:
+                age_tracer_start = float(line.split(" ")[-1])
+            elif "AgeTracerBinEnd" in line:
+                age_tracer_end   = float(line.split(" ")[-1])
+
+
         NBINS    = num_tracers + 1
-        binstart = np.log10(AGE_BIN_START)
-        binend   = np.log10(AGE_BIN_END)
+        binstart = np.log10(age_bin_start)
+        binend   = np.log10(age_bin_end)
         bins     = np.logspace(binstart, binend, NBINS)
 
     else:
@@ -340,7 +362,7 @@ def get_bins(infile = "./gizmo.out", binfile = "age_bins.txt"):
 
     return bins
 
-def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False):
+def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, final_only = False):
     """
     Compute the error in the given age tracer model, defined
     for each element (i) as:
@@ -360,7 +382,11 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False):
                                     yieldtype = 'total')
 
 
-    if limit_input:
+    if final_only:
+        ds_list = [np.sort(glob.glob('./output/snapshot*.hdf5'))[-1]]
+        outfile = outfile.split('.')[0] + '-final.' + outfile.split('.')[1]
+
+    elif limit_input:
         ds_list = np.sort(glob.glob('./output/snapshot_*0.hdf5'))
     else:
         ds_list = np.sort(glob.glob('./output/snapshot_*.hdf5'))
@@ -489,8 +515,8 @@ def plot_error(infile = 'error.dat'):
         if (not(e == 'C')) and (not(e == 'O')) and (not(e == 'N')) and (not(e == 'Fe')) and (not(e=='Mg')):
             continue
 
-        mass   = data[:,2 + 4*ei]
-        mtrue  = data[:,3 + 4*ei] * HubbleParam
+        mass   = data[:,2 + 4*ei] / HubbleParam
+        mtrue  = data[:,3 + 4*ei]
         error  = np.zeros(np.size(mtrue))
 
         error[mtrue>0]  = (mass[mtrue>0]-mtrue[mtrue>0])/mtrue[mtrue>0]
