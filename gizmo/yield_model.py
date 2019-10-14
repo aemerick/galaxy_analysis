@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import integrate
 import yt
-import os
+import os, sys
 import matplotlib.pyplot as plt
 import glob
 
@@ -549,5 +549,17 @@ def plot_error(infile = 'error.dat'):
 
 if __name__ == "__main__":
 
-    compute_error()
+#    overwrite   = False
+#    limit_input = False
+#    final_only  = False
+    kwargs = {}
+    if len(sys.argv) > 1:
+        for k in ['overwrite','limit_input','final_only']:
+            if k in sys.argv:
+                kwargs[k] = sys.argv[sys.argv.index(k) + 1] == "True"
+        for k in ['outfile']:
+            if k in sys.argv:
+                kwargs[k] = str(sys.argv[sys.argv.index(k)+1])
+
+    compute_error(**kwargs)
     plot_error()
