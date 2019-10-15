@@ -318,7 +318,7 @@ def get_bins(config_file = "./gizmo.out", param_file = "./params.txt-usedvalues"
 
 
     for line in open(config_file,'r'):
-        if "GALSF_FB_FIRE_AGE_TRACERS"+delimeter in line:
+        if "GALSF_FB_FIRE_AGE_TRACERS"+delimiter in line:
             num_tracers = int(line.split(delimiter)[1])
 
         if "GALSF_FB_FIRE_AGE_TRACERS_CUSTOM" in line:
@@ -383,7 +383,8 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
 
     if final_only:
-        ds_list = [np.sort(glob.glob('./output/snapshot*.hdf5'))[-1]]
+        ds_list = glob.glob('./output/snapshot*.hdf5')
+        ds_list = [ds_list[0], ds_list[-1]]
         outfile = outfile.split('.')[0] + '-final.' + outfile.split('.')[1]
 
     elif limit_input:
@@ -411,6 +412,7 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
             open_mode = 'a'
 
     f = open(outfile, open_mode)
+    fcol = open("./final_error.dat",'w')
 
     ds0    = yt.load(ds_list[0])
     data0   = ds0.all_data()
@@ -427,7 +429,13 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
         dsstart = nlines
 
     for dsi, dsname in enumerate(ds_list):
+        finalloop=False
+        print(dsi, len(ds_list))
+        if dsi == (len(ds_list) -1):
+            finalloop = True
+
         dsi = dsi + dsstart
+
 
         ds = yt.load(dsname)
         data = ds.all_data()
@@ -446,11 +454,18 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
             print("File %003i:  No star particles    "%(dsi))
 
         if ds.cosmological_simulation:
-            f.write("%03i %3.3f "%(dsi, ds.current_redshift))
+            current_redshift = ds.current_redshift
+            HubbleParam = 0.702
         else:
-            f.write("%03i %3.3f "%(dsi, 0.0000))
+            current_redshift = 0.0
+            HubbleParam = 1.0
 
+        f.write("%03i %3.3f "%(dsi,current_redshift))
         tolerance = 1.0E-6 * yt.units.Msun
+
+        if finalloop:
+            fcol.write("Final Output Stats:  i = %03i z = %3.3f\n"%(dsi,current_redshift))
+            fcol.write("element  total_error  star_error\n")
 
         for ei,e in enumerate(elements):
 #            if e=='Total':
@@ -465,7 +480,11 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
             mtrue = data[('all','PartType0_'+e+'_actual_mass')]
             mtrue_total = np.max( [(np.sum(mtrue) + np.sum(mtrue_mstar) - mtrue_initial[e]), 0.0])
-            m_total     = np.sum(m) + np.sum(mstar)
+            m_total     = np.sum(m)/HubbleParam + np.sum(mstar)
+
+#           if ds.cosmological_simulation:
+#                mstar = mstar / HubbleParam
+#                m_total = m_total / HubbleParam
 
 #            if mtrue_total == 0.0:
 #                error = 0.00
@@ -473,6 +492,10 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 #                error       = (m_total.value - mtrue_total) / mtrue_total
 
             f.write("%5.5E %5.5E %5.5E %5.5E "%(m_total, mtrue_total, np.sum(mstar), np.sum(mtrue_mstar) ))
+
+            # final?
+            if finalloop:
+                fcol.write("%10s %5.5E %5.5E\n"%(e, (m_total.value-mtrue_total)/mtrue_total,  (np.sum(mstar) - np.sum(mtrue_mstar)) / np.sum(mtrue_mstar)))
 
         f.write("\n")
         f.flush()
@@ -482,6 +505,9 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
 
     f.close()
+    fcol.flush()
+    os.fsync(fcol.fileno())
+    fcol.close()
 
 
     return
@@ -501,7 +527,8 @@ def plot_error(infile = 'error.dat'):
     if np.size(redshift[redshift>0]) > 0:
         plot_x = redshift + 1
         cosmological = True
-        HubbleParam  = 0.702
+    #    HubbleParam  = 0.702 # correction applied in computation now
+        HubbleParam = 1.0
     else:
         plot_x = time
         HubbleParam  = 1.0
