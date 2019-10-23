@@ -465,7 +465,7 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
         if finalloop:
             fcol.write("Final Output Stats:  i = %03i z = %3.3f\n"%(dsi,current_redshift))
-            fcol.write("element  total_error  star_error\n")
+            fcol.write("element  total_error  gas_error   star_error\n")
 
         for ei,e in enumerate(elements):
 #            if e=='Total':
@@ -495,7 +495,10 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
             # final?
             if finalloop:
-                fcol.write("%10s %5.5E %5.5E\n"%(e, (m_total.value-mtrue_total)/mtrue_total,  (np.sum(mstar) - np.sum(mtrue_mstar)) / np.sum(mtrue_mstar)))
+                print(np.sum(m), np.sum(m)/HubbleParam, np.sum(mtrue)-mtrue_initial[e], mtrue_initial[e])
+                fcol.write("%10s %5.5E %5.5E %5.5E \n"%(e, (m_total.value-mtrue_total)/mtrue_total,
+                                                    (np.sum(m)/HubbleParam - (np.sum(mtrue)-mtrue_initial[e])) / (np.sum(mtrue)-mtrue_initial[e]),
+                                                    (np.sum(mstar) - np.sum(mtrue_mstar)) / np.sum(mtrue_mstar)))
 
         f.write("\n")
         f.flush()
