@@ -34,7 +34,8 @@ for e in elements:
 def generate_metal_fields(ds, _agebins=None,
                               _elements=elements,
                               _yields=None,
-                              ptype='PartType0'):
+                              ptype='PartType0',
+                              age_is_fraction=False):
     """
     Generate derived fields mapping the age tracers to 
     actual elemental abundances using the given set of
@@ -68,6 +69,10 @@ def generate_metal_fields(ds, _agebins=None,
                 fname    = 'Metallicity_%02i'%(OFFSET + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
             mass_p = mass_p * yt.units.Msun
+
+            if age_is_fraction:
+                mass_p = mass_p * data[(ptype,'particle_mass')].value
+
             return mass_p
         return temp
 
@@ -109,7 +114,8 @@ def _generate_star_metal_fields(ds,
                                 _agebins=None,
                                 _elements=elements,
                                 _yields=None,
-                                ptype='PartType4'):
+                                ptype='PartType4',
+                                age_is_fraction = False):
 
     """
     See above function. Computes surface abundances
@@ -126,6 +132,9 @@ def _generate_star_metal_fields(ds,
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
             
             mass_p = mass_p * yt.units.Msun
+
+            if age_is_fraction:
+                mass_p = mass_p * data[(ptype,'particle_mass')].value
           
             return mass_p
         
@@ -202,7 +211,7 @@ def wind_yields(i,element=None):
 
     return yields[i]
 
-def wind_rate(t, Z = 1.0E-4 / 0.02, GasReturnFraction = 1.0):
+def wind_rate(t, Z = 1.0E-5 / 0.02, GasReturnFraction = 1.0):
     """
     Mass loss rate from stellar winds. Z is in solar.
     """    
@@ -363,7 +372,9 @@ def get_bins(config_file = "./gizmo.out", param_file = "./params.txt-usedvalues"
 
     return bins
 
-def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, final_only = False):
+def compute_error(outfile = 'error.dat', overwrite=False, 
+                  limit_input=False, final_only = False,
+                  age_is_fraction = False):
     """
     Compute the error in the given age tracer model, defined
     for each element (i) as:
@@ -417,7 +428,7 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
 
     ds0    = yt.load(ds_list[0])
     data0   = ds0.all_data()
-    generate_metal_fields(ds0, _agebins = bins, _yields = total_yields)
+    generate_metal_fields(ds0, _agebins = bins, _yields = total_yields, age_is_fraction=age_is_fraction)
 
     mtrue_initial = {}
     for e in elements:
@@ -441,7 +452,7 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
         ds = yt.load(dsname)
         data = ds.all_data()
         fields = ds.field_list
-        generate_metal_fields(ds, _agebins=bins, _yields=total_yields)
+        generate_metal_fields(ds, _agebins=bins, _yields=total_yields, age_is_fraction=age_is_fraction)
 
         ptypes = np.unique([x[0] for x in ds.field_list])
         metals = np.unique([x[1] for x in ds.field_list if ((x[0] == 'PartType0') and ('Metal' in x[1]))])
@@ -450,11 +461,11 @@ def compute_error(outfile = 'error.dat', overwrite=False, limit_input=False, fin
         if 'PartType4' in ptypes:
             print("File %003i:  Number of new stars    %00005i"%(dsi, np.size(data[('PartType4','Metallicity_00')])))
             M_new_stars = data[('PartType4','particle_mass')].to('Msun')
-            _generate_star_metal_fields(ds, _agebins = bins, _yields = total_yields)
+            _generate_star_metal_fields(ds, _agebins = bins, _yields = total_yields, age_is_fraction=age_is_fraction)
         else:
             print("File %003i:  No star particles    "%(dsi))
 
-        if ds.cosmological_simulation:
+        if ds.cosmological_simulation: # might need to turn off if age is fraction
             current_redshift = ds.current_redshift
             HubbleParam = 0.702
         else:
@@ -585,7 +596,7 @@ if __name__ == "__main__":
 #    final_only  = False
     kwargs = {}
     if len(sys.argv) > 1:
-        for k in ['overwrite','limit_input','final_only']:
+        for k in ['overwrite','limit_input','final_only','age_is_fraction']:
             if k in sys.argv:
                 kwargs[k] = sys.argv[sys.argv.index(k) + 1] == "True"
         for k in ['outfile']:
