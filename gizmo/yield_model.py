@@ -201,7 +201,7 @@ def wind_yields(i,element=None):
 
     return yields[i]
 
-def wind_rate(t, Z = 1.0, GasReturnFraction = 1.0):
+def wind_rate(t, Z = 1.0E-4 / 0.02, GasReturnFraction = 1.0):
     """
     Mass loss rate from stellar winds. Z is in solar.
     """    
@@ -216,7 +216,7 @@ def wind_rate(t, Z = 1.0, GasReturnFraction = 1.0):
             if (t<=0.1):
                 p=72.1215*(t/0.0035)**(-3.25)+0.0103
             else:
-                p=1.03*t**(-1.1) / (12.9-np.log10(t))
+                p=1.03*t**(-1.1) / (12.9-np.log(t))
     
     #if (t < 0.1):
     #    p = p * 1.0
