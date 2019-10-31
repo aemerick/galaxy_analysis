@@ -26,10 +26,10 @@ def load_abundance_data(data, data_list,
         time_data[field] = {}
 
         if field_types is None:
-            if '_Fraction' in field:
+            if '_Fraction' in field or '_over_' in field:
                 ft = 'mass_fraction'
-            elif '_over_' in field:
-                ft = 'abundance'
+         #   elif '_over_' in field:
+         #       ft = 'abundance'
             else:
                 print("Cannot properly determing field type for " + field)
                 raise RunTimeError
@@ -53,8 +53,14 @@ def load_abundance_data(data, data_list,
                                                                                data_list = data_list,
                                                                                self_contained = True)
                         time_data[field][phase][p] = np.array(time_data[field][phase][p], dtype = np.float)
-                    time_data[field][phase][property] = np.log10(time_data[field][phase]['Q3']) -\
-                                                        np.log10(time_data[field][phase]['Q1'])
+
+                    if '_Fraction' in field: # do not do for abundance ratios
+                        time_data[field][phase][property] = np.log10(time_data[field][phase]['Q3']) -\
+                                                            np.log10(time_data[field][phase]['Q1'])
+                    else:
+                        time_data[field][phase][property] = time_data[field][phase]['Q3'] -\
+                                                            time_data[field][phase]['Q1']
+
                 elif property == 'mean_median_distance':
                     for p in ['median','mean']:
                         if not p in list(time_data[field][phase].keys()):
@@ -64,9 +70,13 @@ def load_abundance_data(data, data_list,
                                                                                 data_list = data_list,
                                                                                 self_contained = True)
                             time_data[field][phase][p] = np.array(time_data[field][phase][p], dtype = np.float)
-                    time_data[field][phase]['mean_median_distance'] =\
-                                               np.log10(time_data[field][phase]['mean']) -\
-                                               time_data[field][phase]['median']
+                    if '_Fraction' in field: # do not do for abundance ratios
+                        time_data[field][phase]['mean_median_distance'] =\
+                                                   np.log10(time_data[field][phase]['mean']) -\
+                                                   time_data[field][phase]['median']
+                    else:
+                        time_data[field][phase]['mean_median_distance'] = time_data[field][phase]['mean']-\
+                                                                          time_data[field][phase]['median']
 
                 elif property == 'inner_decile_range' or property == 'd9_d1_range':
                     for p in ['decile_1','decile_9']:
@@ -78,8 +88,12 @@ def load_abundance_data(data, data_list,
                                                                                self_contained = True)
                         time_data[field][phase][p] = np.array(time_data[field][phase][p], dtype = np.float)
 
-                    time_data[field][phase][property] = np.log10(time_data[field][phase]['decile_9']) -\
-                                                        np.log10(time_data[field][phase]['decile_1'])
+                    if '_Fraction' in field: # do not do for abundance ratios
+                        time_data[field][phase][property] = np.log10(time_data[field][phase]['decile_9']) -\
+                                                            np.log10(time_data[field][phase]['decile_1'])
+                    else:
+                        time_data[field][phase][property] = time_data[field][phase]['decile_9']-\
+                                                            time_data[field][phase]['decile_1']
                 else:
                     field_path = [phase,ft,field,property]
                     time_data[field][phase][property] = utilities.get_property(field_path,
@@ -88,8 +102,9 @@ def load_abundance_data(data, data_list,
                                                                                self_contained = True)
                     time_data[field][phase][property] = np.array(time_data[field][phase][property], dtype = np.float)
 
-                    if property in ['median','mean']:
-                        time_data[field][phase][property] = np.log10(time_data[field][phase][property])
+                    if '_Fraction' in field: # do not do for abundance ratios
+                        if property in ['median','mean']:
+                            time_data[field][phase][property] = np.log10(time_data[field][phase][property])
 
     return time_data
 
@@ -136,7 +151,7 @@ def plot_stellar_separation(time, data, galaxy,
                             phases   = ['CNM'],
                             figdim=None,
                             field_types = None,
-                            labels = None, line_styles = None,
+                            labels = None, line_styles = {},
                             xlim = None, ylim = None,
                             annotate_text = None, ylabels = None):
     if labels is None:
@@ -309,7 +324,7 @@ def plot_abundance_evolution(time, data,
                              field_types = None,
                              labels = None, line_styles = None,
                              xlim = None, ylim = None,
-                             annotate_text = None):
+                             annotate_text = None, fsize=5):
 
     if figdim is None:
         ncol = len(property_list)
@@ -330,7 +345,7 @@ def plot_abundance_evolution(time, data,
     print("DATA LOADING TOOK %2.2E"%(cpu_time.time()- start))
 
     fig, ax = plt.subplots(nrow,ncol)
-    fig.set_size_inches(5*ncol, 5*nrow)
+    fig.set_size_inches(fsize*ncol, fsize*nrow)
 
     axi = 0
     axj = 0
@@ -339,7 +354,10 @@ def plot_abundance_evolution(time, data,
     for field in fields:
 
         for property in property_list:
-            axindex = (axi,axj)
+            if len(fields) == 1:
+                axindex = axj
+            else:
+                axindex = (axi,axj)
 
             for phase in phases:
                 yval = time_data[field][phase][property] # - time_data[field]['CNM'][property]
@@ -355,7 +373,11 @@ def plot_abundance_evolution(time, data,
                                  label = phase)
 
             ax[axindex].set_xlabel(r'Time (Myr)')
-            ax[axindex].set_ylabel(labels[property])
+
+            if hasattr(labels[property],"keys"):
+                ax[axindex].set_ylabel(labels[property][field])
+            else:
+                ax[axindex].set_ylabel(labels[property])
 
             if xlim is None:
                 ax[axindex].set_xlim(xval[0],xval[-1])
@@ -363,7 +385,10 @@ def plot_abundance_evolution(time, data,
                 ax[axindex].set_xlim(xlim)
 
             if not (ylim is None):
-                ymin,ymax = ylim[axi][axj]
+                if np.size(fields) == 1:
+                    ymin,ymax = ylim[axindex]
+                else:
+                    ymin,ymax = ylim[axindex[0]][axindex[1]]
                 ax[axindex].set_ylim(ymin,ymax)
 
 
@@ -372,18 +397,30 @@ def plot_abundance_evolution(time, data,
                 axj = 0
                 axi = axi + 1
 
-    ax[(0,0)].legend(loc='lower right', ncol=2)
+    if len(fields) == 1:
+        indexzero=0
+    else:
+        indexzero=(0,0)
+
+    ax[indexzero].legend(loc='lower right', ncol=2)
 
     if not annotate_text is None:
-        for axi in [0,1]:
-            xy = annotate_text[axi][1]
-            ax[(axi,0)].annotate( annotate_text[axi][0], xy,xy)
+        for axi in len(fields):
+            if len(fields) == 1:
+                axindex0 = axi
+                axindex1 = axi
+            else:
+                axindex0 = (axi,1)
+                axindex1 = (axi,0)
+
+            xy = annotate_text[axindex0]
+            ax[axindex1].annotate( annotate_text[axindex0], xy,xy)
 
     plt.minorticks_on()
-    plt.tight_layout()
+    #plt.tight_layout()
     fig.savefig( '_'.join(fields + property_list) + '_evolution.png')
 
-    return
+    return fig, ax
 
 if __name__ == "__main__":
 
@@ -405,9 +442,10 @@ if __name__ == "__main__":
 
     plot_stellar_2d_hist(galaxy, 'O_Fraction')
 
+
     plot_stellar_separation(time, data, galaxy,
-                            field    = 'O_Fraction',
-                            property = 'median',
+                             field    = 'O_Fraction',
+                           property = 'median',
                             phases   = ['CNM'],
                             labels = {'median' : 'Median'},
                             ylabels = [r"[O/H] - [O/H]$_{\rm CNM}$"])
@@ -436,5 +474,7 @@ if __name__ == "__main__":
                                        'd9_d1_range' : r'Inner Decile Range [dex]'},
                              line_styles = {'HIM' : ':'},
                               ylim = [ [(-8,-2),(0.0,1.5),(0.0,3.0)], [(-9,-3),(0.0,1.5),(0.0,3.0)]],
-                            # ylim = [ [(-1,8),(-3,3),(-3,3.0)], [(-1,8),(-3,3),(-3,3.0)]],
+                           # ylim = [ [(-1,8),(-3,3),(-3,3.0)], [(-1,8),(-3,3),(-3,3.0)]],
                              annotate_text = [ ('Oxygen', (20.0,-2.5)),   ('Nitrogen',(-8.5,-10.5))])
+
+    
