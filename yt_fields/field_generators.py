@@ -4,7 +4,7 @@ __email__  = "aemerick11@gmail.com"
 
 import yt
 yt.funcs.mylog.setLevel(40)
-
+from yt.fields.api import ValidateDataField, ValidateParameter
 from yt.units import dimensions
 import numpy as np
 
@@ -505,9 +505,10 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     denoms = [x.split('/')[1] for x in ratios]
     denoms = np.unique(denoms)
-    for x in denoms:
-        yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
-        yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
+    if ('io','particle_alpha_abundance') in ds.derived_field_list:
+        for x in denoms:
+            yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
+            yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
 
 
 #    def _alpha_over_Fe(field,data):
@@ -850,8 +851,12 @@ def _additional_helper_fields(fields):
         return x
 
     def _otlwcgs(field, data):
-        lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
-        return lw.convert_to_units('1/s') 
+        if ('enzo','OTLW_kdissH2I') in data.ds.field_list:
+            lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
+        else:
+            lw = np.zeros(np.shape(data['Density'])) / data.ds.time_unit
+
+        return lw.convert_to_units('1/s')
 
     def _G_o(field,data):
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
@@ -902,7 +907,10 @@ def _additional_helper_fields(fields):
         LW_energy = 12.8 * yt.units.eV
         H2Isigma  = 3.71E-18 * yt.units.cm**(2)
 
-        kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+        if ('enzo','OTLW_kdissH2I') in data.ds.field_list:
+            kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+        else:
+            kdissH2I = (np.zeros(np.shape(data['Density'])) / data.ds.time_unit).to('1/s')
 
         LW_flux = kdissH2I / H2Isigma * LW_energy
 
@@ -1057,12 +1065,16 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','H_Mass'), function = _H_total_mass, units = 'g') # define as same
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
-    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
+
+    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s',
+                 validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
+    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2",
+                 validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
+
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate_masked, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
     yt.add_field(('gas','G_eff'), function = _G_eff, units = "")
     yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
-    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','Q0_flux'), function = _Q0_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','Q1_flux'), function = _Q1_flux, units = "erg/s/cm**2")
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
