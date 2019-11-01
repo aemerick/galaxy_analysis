@@ -10,7 +10,8 @@ import glob
 #     installing a bunch of stuff:
 # from galaxy_analysis.plot.plot_styles import *
 
-
+SolarAbundances = np.array([0.02, 0.28, 3.26E-3, 1.32E-3, 8.65E-3, 
+                            2.22E-3, 9.31E-4, 1.08E-3, 6.44E-4, 1.01E-4, 1.73E-3])
 
 # globals since these were ifdefs in an old version of the code
 # here for backwards compatability, but now these are
@@ -18,6 +19,10 @@ import glob
 # (only needed for when logbins used)
 AGE_BIN_START      = 1.0     # Myr
 AGE_BIN_END        = 14000.0 # Myr
+
+SOLAR_METALLICITY = 0.02 # as defined in Gizmo / FIRE defaults
+
+
 
 # in Gizmo output, first metal tracer field corresponding to
 # the age bins (0-14 are the 11 default species + 4 r-process)
@@ -197,12 +202,30 @@ def snIa_rate(t):
             
     return RSNE * 1000.0
 
-def wind_yields(i,element=None):
+def wind_yields(i,element=None, Z = 1.0E-5, FIRE_Z_scaling = False):
     """
     Yields (in fraction) per element with winds
     """
-    yields = [0.0, 0.36,0.016,0.0041,0.0118] + [0.0]*6
+    Zsolar = Z / SOLAR_METALLICITY
+
+    yields = np.array([0.0, 0.36,0.016,0.0041,0.0118] + [0.0]*6)
+
+    if (Z  < 0.033):
+        yields[4]  *= Zsolar
+    else:
+        yields[4]  *= 1.65
+
+    if FIRE_Z_scaling:
+        # only first 5 elements
+        i = 4
+        yields[:i] = yields[:i]*(1.0-Z)+(Zsolar*SolarAbundances[:i]-SolarAbundances[:i])
+
     yields[0] = np.sum(yields) # total yield
+
+    if (np.any(yields <	0.0)):
+        print(yields)
+       	print("Error in	wind yields - negative", Z)
+       	raise RuntimeError
 
     # if element passed, use that - otherwise use yield indeces
     if not (element is None):
@@ -211,17 +234,20 @@ def wind_yields(i,element=None):
 
     return yields[i]
 
-def wind_rate(t, Z = 1.0E-5 / 0.02, GasReturnFraction = 1.0):
+def wind_rate(t, Z = 1.0E-5, GasReturnFraction = 1.0):
     """
     Mass loss rate from stellar winds. Z is in solar.
     """    
+
+    Zsolar  = Z / SOLAR_METALLICITY
+
     p = 0.0
     if (t <= 0.001):
         p = 11.6846
     else:
         if (t <=0.0035):
-            logZ=np.log10(Z)
-            p=11.6846*Z*10.0**(1.838*(0.79+logZ)*(np.log10(t)-(-3.00)))
+            logZ=np.log10(Zsolar)
+            p=11.6846*Zsolar*10.0**(1.838*(0.79+logZ)*(np.log10(t)-(-3.00)))
         else:
             if (t<=0.1):
                 p=72.1215*(t/0.0035)**(-3.25)+0.0103
@@ -237,10 +263,30 @@ def wind_rate(t, Z = 1.0E-5 / 0.02, GasReturnFraction = 1.0):
     
     return rate # might already be / Gyr
 
-def snIa_yields(i, element = None):
+def snIa_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling = False, MSNe = 1.4):
     # ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
-    yields = [1.4,0.0,0.049,1.2E-6,0.143,0.0045,0.0086,0.156,0.087,0.012,0.743]
+    yields = np.array([1.4,0.0,0.049,1.2E-6,0.143,0.0045,0.0086,0.156,0.087,0.012,0.743])
+
+    Zsolar = Z / SOLAR_METALLICITY
     
+    if FIRE_Z_scaling:
+        yields = yields / MSNe
+        yields = yields*(1.0-Z)+(Zsolar*SolarAbundances-SolarAbundances)
+        yields = yields * MSNe
+
+    yields[1] = 0.0
+
+    if (np.any(yields < 0.0)):
+
+        if yields[3] < 0.0:
+            print("N yield in SNIA is negative")
+            yields[3] = 0.0
+
+        if np.any(yields<0.0):
+            print("Error in SNIA yields - negative")
+            print(yields)
+            raise RuntimeError
+
     # if element passed, use that - otherwise use yield indeces
     if not (element is None):
         if element == 'all':
@@ -248,10 +294,36 @@ def snIa_yields(i, element = None):
 
     return yields[i]
     
-def snII_yields(i, element = None):
+def snII_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling=False, MSNe = 10.5):
     # if element passed, use that - otherwise use yield indeces
     # ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
-    yields = [2.0,3.87,0.133,0.0479,1.17,0.30,0.0987,0.0933,0.0397,0.00458,0.0741]
+    yields = np.array([2.0,3.87,0.133,0.0479,1.17,0.30,0.0987,0.0933,0.0397,0.00458,0.0741])
+
+    Zsolar = Z / SOLAR_METALLICITY
+
+    if (Z < 0.033):
+        yields[3] *= Zsolar
+    else:
+        yields[3] *= 1.65
+
+    yields[0] = yields[0] + yields[3]-0.0479        
+
+    
+    if FIRE_Z_scaling:
+        yields = yields / MSNe
+        yields = yields*(1.0-Z)+(Zsolar*SolarAbundances-SolarAbundances)
+        yields = yields * MSNe
+
+    if (np.any(yields <	0.0)):
+
+        if yields[3] < 0:
+            print("N yield in SNII is less than zero due to FIRE scaling")
+            yields[3] = 0.0
+
+        if (np.any(yields<0.0)):
+            print("Error in SNII yields - negative")
+            print(yields)
+            raise RuntimeError
 
     if not (element is None):
         if element == 'all':
@@ -262,12 +334,15 @@ def snII_yields(i, element = None):
 
     return yields[i]    
 
-def construct_yields(agebins, yieldtype = 'total'):
+def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = False):
+
+
+    # Z = Z / SOLAR_METALLICITY
 
     points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10, 1.0, 14.0]
     
     yields = np.zeros( (np.size(agebins)-1 , np.size(elements))) 
-    
+
     if yieldtype == 'snII' or yieldtype == 'total' or yieldtype == 'sn_only':
         numsnII = np.zeros(np.size(agebins)-1)
         
@@ -281,7 +356,7 @@ def construct_yields(agebins, yieldtype = 'total'):
 
             numsnII[i] = integrate.quad( sn_rate, mint, maxt, points = points)[0]
             
-        yields += np.outer(numsnII, snII_yields(-1, element = 'all'))
+        yields += np.outer(numsnII, snII_yields(-1, element = 'all', Z = Z, FIRE_Z_scaling=FIRE_Z_scaling))
     
     if yieldtype == 'snIa' or yieldtype == 'total' or yieldtype == 'sn_only':    
         numsnIa = np.zeros(np.size(agebins)-1)
@@ -295,7 +370,7 @@ def construct_yields(agebins, yieldtype = 'total'):
             maxt = agebins[i+1]
             numsnIa[i] = integrate.quad( snIa_rate, mint, maxt, points = points)[0]
 
-        yields += np.outer(numsnIa, snIa_yields(-1, element = 'all'))        
+        yields += np.outer(numsnIa, snIa_yields(-1, element = 'all', Z=Z, FIRE_Z_scaling=FIRE_Z_scaling))        
  
     if yieldtype == 'winds' or yieldtype == 'total':    
         wind_mass  = np.zeros(np.size(agebins)-1)
@@ -308,9 +383,9 @@ def construct_yields(agebins, yieldtype = 'total'):
             else:
                 mint = agebins[i]
             maxt         = agebins[i+1]
-            wind_mass[i] = integrate.quad(wind_rate, mint, maxt, points = windpoints)[0]
+            wind_mass[i] = integrate.quad(wind_rate, mint, maxt, points = windpoints, args=(Z,1.0))[0]
 
-        yields += np.outer(wind_mass, wind_yields(-1, element = 'all'))  
+        yields += np.outer(wind_mass, wind_yields(-1, element = 'all', Z = Z, FIRE_Z_scaling=FIRE_Z_scaling))  
     return yields
 
 
@@ -374,7 +449,8 @@ def get_bins(config_file = "./gizmo.out", param_file = "./params.txt-usedvalues"
 
 def compute_error(outfile = 'error.dat', overwrite=False, 
                   limit_input=False, final_only = False,
-                  age_is_fraction = False):
+                  age_is_fraction = False,
+                  FIRE_Z_scaling = False, Z = 1.0E-5):
     """
     Compute the error in the given age tracer model, defined
     for each element (i) as:
@@ -389,9 +465,9 @@ def compute_error(outfile = 'error.dat', overwrite=False,
     
     bins = get_bins()
 
-
-    total_yields = construct_yields(bins/1000.0, # pass bins as Gyr
-                                    yieldtype = 'total')
+    # need to estimate Z from data a bit
+    total_yields = construct_yields(bins/1000.0, # pass bins as Gyr, Z = Z,
+                                    Z = Z, yieldtype = 'total', FIRE_Z_scaling=FIRE_Z_scaling)
 
 
     if final_only:
@@ -442,6 +518,7 @@ def compute_error(outfile = 'error.dat', overwrite=False,
 
     for dsi, dsname in enumerate(ds_list):
         finalloop=False
+
         print(dsi, len(ds_list))
         if dsi == (len(ds_list) -1):
             finalloop = True
@@ -478,6 +555,11 @@ def compute_error(outfile = 'error.dat', overwrite=False,
         if finalloop:
             fcol.write("Final Output Stats:  i = %03i z = %3.3f\n"%(dsi,current_redshift))
             fcol.write("element  total_error  gas_error   star_error\n")
+       	    te_sum = ge_sum = se_sum = 0.0
+       	    ne = 1
+
+
+
 
         for ei,e in enumerate(elements):
 #            if e=='Total':
@@ -508,9 +590,18 @@ def compute_error(outfile = 'error.dat', overwrite=False,
             # final?
             if finalloop:
                 print(np.sum(m), np.sum(m)/HubbleParam, np.sum(mtrue)-mtrue_initial[e], mtrue_initial[e])
-                fcol.write("%10s %5.5E %5.5E %5.5E \n"%(e, (m_total.value-mtrue_total)/mtrue_total,
-                                                    (np.sum(m)/HubbleParam - (np.sum(mtrue)-mtrue_initial[e])) / (np.sum(mtrue)-mtrue_initial[e]),
-                                                    (np.sum(mstar) - np.sum(mtrue_mstar)) / np.sum(mtrue_mstar)))
+                total_error = (m_total.value-mtrue_total)/mtrue_total
+                gas_error   = (np.sum(m)/HubbleParam - (np.sum(mtrue)-mtrue_initial[e])) / (np.sum(mtrue)-mtrue_initial[e])
+                star_error  = (np.sum(mstar) - np.sum(mtrue_mstar)) / np.sum(mtrue_mstar)
+
+                fcol.write("%10s %5.5E %5.5E %5.5E \n"%(e, total_error, gas_error, star_error))
+
+                if (e != 'Total') and (e != 'He') and (e != 'N'):
+                    te_sum += np.abs(total_error)
+                    ge_sum += np.abs(gas_error)
+                    se_sum += np.abs(star_error)
+                    ne = ne + 1
+                
 
         f.write("\n")
         f.flush()
@@ -518,6 +609,9 @@ def compute_error(outfile = 'error.dat', overwrite=False,
         del(ds)   # just in case
         del(data) # just in case
 
+    if finalloop:
+        ne = 1.0 * ne
+        fcol.write("%10s %5.5E %5.5E %5.5E \n"%("average", te_sum/ne, ge_sum/ne, se_sum/ne))
 
     f.close()
     fcol.flush()
@@ -596,12 +690,16 @@ if __name__ == "__main__":
 #    final_only  = False
     kwargs = {}
     if len(sys.argv) > 1:
-        for k in ['overwrite','limit_input','final_only','age_is_fraction']:
+        for k in ['overwrite','limit_input','final_only','age_is_fraction', 'FIRE_Z_scaling']:
             if k in sys.argv:
                 kwargs[k] = sys.argv[sys.argv.index(k) + 1] == "True"
         for k in ['outfile']:
             if k in sys.argv:
                 kwargs[k] = str(sys.argv[sys.argv.index(k)+1])
+
+        for k in ['Z']:
+            if k in sys.argv:
+                kwargs[k] = float(sys.argv[sys.argv.index(k)+1])
 
     compute_error(**kwargs)
     plot_error()
