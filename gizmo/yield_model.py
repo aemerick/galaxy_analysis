@@ -10,7 +10,7 @@ import glob
 #     installing a bunch of stuff:
 # from galaxy_analysis.plot.plot_styles import *
 
-SolarAbundances = np.array([0.02, 0.28, 3.26E-3, 1.32E-3, 8.65E-3, 
+SolarAbundances = np.array([0.02, 0.28, 3.26E-3, 1.32E-3, 8.65E-3,
                             2.22E-3, 9.31E-4, 1.08E-3, 6.44E-4, 1.01E-4, 1.73E-3])
 
 # globals since these were ifdefs in an old version of the code
@@ -24,12 +24,23 @@ SOLAR_METALLICITY = 0.02 # as defined in Gizmo / FIRE defaults
 
 
 
+CYTHON_ON = True
+
+if CYTHON_ON:
+    import pyximport; pyximport.install(setup_args={'include_dirs':[np.get_include()]},
+                                        language_level=3)
+
+    from galaxy_analysis.gizmo import age_fields
+    from galaxy_analysis.utilities import cy_convert_abundances as ca
+
+
 # in Gizmo output, first metal tracer field corresponding to
 # the age bins (0-14 are the 11 default species + 4 r-process)
 OFFSET             = 15
 
 # Hard-coded: list of elements in standard file model (in order)
 elements = ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
+
 element_num = {}
 i = 0
 for e in elements:
@@ -42,7 +53,7 @@ def generate_metal_fields(ds, _agebins=None,
                               ptype='PartType0',
                               age_is_fraction=False):
     """
-    Generate derived fields mapping the age tracers to 
+    Generate derived fields mapping the age tracers to
     actual elemental abundances using the given set of
     yields. yields must be a NxM array with N = the
     number of age bins and M = the number of elements
@@ -58,7 +69,7 @@ def generate_metal_fields(ds, _agebins=None,
         (ptype,"ELEMENTNAME_fraction")
         (ptype,"ELEMENTNAME_actual_mass")
 
-    where 'ptype' is the passed particle type ("PartType0" or 
+    where 'ptype' is the passed particle type ("PartType0" or
     "PartType4" probably) and the "ELEMENTNAME_actual_mass" field
     is the actual mass of that element in the yields followed in
     the simulation (e.g. something like:
@@ -70,9 +81,30 @@ def generate_metal_fields(ds, _agebins=None,
         # test metals in bin zero
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
-            for i in np.arange(np.size(_agebins)-1):
-                fname    = 'Metallicity_%02i'%(OFFSET + i)
-                mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
+
+
+            # do this in cython:
+
+            if CYTHON_ON:
+
+                age_vals = np.array([ data[(ptype,"Metallicity_%02i"%(OFFSET+i))] for i in np.arange(np.size(_agebins)-1)])
+
+                age_fields.add_fields( age_vals,
+                                       _yields[:,ei], mass_p)
+
+            else:
+
+
+                if False:
+                    for i in np.arange(np.size(_agebins)-1):
+                        fname    = 'Metallicity_%02i'%(OFFSET + i)
+                        mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
+                else:
+                    age_vals = np.array([ data[(ptype,"Metallicity_%02i"%(OFFSET+i))] for i in np.arange(np.size(_agebins)-1)])
+                    mass_p = np.sum(np.transpose(age_vals) * _yields[:,ei], axis=1)
+
+
+
             mass_p = mass_p * yt.units.Msun
 
             if age_is_fraction:
@@ -88,32 +120,32 @@ def generate_metal_fields(ds, _agebins=None,
             abund[Mp==0.0] = 0.0
             return abund
         return temp
-    
+
     def _metal_mass_actual_test(_ptype,_ei):
         def temp(field,data):
             Mp    = data[(_ptype,'particle_mass')].to('Msun')
             abund = data[(_ptype,"Metallicity_%02i"%(_ei))]
-        
-            
+
+
             return abund*Mp
         return temp
-            
-    
-    
+
+
+
     for ei,e in enumerate(_elements):
 
-        ds.add_field( ('all', ptype + '_' + e + '_mass'), sampling_type='particle', 
+        ds.add_field( ('all', ptype + '_' + e + '_mass'), sampling_type='particle',
                       function=_metal_mass_test(ptype, ei),
                       units = 'Msun', force_override=True)
         ds.add_field(  ('all',ptype + '_' + e + '_fraction'), sampling_type='particle',
                       function=_metal_fraction_test(ptype,e),
                       units='', force_override=True)
-        
+
         ds.add_field( ('all',ptype + '_' + e + '_actual_mass'), sampling_type='particle',
                        function=_metal_mass_actual_test(ptype,ei),
                        units='Msun', force_override=True)
-        
-    return    
+
+    return
 
 def _generate_star_metal_fields(ds,
                                 _agebins=None,
@@ -135,23 +167,23 @@ def _generate_star_metal_fields(ds,
             for i in np.arange(np.size(_agebins)-1):
                 fname    = 'Metallicity_%02i'%(OFFSET + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
-            
+
             mass_p = mass_p * yt.units.Msun
 
             if age_is_fraction:
                 mass_p = mass_p * data[(ptype,'particle_mass')].value
-          
+
             return mass_p
-        
+
         return temp
-    
-        
+
+
     for ei,e in enumerate(_elements):
 
-        ds.add_field( ('all', ptype + '_' + e + '_mass'), sampling_type='particle', 
+        ds.add_field( ('all', ptype + '_' + e + '_mass'), sampling_type='particle',
                       function=_star_metal_mass_test(ptype, ei),
                       units = 'Msun', force_override=True)
-        
+
     return
 
 
@@ -173,18 +205,18 @@ def sn_rate(t):
     agemin = 0.003401   # Gyr
     agebrk = 0.010370   # Gyr
     agemax = 0.03753    # Gyr
-    
+
     RSNE = 0.0
     if (t>agemin):
         if (t <= agebrk):
             RSNE = 5.408E-4
         elif (t<=agemax):
             RSNE=2.516E-4
-        
+
         if (t > agemax):
             #RSNE=5.3E-8+1.6*np.exp(-0.5*((t-0.05)/0.01)*((t-0.05)/0.01)) # This is JUST SNIa
             RSNE=0.0 # set to zero for CCSNE
-            
+
     return RSNE * 1000.0
 
 def snIa_rate(t):
@@ -195,11 +227,11 @@ def snIa_rate(t):
     agemin = 0.003401   # Gyr
     agebrk = 0.010370   # Gyr
     agemax = 0.03753    # Gyr
-    
+
     RSNE = 0.0
     if (t > agemax):
         RSNE=5.3E-8+1.6E-5*np.exp(-0.5*((t-0.05)/0.01)*((t-0.05)/0.01)) # This is JUST SNIa
-            
+
     return RSNE * 1000.0
 
 def wind_yields(i,element=None, Z = 1.0E-5, FIRE_Z_scaling = False):
@@ -237,7 +269,7 @@ def wind_yields(i,element=None, Z = 1.0E-5, FIRE_Z_scaling = False):
 def wind_rate(t, Z = 1.0E-5, GasReturnFraction = 1.0):
     """
     Mass loss rate from stellar winds. Z is in solar.
-    """    
+    """
 
     Zsolar  = Z / SOLAR_METALLICITY
 
@@ -253,14 +285,14 @@ def wind_rate(t, Z = 1.0E-5, GasReturnFraction = 1.0):
                 p=72.1215*(t/0.0035)**(-3.25)+0.0103
             else:
                 p=1.03*t**(-1.1) / (12.9-np.log(t)) # bug: this was log10 at first
-    
+
     #if (t < 0.1):
     #    p = p * 1.0
-    
+
     # assuming wind_rate is in Msun / Myr per solar mass of SF
-    
+
     rate = p * GasReturnFraction * 1.4 * 0.291175
-    
+
     return rate # might already be / Gyr
 
 def snIa_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling = False, MSNe = 1.4):
@@ -268,7 +300,7 @@ def snIa_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling = False, MSNe = 1.
     yields = np.array([1.4,0.0,0.049,1.2E-6,0.143,0.0045,0.0086,0.156,0.087,0.012,0.743])
 
     Zsolar = Z / SOLAR_METALLICITY
-    
+
     if FIRE_Z_scaling:
         yields = yields / MSNe
         yields = yields*(1.0-Z)+(Zsolar*SolarAbundances-SolarAbundances)
@@ -293,7 +325,7 @@ def snIa_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling = False, MSNe = 1.
             return yields
 
     return yields[i]
-    
+
 def snII_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling=False, MSNe = 10.5):
     # if element passed, use that - otherwise use yield indeces
     # ['Total','He','C','N','O','Ne','Mg','Si','S','Ca','Fe']
@@ -306,9 +338,9 @@ def snII_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling=False, MSNe = 10.5
     else:
         yields[3] *= 1.65
 
-    yields[0] = yields[0] + yields[3]-0.0479        
+    yields[0] = yields[0] + yields[3]-0.0479
 
-    
+
     if FIRE_Z_scaling:
         yields = yields / MSNe
         yields = yields*(1.0-Z)+(Zsolar*SolarAbundances-SolarAbundances)
@@ -328,11 +360,11 @@ def snII_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling=False, MSNe = 10.5
     if not (element is None):
         if element == 'all':
             return yields
-        
-        i = element_num[element]
-    
 
-    return yields[i]    
+        i = element_num[element]
+
+
+    return yields[i]
 
 def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = False):
 
@@ -340,14 +372,14 @@ def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = 
     # Z = Z / SOLAR_METALLICITY
 
     points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10, 1.0, 14.0]
-    
-    yields = np.zeros( (np.size(agebins)-1 , np.size(elements))) 
+
+    yields = np.zeros( (np.size(agebins)-1 , np.size(elements)))
 
     if yieldtype == 'snII' or yieldtype == 'total' or yieldtype == 'sn_only':
         numsnII = np.zeros(np.size(agebins)-1)
-        
+
         for i in np.arange(np.size(agebins) - 1):
-            
+
             if i == 0:
                 mint = 0.0
             else:
@@ -355,14 +387,14 @@ def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = 
             maxt = agebins[i+1]
 
             numsnII[i] = integrate.quad( sn_rate, mint, maxt, points = points)[0]
-            
+
         yields += np.outer(numsnII, snII_yields(-1, element = 'all', Z = Z, FIRE_Z_scaling=FIRE_Z_scaling))
-    
-    if yieldtype == 'snIa' or yieldtype == 'total' or yieldtype == 'sn_only':    
+
+    if yieldtype == 'snIa' or yieldtype == 'total' or yieldtype == 'sn_only':
         numsnIa = np.zeros(np.size(agebins)-1)
-        
+
         for i in np.arange(np.size(agebins) - 1 ):
-            
+
             if i == 0:
                 mint = 0.0
             else:
@@ -370,9 +402,9 @@ def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = 
             maxt = agebins[i+1]
             numsnIa[i] = integrate.quad( snIa_rate, mint, maxt, points = points)[0]
 
-        yields += np.outer(numsnIa, snIa_yields(-1, element = 'all', Z=Z, FIRE_Z_scaling=FIRE_Z_scaling))        
- 
-    if yieldtype == 'winds' or yieldtype == 'total':    
+        yields += np.outer(numsnIa, snIa_yields(-1, element = 'all', Z=Z, FIRE_Z_scaling=FIRE_Z_scaling))
+
+    if yieldtype == 'winds' or yieldtype == 'total':
         wind_mass  = np.zeros(np.size(agebins)-1)
         windpoints = [0.001, 0.0035, 0.1, 1.0, 14.0]
 
@@ -385,7 +417,7 @@ def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = 
             maxt         = agebins[i+1]
             wind_mass[i] = integrate.quad(wind_rate, mint, maxt, points = windpoints, args=(Z,1.0))[0]
 
-        yields += np.outer(wind_mass, wind_yields(-1, element = 'all', Z = Z, FIRE_Z_scaling=FIRE_Z_scaling))  
+        yields += np.outer(wind_mass, wind_yields(-1, element = 'all', Z = Z, FIRE_Z_scaling=FIRE_Z_scaling))
     return yields
 
 
@@ -447,7 +479,7 @@ def get_bins(config_file = "./gizmo.out", param_file = "./params.txt-usedvalues"
 
     return bins
 
-def compute_error(outfile = 'error.dat', overwrite=False, 
+def compute_error(outfile = 'error.dat', overwrite=False,
                   limit_input=False, final_only = False,
                   age_is_fraction = False,
                   FIRE_Z_scaling = False, Z = 1.0E-5):
@@ -462,7 +494,7 @@ def compute_error(outfile = 'error.dat', overwrite=False,
     and M_i_sim is the actual mass of that element in the simulation
 
     """
-    
+
     bins = get_bins()
 
     # need to estimate Z from data a bit
@@ -601,7 +633,7 @@ def compute_error(outfile = 'error.dat', overwrite=False,
                     ge_sum += np.abs(gas_error)
                     se_sum += np.abs(star_error)
                     ne = ne + 1
-                
+
 
         f.write("\n")
         f.flush()
