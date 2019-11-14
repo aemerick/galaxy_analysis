@@ -66,11 +66,13 @@ def simple_rebin(bins, y, new_bins, method = "sum"):
 
     dx = np.unique(np.diff(bins))
     if np.size(dx) > 1:
-        print("Original bins must be evenly spaced")
-        print(dx)
-        print(np.diff(bins))
-        print(bins)
-        raise ValueError
+        dx = np.unique(np.round(np.diff(bins),10))
+        if np.size(dx) > 1:
+            print("Original bins must be evenly spaced")
+            print(dx)
+            print(np.diff(bins))
+            print(bins)
+            raise ValueError
     dx = dx[0] # unique returns an array even if only 1 value
 
     if np.size(new_bins) <= 1:
