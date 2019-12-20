@@ -1,5 +1,5 @@
 """
-    process_SNstats
+    process_abundances
 
     Author: A. Emerick
 
@@ -35,7 +35,7 @@ def filter_data(data):
 
 def _read_sf_data(directory = '.'):
 
-    bash_commands = ["grep --no-filename -e '^P(' ./output*gov  > SA_temp.dat",
+    bash_commands = ["grep --no-filename -e '^P(' ./enzo_job*.out  > SA_temp.dat",
                      'sed -e "s/P(//g" -i SA_temp.dat',
                      'sed -e "s/individual_star_maker//g" -i SA_temp.dat',
                      'sed -e "s/ \[add\]\://g" -i SA_temp.dat',
@@ -56,7 +56,7 @@ def _read_sf_data(directory = '.'):
 def read_all_data(directory = '.'):
 
     # First lets do some hacky BS
-    bash_commands = ["grep --no-filename -e '^StellarAbundances P' ./output*gov  > SA_temp.dat",
+    bash_commands = ["grep --no-filename -e '^StellarAbundances P' ./enzo_job*.out  > SA_temp.dat",
                      'sed -e "s/StellarAbundances P(//g" -i SA_temp.dat',
                      "awk " + "'{$1=" + '""; print $0}' + "' SA_temp.dat > StellarAbundances.dat",
                      "rm SA_temp.dat"]
@@ -76,7 +76,9 @@ def read_all_data(directory = '.'):
     _dtypes = _base_dtypes + [float] * len(species)
     _ndtypes = [(x,y) for x,y in zip(_col_names,_dtypes)]
 
-    data = np.genfromtxt(directory +'/StellarAbundances.dat', dtype = _ndtypes)
+    data = np.genfromtxt(directory +'/StellarAbundances.dat', dtype = _ndtypes, invalid_raise=False)
+
+
 
     return data
 
