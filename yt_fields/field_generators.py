@@ -1003,7 +1003,7 @@ def _additional_helper_fields(fields):
 
         result = 1 * ((TE + KE) + PE < 0.0)
 
-        return result
+        return result*1.0
 
 
     def _mag_cyl_r(field,data):
@@ -1225,7 +1225,33 @@ def generate_particle_filters(ds):
         filter = data[(pfilter.filtered_type, "particle_type")] == 11
         return filter
 
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    def main_sequence_popIII_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 14
+        return filter
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    def remnant_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 13
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    def low_mass_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 11
+        filter = filter * (data[(pfilter.filtered_type,"birth_mass")] > 2.0) * (data[(pfilter.filtered_type,"birth_mass")] <8.0)
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    def low_mass_unresolved_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 15
+        return filter
+
+
     ds.add_particle_filter('main_sequence_stars')
+    ds.add_particle_filter('remnant_stars')
+    ds.add_particle_filter('low_mass_stars')
+    ds.add_particle_filter('low_mass_unresolved_stars')
+    ds.add_particle_filter('main_sequence_popIII_stars')
 
 
     return
