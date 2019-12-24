@@ -82,35 +82,41 @@ def generate_metal_fields(ds, _agebins=None,
         def temp(field,data):
             mass_p = np.zeros(np.shape( data[(_ptype,'particle_mass')]))
 
-
             # do this in cython:
-
             if CYTHON_ON:
 
-                age_vals = np.array([ data[(ptype,"Metallicity_%02i"%(OFFSET+i))] for i in np.arange(np.size(_agebins)-1)])
+                for i in np.arange(np.size(_agebins)-1):
+                    fname    = 'Metallicity_%02i'%(OFFSET + i)
+                    mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
 
-                age_fields.add_fields( age_vals,
-                                       _yields[:,ei], mass_p)
+#
+#                Both the calculations below *should* work but don't for some reason. I am
+#                absolutely mystified by this.... it works just fine in tests outside of 
+#                the derived fields routines.... but for some reason this gives wrong answers...
+#                unfortunate since its slightly faster (and is how I wrote the cython version....
+#
+#                age_vals = np.array([ data[(_ptype     ,"Metallicity_%02i"%(OFFSET+i))].value for i in np.arange(np.size(_agebins)-1)])
+#                mass_p = np.matmul(age_vals.T, _yields[:,ei].T)
+#                mass_p = np.matmul(_yields[:,ei].T, age_vals)
 
             else:
 
 
-                if False:
-                    for i in np.arange(np.size(_agebins)-1):
-                        fname    = 'Metallicity_%02i'%(OFFSET + i)
-                        mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
-                else:
-                    age_vals = np.array([ data[(ptype,"Metallicity_%02i"%(OFFSET+i))] for i in np.arange(np.size(_agebins)-1)])
-                    mass_p = np.sum(np.transpose(age_vals) * _yields[:,ei], axis=1)
+                for i in np.arange(np.size(_agebins)-1):
+                    fname    = 'Metallicity_%02i'%(OFFSET + i)
+                    mass_p += data[(_ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
 
-
-
-            mass_p = mass_p * yt.units.Msun
+#                age_vals = np.array([ data[(_ptype,"Metallicity_%02i"%(OFFSET+i))] for i in np.arange(np.size(_agebins)-1)])
+#                mass_p = np.matmul(_yields[:ei].T, age_vals)
+#np.sum(np.transpose(age_vals) * _yields[:,ei], axis=1)
 
             if age_is_fraction:
-                mass_p = mass_p * data[(ptype,'particle_mass')].value
+                mass_p = (mass_p * data[(_ptype,'particle_mass')].to('code_mass').value) * yt.units.Msun
+            else:
+                mass_p = mass_p * yt.units.Msun
 
-            return mass_p
+            return mass_p / data.ds.hubble_constant
+
         return temp
 
     def _metal_fraction_test(_ptype, _e):
@@ -168,12 +174,13 @@ def _generate_star_metal_fields(ds,
                 fname    = 'Metallicity_%02i'%(OFFSET + i)
                 mass_p += data[(ptype,fname)].value * _yields[i,_ei] #(agebinnum,  elementnum)
 
-            mass_p = mass_p * yt.units.Msun
 
             if age_is_fraction:
-                mass_p = mass_p * data[(ptype,'particle_mass')].value
+                mass_p = (mass_p * data[(ptype,'particle_mass')].to('code_mass').value) * yt.units.Msun
+            else:
+                mass_p = mass_p * yt.units.Msun
 
-            return mass_p
+            return mass_p / data.ds.hubble_constant
 
         return temp
 
