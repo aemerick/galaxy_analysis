@@ -120,7 +120,7 @@ def _mass_function_generator(asym):
 # Construct arbitrary mass fraction derived fields in yt
 # using a loop to generate functions
 #
-def _mass_fraction_function_generator(asym):
+def _mass_fraction_function_generator(ds, asym):
 
     if not isinstance(asym, Iterable):
         asym = [asym]
@@ -162,6 +162,55 @@ def _mass_fraction_function_generator(asym):
 #            yt.add_field( ('gas','alpha_5_Fraction'), function = _alpha_5, units = "")
 
         nfields = nfields + 1
+
+
+    if 'IndividualStarTrackAGBMetalDensity' in ds.parameters:
+        if ds.parameters['IndividualStarTrackAGBMetalDensity']:
+            def _AGB_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'AGB_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'AGB_Mass_Fraction'), function = _AGB_mass_fraction, units="")
+
+        if ds.parameters['IndividualStarTrackSNMetalDensity']:
+            def _SNII_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'SNII_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'SNII_Mass_Fraction'), function = _SNII_mass_fraction, units="")
+
+            def _SNIa_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'SNIa_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'SNIa_Mass_Fraction'), function = _SNIa_mass_fraction, units="")
+
+            if ds.parameters['IndividualStarPopIIIFormation']:
+                def _PopIII_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'PopIII_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens = ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].convert_to_cgs()
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'PopIII_Mass_Fraction'), function = _PopIII_mass_fraction, units="")  
 
     return nfields
 
@@ -1119,7 +1168,7 @@ def generate_derived_fields(ds):
     print("tracer species present: ", metals)
     nfields = _mass_function_generator(metals)
     print(nfields, "mass fields defined")
-    nfields = _mass_fraction_function_generator(metals)
+    nfields = _mass_fraction_function_generator(ds, metals)
     print(nfields, "mass fraction fields defined")
     nfields = _number_density_function_generator(metals)
     print(nfields, "number density fields defined")
