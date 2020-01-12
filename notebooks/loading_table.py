@@ -10,17 +10,26 @@ import deepdish as dd
 # compute averages:
 
 # convert to loading factors - compute averages
-data1   = np.genfromtxt('loading_factors.dat',names=True)
-data2   = np.genfromtxt('loading_factors2.dat',names=True)
 
-data = {}
-for k in data1.dtype.names:
-    data[k] = np.array(list(data1[k]) + list(data2[k])) # ew
+#file_list = np.sort(glob.glob('loading_factors*.dat'))
+
+#data_list = [None] * len(file_list)
+
+#for name in data_list:
+#    data_list[i] = np.genfromtxt(name,names=True)
+
+data   = np.genfromtxt('loading_factors.dat',names=True)
+#data2   = np.genfromtxt('loading_factors2.dat',names=True)
+
+#data = {}
+#for k in data1.dtype.names:
+#    data[k] = np.array(list(data1[k]) + list(data2[k])) # ew
 
 
-correct_orate = np.genfromtxt('orate.dat',names=True)
-
-data['O_rate'] = correct_orate['O_rate'] #####
+#
+#correct_orate = np.genfromtxt('orate.dat',names=True)
+#
+#data['O_rate'] = correct_orate['O_rate'] #####
 
 
 loading_data = {}
@@ -37,7 +46,7 @@ for k in ['E_out','E_hot_out','E_cold_out','E_colder_out']:
 #
 # compute SFR for gas and stars
 #
-files = np.sort(glob.glob("/home/aemerick/work/enzo_runs/leo_p/fiducial/sn_H2atten_H2sh/py3temp/*galaxy_data*.h5"))
+files = np.sort(glob.glob("./*galaxy_data*.h5"))
 gassdens = np.zeros(np.size(files))
 
 for i,f in enumerate(files):
