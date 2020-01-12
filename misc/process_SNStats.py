@@ -189,7 +189,7 @@ def plot_rpds(data, dx = None, ncell = 3, norm = False):
 #        ax.annotate('%0.2f %%'%(100.0*max_unres), xy = txy_2, xytext = txy_2,
 #                        color = 'orange')
 
-        print "avg    max   ", 100*avg_unres, 100 * max_unres
+        print("avg    max   ", 100*avg_unres, 100 * max_unres)
 
         ax.annotate(r"Resolved (4.5$\times$ dx)", xy=(logdx+0.075,txy_1[1]),xytext=(logdx+0.075,txy_1[1]),
                       color='black', rotation=90)

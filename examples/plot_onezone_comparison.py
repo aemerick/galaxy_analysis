@@ -26,7 +26,7 @@ def load_galaxy_data(data_path = './../'):
         dfiles = glob.glob(data_path + '../DD????_galaxy_data.h5')
 
     if len(dfiles) < 1:
-        print "No galaxy analysis files found"
+        print("No galaxy analysis files found")
         return
 
     dfiles = np.sort(dfiles)
@@ -108,7 +108,7 @@ def plot_variance(sim_data, onez_data):
     fig, ax = plt.subplots()
     fig.set_size_inches(8,8)
 
-    labels = sort_labels(onez_data.keys())
+    labels = sort_labels(list(onez_data.keys()))
     x = np.arange(1,len(labels)+1)
 
     yz = np.array([ onez_data[l]['std']/onez_data[l]['mean'] for l in labels])
@@ -129,7 +129,7 @@ def plot_masses(sim_data, onez_data):
     fig, ax = plt.subplots()
     fig.set_size_inches(12, 6)
 
-    labels = sort_labels( onez_data.keys() )
+    labels = sort_labels( list(onez_data.keys()) )
     x      = np.arange(1, len(labels) + 1)
 
     yz = np.array([ onez_data[l]['mean'] for l in labels])
@@ -161,7 +161,7 @@ def plot_masses(sim_data, onez_data):
 
     error = np.abs(ysim-yz)/yz
     ax.scatter(x, error, s = 20, color = 'black')
-    print error
+    print(error)
     ax.set_yscale('log')
     ax.set_ylabel("Fractional Error (sim - onez)/onez")
 

@@ -17,12 +17,12 @@ def get_fractions(ftype, data = None, tmin = None, tmax = None,
                   phases = ['Molecular','CNM','WNM','WIM','HIM']):
 
     if (not (ftype == 'mass')) and (not (ftype == 'volume')):
-        print  "ftype must be either 'mass' or 'volume'"
+        print("ftype must be either 'mass' or 'volume'")
         raise ValueError
 
     if data is None:
         if tmin is None or tmax is None:
-            print "need to specify data set or time range"
+            print("need to specify data set or time range")
             raise ValueError
 
         if average:

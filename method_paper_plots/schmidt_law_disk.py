@@ -28,7 +28,7 @@ def load_data(work_dir = './', tmin = 0.0, tmax = np.inf):
             _all_data[k]  = dd.io.load(k, '/observables')
             _all_meta_data[k]  = dd.io.load(k, '/meta_data')
         except:
-            print 'skipping data entry ', i, k
+            print('skipping data entry ', i, k)
 
     # gather all data so it can be readily plotted
     all_data = {}

@@ -61,6 +61,19 @@ def elemental_abundance(element, mass):
     return n
 
 
+def abundance_ratio_array(x1e, x1, x2e, x2, input_type = 'abundance', normalize='solar'):
+    """
+    Rrturns abundance ratios for elements given element symbol (x1e), array of values (x1),
+    and second symbol (x2e) and array of values (x2). input_type is either "abundance"
+    or "mass".
+    """
+
+    if np.size(x1) != np.size(x2):
+        print("Arrays are not of equal size")
+        raise ValueError
+
+    return np.array([  abundance_ratio( (x1e,val1), (x2e,val2), input_type=input_type) for val1,val2 in zip(x1,x2)])
+
 def abundance_ratio(x1, x2, input_type = 'abundance'):
     """
     Normalize abundance ratio to solar. x1 and x2 are tuples

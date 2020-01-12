@@ -52,7 +52,7 @@ def plot_outflow_panel(dir = '.', tmin = None, tmax = None, mass_loading = False
     else:
         for k in data_list:
             all_data_dict[k] = dd.io.load(k, '/gas_profiles/outflow/sphere')
-        norm = np.ones(len(all_data_dict.keys()))
+        norm = np.ones(len(list(all_data_dict.keys())))
 #    times[norm == 0.0] = None
 
     axi, axj = 0,0

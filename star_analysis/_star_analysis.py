@@ -157,6 +157,6 @@ def get_star_property(ds, data, AllStars = None, property_names = None,
 
 def generate_CMD():
 
-    print "Placeholder / reminder to do this"
+    print("Placeholder / reminder to do this")
 
     return

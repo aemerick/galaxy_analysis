@@ -27,7 +27,7 @@ def process_boundary_flux(data = None, filename = None, wdir = '.'):
             filename = wdir + '/boundary_mass_flux.dat'
 
         if not os.path.isfile(filename):
-            print 'boundary mass flux file not found at ' + filename
+            print('boundary mass flux file not found at ' + filename)
             return False, 0
 
         data = np.genfromtxt(filename)

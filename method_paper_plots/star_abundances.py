@@ -460,7 +460,7 @@ def plot_time_evolution():
             for e in elements:
                 if (base == e):
                     continue
-                print "plotting " + e + "/" + base + " time evolution"
+                print("plotting " + e + "/" + base + " time evolution")
                 index = (i,j)
 
                 t  = data['statistics'][time_type]['bins']
@@ -531,7 +531,7 @@ def plot_mass_fraction_time_evolution():
 
         i,j = 0,0
         for e in elements:
-            print "plotting " + e + "mass fraction time evolution"
+            print("plotting " + e + "mass fraction time evolution")
             index = (i,j)
 
             t  = data['mass_fraction_statistics'][time_type]['bins']
@@ -591,8 +591,8 @@ def plot_ratios_with_histograms(X='alpha',A='Fe',B='Fe',C='H'):
     # --------------------
     check_elements = [x for x in [X,A,B,C] if (not (x in elements))]
     if len(check_elements) > 0:
-        print check_elements, " not in elements list"
-        print "available: ", elements
+        print(check_elements, " not in elements list")
+        print("available: ", elements)
         raise ValueError
 
     sep = 0.02

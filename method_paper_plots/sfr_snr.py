@@ -67,7 +67,7 @@ def plot(work_dir, separate_axis = False, TMAX = 500.0, outdir = './'):
 
     fig.savefig(outdir + 'sfr_snrx100_agb.png')
 
-    print np.min(agbr), np.max(agbr), np.average(agbr)
+    print(np.min(agbr), np.max(agbr), np.average(agbr))
     return
 
 if __name__ == "__main__":

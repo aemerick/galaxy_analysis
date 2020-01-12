@@ -23,7 +23,7 @@ def _make_conversion_dictionaries():
     for i in np.arange(1, len(elements)+1, 1):
         x[elements[i-1]] = i
 
-    y = {v: k for k, v in x.iteritems()}
+    y = {v: k for k, v in x.items()}
 
     return x, y
 
@@ -65,7 +65,7 @@ def _set_abundance_dictionary():
          79 :  0.92, 80 :  1.17, 81 : 0.90,
          82 :  1.75, 83 :  0.65}
 
-    for anum in x.keys():
+    for anum in list(x.keys()):
         x[anum_to_asym[anum]] = x[anum]
 
     #
@@ -108,7 +108,7 @@ def _set_molecular_weight_dictionary():
          82 : 207.2, 83 : 208.98040}
 
     # double up with element names
-    for anum in x.keys():
+    for anum in list(x.keys()):
         x[anum_to_asym[anum]] = x[anum]
 
     # make anum = 0 general metals

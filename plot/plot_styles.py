@@ -70,10 +70,10 @@ def plot_histogram(ax, x, y, *args, **kwargs):
         ynew[:len(y)] = y
         ynew[-1] = y[-1]
 
-    if 'drawstyle' in kwargs.keys():
-        print "'drawstyle' included as kwarg as " +\
+    if 'drawstyle' in list(kwargs.keys()):
+        print("'drawstyle' included as kwarg as " +\
               kwargs['drawstyle'] +\
-              "; are you sure? Changing this to 'steps-post'"
+              "; are you sure? Changing this to 'steps-post'")
 
     kwargs['drawstyle'] = 'steps-post'
 

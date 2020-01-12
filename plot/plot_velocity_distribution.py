@@ -37,7 +37,7 @@ def plot_velocity_distribution(data_name, data = None, rebin = True):
     if hasattr(vbins,'value'):
         vbins = vbins.value
 
-    for k in [x for x in ISM.keys() if (not (x=='star_forming'))]:
+    for k in [x for x in list(ISM.keys()) if (not (x=='star_forming'))]:
         x, y = utilities.simple_rebin(vbins, (data['halo'][k]), 10) # rebin to 10 km/s
 
         plot_histogram(ax[0], x, y,

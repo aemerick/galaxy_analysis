@@ -36,10 +36,10 @@ def _create_region(ds, region_type, prop):
     Note that certain fields are REQUIRED for certain region types.
     """
     if (region_type is None) or (region_type == 'FullBox') or (region_type == 'Fullbox'):
-        if len(prop.keys()) > 0:
-            print "Following keys do not do anything as full box was selected"
-            print prop.keys()
-            print "Proceeding anyway"
+        if len(list(prop.keys())) > 0:
+            print("Following keys do not do anything as full box was selected")
+            print((list(prop.keys())))
+            print("Proceeding anyway")
 
         region = ds.all_data()
 
@@ -49,7 +49,7 @@ def _create_region(ds, region_type, prop):
         if not 'normal' in prop.keys():
             prop['normal'] = [0,0,1]
         if (not 'radius' in prop.keys()) or (not 'height' in prop.keys()):
-            print "If using disk region, must include radius and height"
+            print("If using disk region, must include radius and height")
             raise ValueError
 
         region = ds.disk(prop['center'], prop['normal'],
@@ -59,7 +59,7 @@ def _create_region(ds, region_type, prop):
         if not 'center' in prop.keys():
             prop['center'] = ds.domain_center
         if not 'radius' in prop.keys():
-            print "If using sphere, must include radius"
+            print("If using sphere, must include radius")
             raise ValueError
 
         region = ds.sphere(prop['center'], prop['radius'])
@@ -158,7 +158,7 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
 
         for sto, dataset in DS.piter(storage=phase_data):
             region = _create_region(dataset, region_type, region_kwargs)
-            print str(dataset)
+            print((str(dataset)))
             pd = yt.PhasePlot(region, xfield, yfield, zfield,
                                  weight_field=weight_field, x_bins = x_bins, y_bins = y_bins)
             _set_axis_lim(pd)
@@ -293,7 +293,7 @@ def grackle_cooling_time():
 
     fg.generate_grackle_fields(ds)
 
-    pd = time_average_phase_diagram(300+42, 315+42, ds_list = ds_list
+#    pd = time_average_phase_diagram(300+42, 315+42, ds_list = ds_list
 
     return
 

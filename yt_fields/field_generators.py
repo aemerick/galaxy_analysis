@@ -4,7 +4,7 @@ __email__  = "aemerick11@gmail.com"
 
 import yt
 yt.funcs.mylog.setLevel(40)
-
+from yt.fields.api import ValidateDataField, ValidateParameter
 from yt.units import dimensions
 import numpy as np
 
@@ -120,7 +120,7 @@ def _mass_function_generator(asym):
 # Construct arbitrary mass fraction derived fields in yt
 # using a loop to generate functions
 #
-def _mass_fraction_function_generator(asym):
+def _mass_fraction_function_generator(ds, asym):
 
     if not isinstance(asym, Iterable):
         asym = [asym]
@@ -162,6 +162,55 @@ def _mass_fraction_function_generator(asym):
 #            yt.add_field( ('gas','alpha_5_Fraction'), function = _alpha_5, units = "")
 
         nfields = nfields + 1
+
+
+    if 'IndividualStarTrackAGBMetalDensity' in ds.parameters:
+        if ds.parameters['IndividualStarTrackAGBMetalDensity']:
+            def _AGB_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'AGB_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'AGB_Mass_Fraction'), function = _AGB_mass_fraction, units="")
+
+        if ds.parameters['IndividualStarTrackSNMetalDensity']:
+            def _SNII_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'SNII_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'SNII_Mass_Fraction'), function = _SNII_mass_fraction, units="")
+
+            def _SNIa_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'SNIa_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens = ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].convert_to_cgs()
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+
+            yt.add_field(('gas', 'SNIa_Mass_Fraction'), function = _SNIa_mass_fraction, units="")
+
+            if ds.parameters['IndividualStarPopIIIFormation']:
+                def _PopIII_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'PopIII_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens = ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].convert_to_cgs()
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'PopIII_Mass_Fraction'), function = _PopIII_mass_fraction, units="")  
 
     return nfields
 
@@ -505,9 +554,10 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     denoms = [x.split('/')[1] for x in ratios]
     denoms = np.unique(denoms)
-    for x in denoms:
-        yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
-        yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
+    if ('io','particle_alpha_abundance') in ds.derived_field_list:
+        for x in denoms:
+            yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
+            yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
 
 
 #    def _alpha_over_Fe(field,data):
@@ -850,8 +900,12 @@ def _additional_helper_fields(fields):
         return x
 
     def _otlwcgs(field, data):
-        lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
-        return lw.convert_to_units('1/s') 
+        if ('enzo','OTLW_kdissH2I') in data.ds.field_list:
+            lw = data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit
+        else:
+            lw = np.zeros(np.shape(data['Density'])) / data.ds.time_unit
+
+        return lw.convert_to_units('1/s')
 
     def _G_o(field,data):
         pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
@@ -902,7 +956,10 @@ def _additional_helper_fields(fields):
         LW_energy = 12.8 * yt.units.eV
         H2Isigma  = 3.71E-18 * yt.units.cm**(2)
 
-        kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+        if ('enzo','OTLW_kdissH2I') in data.ds.field_list:
+            kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+        else:
+            kdissH2I = (np.zeros(np.shape(data['Density'])) / data.ds.time_unit).to('1/s')
 
         LW_flux = kdissH2I / H2Isigma * LW_energy
 
@@ -995,7 +1052,7 @@ def _additional_helper_fields(fields):
 
         result = 1 * ((TE + KE) + PE < 0.0)
 
-        return result
+        return result*1.0
 
 
     def _mag_cyl_r(field,data):
@@ -1057,12 +1114,16 @@ def _additional_helper_fields(fields):
     yt.add_field(('gas','H_Mass'), function = _H_total_mass, units = 'g') # define as same
     yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
     yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
-    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s')
+
+    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s',
+                 validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
+    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2",
+                 validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
+
     yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate_masked, units='erg/s/cm**3')
     yt.add_field(('gas','G_o'), function = _G_o, units = "")
     yt.add_field(('gas','G_eff'), function = _G_eff, units = "")
     yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
-    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','Q0_flux'), function = _Q0_flux, units = "erg/s/cm**2")
     yt.add_field(('gas','Q1_flux'), function = _Q1_flux, units = "erg/s/cm**2")
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
@@ -1104,27 +1165,27 @@ def generate_derived_fields(ds):
     # make new functions to do correct units for species fields
     _density_function_generator(metals + ['Metal'])
 
-    print "tracer species present: ", metals
+    print("tracer species present: ", metals)
     nfields = _mass_function_generator(metals)
-    print nfields, "mass fields defined"
-    nfields = _mass_fraction_function_generator(metals)
-    print nfields, "mass fraction fields defined"
+    print(nfields, "mass fields defined")
+    nfields = _mass_fraction_function_generator(ds, metals)
+    print(nfields, "mass fraction fields defined")
     nfields = _number_density_function_generator(metals)
-    print nfields, "number density fields defined"
+    print(nfields, "number density fields defined")
 
     if not (ionization._ion_table is None):
         nfields = _ionization_state_generator(metals)
-        print nfields, "ionization state fields defined"
+        print(nfields, "ionization state fields defined")
 
     nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
-    print nfields, "abundance ratio fields defined"
+    print(nfields, "abundance ratio fields defined")
     nfields = _abundance_function_generator(metals)
 
     if ds.parameters['NumberOfParticles'] > 0:
         if ('io','particle_' + metals[0] + '_fraction') in ds.field_list:
 
             nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
-            print nfields, "particle abundance ratio fields defined"
+            print(nfields, "particle abundance ratio fields defined")
             _particle_abundance_function_generator(metals, ds)
 
 
@@ -1132,7 +1193,7 @@ def generate_derived_fields(ds):
 
 
     nfields = _additional_helper_fields(fields)
-    print nfields, "additional helper fields defined"
+    print(nfields, "additional helper fields defined")
 
     #generate_grackle_fields(ds)
 
@@ -1181,7 +1242,7 @@ def load_and_define(name):
 def generate_grackle_fields(ds):
 
     if not GRACKLE_IMPORTED:
-        print "Grackle's python wrapper (pygrackle) was not imported successfully"
+        print("Grackle's python wrapper (pygrackle) was not imported successfully")
 
     if ds.parameters['use_grackle']:
         _grackle_fields(ds)
@@ -1213,7 +1274,33 @@ def generate_particle_filters(ds):
         filter = data[(pfilter.filtered_type, "particle_type")] == 11
         return filter
 
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    def main_sequence_popIII_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 14
+        return filter
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    def remnant_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 13
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    def low_mass_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 11
+        filter = filter * (data[(pfilter.filtered_type,"birth_mass")] > 2.0) * (data[(pfilter.filtered_type,"birth_mass")] <8.0)
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    def low_mass_unresolved_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 15
+        return filter
+
+
     ds.add_particle_filter('main_sequence_stars')
+    ds.add_particle_filter('remnant_stars')
+    ds.add_particle_filter('low_mass_stars')
+    ds.add_particle_filter('low_mass_unresolved_stars')
+    ds.add_particle_filter('main_sequence_popIII_stars')
 
 
     return

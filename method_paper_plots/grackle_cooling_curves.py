@@ -31,7 +31,7 @@ def get_index_number(n, z = None, z_index = None):
             
         index2 = z_index
     else:
-        print "Cannot provide both a redshift value and redshift bin value"
+        print("Cannot provide both a redshift value and redshift bin value")
         raise ValueError
         
     
@@ -76,14 +76,14 @@ def plot_cooling_curve(data_type = 'shielded'):
     try:
         metal_heat = data['CoolingRates']['Metals']['Heating']
     except:
-        print 'failed to load heating' # will fail for no UVB
+        print('failed to load heating') # will fail for no UVB
 
 # --------- same for primordial component --------------------------
     prim_cool  = data['CoolingRates']['Primordial']['Cooling']
     try:
         prim_heat  = data['CoolingRates']['Primordial']['Heating']
     except:
-        print 'failed to load heating' # will fail for no UVB
+        print('failed to load heating') # will fail for no UVB
 
 
 # ----------- now do all of the plotting ---------------------   
@@ -110,7 +110,7 @@ def plot_cooling_curve(data_type = 'shielded'):
             net = total_cool - total_heat
         except:
             total_cool = metal_cool[index1] * Z + prim_cool[index1]
-            print 'failed to compute heating and net '
+            print('failed to compute heating and net ')
     
         
         ax[i].plot(T, np.log10(total_cool), lw = 3, color = 'black', ls = ':', label = 'cooling')
@@ -118,12 +118,12 @@ def plot_cooling_curve(data_type = 'shielded'):
         try:
             ax[i].plot(T, np.log10(total_heat), lw = 3, color = 'black', ls = '--', label = 'heating')
         except:
-            print 'failed to plot heating'
+            print('failed to plot heating')
             
         try:
             ax[i].plot(T, np.log10(np.abs(net)), lw = 3, color = 'black', ls = '-', label = '|cooling - heating|')
         except:
-            print 'failed to plot cooling - heating'
+            print('failed to plot cooling - heating')
             
         if i == 0:
             ax[i].legend(loc='best')
@@ -185,7 +185,7 @@ def plot_cooling_model_comparison():
                 ax.plot(x[heat_max_index:cool_min_index], np.log10(np.abs(y[heat_max_index:cool_min_index])), 
                     lw = 3, color = color, ls = '-')  
             else:
-                print 'cannot plot the separate lines'
+                print('cannot plot the separate lines')
         else:
             ax.plot(x, np.log10(np.abs(y)), lw = 3, color = color, ls = '-', label = label)
         return

@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 import yt
 yt.funcs.mylog.setLevel(40)
@@ -29,16 +29,16 @@ import deepdish as dd
 # --------- internal imports --------------
 from galaxy_analysis.utilities import utilities as util
 #from ..utilities import utilities
-from ..static_data import LABELS,\
-                        FIELD_UNITS,\
-                        IMAGE_COLORBAR_LIMITS,\
-                        PLOT_LIMITS,\
-                        UNITS,\
-                        ISM, CUT_REGION, ISM_FILTER
+from galaxy_analysis.static_data import LABELS,\
+                          FIELD_UNITS,\
+                          IMAGE_COLORBAR_LIMITS,\
+                          PLOT_LIMITS,\
+                          UNITS,\
+                          ISM, CUT_REGION, ISM_FILTER
 
 from galaxy_analysis import particle_analysis as pa
 
-from ..particle_analysis import particle_types as pt
+from galaxy_analysis.particle_analysis import particle_types as pt
 #from ..particle_analysis import IMF
 
 # need to have better API
@@ -46,10 +46,10 @@ from ..particle_analysis import particle_types as pt
 # from ..particle_analysis.sfhFromParticles import sfhFromParticles
 # from ..particle_analysis.sn_rate          import snr
 
-from ..yt_fields import field_generators as fg
+from galaxy_analysis.yt_fields import field_generators as fg
 
-from ..misc import process_boundary_flux
-from ..misc import dm_halo as dmprof
+from galaxy_analysis.misc import process_boundary_flux
+from galaxy_analysis.misc import dm_halo as dmprof
 
 _hdf5_compression = 'lzf'
 
@@ -87,7 +87,7 @@ class Galaxy(object):
                     try:
                         dstemp = yt.load(dfiles[i])
                     except:
-                        print i
+                        print(i)
                         continue
 
                     break
@@ -178,7 +178,7 @@ class Galaxy(object):
                 self._map_output_to_class()
 
         else:
-            print "No hdf5 output file exists at " + filename
+            print(("No hdf5 output file exists at " + filename))
 
         return
 
@@ -243,7 +243,7 @@ class Galaxy(object):
         return
 
     def _update_data_structure(self):
-        print "does nothing for now"
+        print("does nothing for now")
         return
 
     def calculate_projected_disk_field(self, field, axis = 'z', **kwargs):
@@ -428,7 +428,7 @@ class Galaxy(object):
         #
         # save profiles
         #
-	prof_type = 'outflow'
+        prof_type = 'outflow'
         if not outflow:
             prof_type = 'inflow'
 
@@ -872,7 +872,7 @@ class Galaxy(object):
 
         # now we need to do some subtraction of the fields
         mdict['OutsideHalo'] = {}
-        for s in fields.keys() + self.species_list + ['Total Tracked Metals']:
+        for s in list(fields.keys()) + self.species_list + ['Total Tracked Metals']:
             mdict['OutsideHalo'][s] = mdict['FullBox'][s] - mdict['Halo'][s]
             mdict['Halo'][s]        = mdict['Halo'][s]    - mdict['Disk'][s]
 
@@ -935,7 +935,7 @@ class Galaxy(object):
         if not hasattr(self, 'gas_sequestering'):
             discard = self.compute_gas_sequestering()
 
-        fields = self.gas_sequestering['Disk'].keys()
+        fields = list(self.gas_sequestering['Disk'].keys())
         x      = copy.deepcopy(self.gas_sequestering)
         for region in self.gas_sequestering.keys():
             for s in fields:
@@ -993,7 +993,7 @@ class Galaxy(object):
         #
         self.time_data['time_1'], self.time_data['SFR_1'] = pa.sfrFromParticles(self.ds, self.df, times = 1.0 * yt.units.Myr)
         x, self.time_data['SFH_1'] = pa.sfhFromParticles(self.ds, self.df, times=self.time_data['time_1'])
-	x, self.time_data['SNII_snr_1'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
+        x, self.time_data['SNII_snr_1'] = pa.snr(self.ds, self.df ,times=x, sn_type ='II')
         x, self.time_data['SNIa_snr_1'] = pa.snr(self.ds, self.df ,times=x, sn_type ='Ia')
 
         self.time_data['time_1'] = 0.5 * (x[1:] + x[:-1]) # bin centers
@@ -1357,7 +1357,7 @@ class Galaxy(object):
         num_flux = len( [x for x in self.ds.parameters.keys() if 'BoundaryMassFluxFieldNumbers' in x])
 
         if hasattr(self, 'boundary_mass_flux'):
-            if len(self.boundary_mass_flux.keys()) == num_flux:
+            if len(list(self.boundary_mass_flux.keys())) == num_flux:
                 return # don't need to re-make this
 
         self.boundary_mass_flux = {}

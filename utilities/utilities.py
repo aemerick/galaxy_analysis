@@ -30,7 +30,7 @@ def map_to_pixels(x0,x1,y0=None, y1=None):
         p_y = _map_to_pixels(y0,y1)
         return p_x, p_y
     else:
-        print "Must supply two additional points for y-axis to generate additional function"
+        print("Must supply two additional points for y-axis to generate additional function")
         raise ValueError
 
     return
@@ -61,16 +61,18 @@ def simple_rebin(bins, y, new_bins, method = "sum"):
     """
 
     if not (len(bins) == len(y) + 1):
-        print "Length of bins must be greater than y by 1"
+        print("Length of bins must be greater than y by 1")
         raise ValueError
 
     dx = np.unique(np.diff(bins))
     if np.size(dx) > 1:
-        print "Original bins must be evenly spaced"
-        print dx
-        print np.diff(bins)
-        print bins
-        raise ValueError
+        dx = np.unique(np.round(np.diff(bins),10))
+        if np.size(dx) > 1:
+            print("Original bins must be evenly spaced")
+            print(dx)
+            print(np.diff(bins))
+            print(bins)
+            raise ValueError
     dx = dx[0] # unique returns an array even if only 1 value
 
     if np.size(new_bins) <= 1:
@@ -86,7 +88,7 @@ def simple_rebin(bins, y, new_bins, method = "sum"):
     elif method == 'average' or method == 'avg':
         func = np.average
     else:
-        print "method must be either 'sum' or 'average'"
+        print("method must be either 'sum' or 'average'")
         raise ValueError
 
     tempy = np.zeros(np.size(y)+1) # bit of a hack unfortunately
@@ -140,27 +142,27 @@ def get_property(field_path, file_list=None, dir = '.', tmin = None, tmax = None
         file_list, t = select_data_by_time( dir = dir, tmin = tmin, tmax = tmax,
                                             data_list = None, times = None, self_contained = False)
 
-    if isinstance(field_path, basestring):
+    if isinstance(field_path, str):
         if field_path[0] != '/':
             field_path = '/' + field_path
     else:
         field_path = "/" + "/".join(field_path)
 
     if self_contained:
-        if not isinstance(file_list, basestring):
-            print "If loading self-contained data, file_list MUST be the name of the file"
+        if not isinstance(file_list, str):
+            print("If loading self-contained data, file_list MUST be the name of the file")
             raise ValueError
 
         if data_list is None:
-            print "If loading self-contained data, data_list must be kwargs of 'files' in top level to loop over"
+            print("If loading self-contained data, data_list must be kwargs of 'files' in top level to loop over")
             raise ValueError
 
         load_data = lambda dname : dd.io.load(file_list, '/' + str(dname) + field_path)
 
-        x = np.array( map( load_data, data_list))
+        x = np.array( list(map( load_data, data_list)))
     else:
         load_data = lambda fname : dd.io.load(fname, field_path)
-        x = np.array( map( load_data, file_list ) )
+        x = np.array( list(map( load_data, file_list )) )
 
     if return_times:
         return x, t
@@ -177,7 +179,7 @@ def select_data_by_time(dir = '.', tmin = None, tmax = None,
     """
 
     if (tmax is None) and (tmin is None):
-        print "Must set a tmin OR tmax, or both"
+        print("Must set a tmin OR tmax, or both")
         raise ValueError
 
     if tmin is None: tmin = np.inf
@@ -205,7 +207,7 @@ def select_data_by_time(dir = '.', tmin = None, tmax = None,
         data_list = data_list[  times >= tmin ]
         times     = times[times>=tmin]
     else:
-	data_list = data_list[(times<tmax)*(times>=tmin)]
+        data_list = data_list[(times<tmax)*(times>=tmin)]
         times     = times[(times<tmax)*(times>=tmin)]
 
     return data_list, times
@@ -219,7 +221,7 @@ def extract_nested_dict(dict, key_list):
     """
     x = dict
 
-    if isinstance(key_list, basestring) or isinstance(key_list, tuple):
+    if isinstance(key_list, str) or isinstance(key_list, tuple):
         x = x[key_list]
     elif isinstance(key_list, list):
         for k in key_list:
@@ -241,13 +243,13 @@ def nested_haskey(x, keys):
     else:
         return False
 
-def filter_dict(field, dictionary, level = 2):
+def filter_dict(field, dict, level = 2):
     """
     Filter through nested dictionarys like one would do with
     arrays. Only works if sub-dictionaries all have same
     kwargs as desired by 'field'
     """
-    return [(x,dictionary[x][field]) for x in dictionary.keys]
+    return [(x,dict[x][field]) for x in dict.keys()]
 
 def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained = True):
     """
@@ -300,13 +302,13 @@ def extract_nested_dict_aslist(dict, key_list, loop_keys = None, self_contained 
         # --- this is a bit ugly of a process, but hopefully we can limit doing
         # --- this too much in the future
         if loop_keys is None:
-            print "Currently must set loop_keys to file paths of HDF5 files to loop over"
+            print("Currently must set loop_keys to file paths of HDF5 files to loop over")
             raise ValueError
 
-        if not all(isinstance(x, basestring) for x in key_list):
-            print "Currently cannot handle keys that are not all strings"
-            print "doing this would require some more heavy lifting. It is on my to-do list"
-            print "to get rid of non-string dictionary keys in the analysis"
+        if not all(isinstance(x, str) for x in key_list):
+            print("Currently cannot handle keys that are not all strings")
+            print("doing this would require some more heavy lifting. It is on my to-do list")
+            print("to get rid of non-string dictionary keys in the analysis")
             raise ValueError
 
         # must prepend first key with / to load using deepdish in below

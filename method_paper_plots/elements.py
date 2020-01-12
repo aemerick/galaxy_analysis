@@ -20,7 +20,7 @@ import deepdish as dd
 temp = dd.io.load('DD0100_galaxy_data.h5', '/gas_meta_data/masses/CNM')
 elements = utilities.sort_by_anum([x for x in temp.keys() if len(x) <= 2 and (not (x in ['H','He','H2','HI','HII','HeI']))])
 
-print np.size(elements), '-----------'
+print(np.size(elements), '-----------')
 
 
 def plot_single_frames(dsi, fpath = '.'):
@@ -119,7 +119,7 @@ def plot_individual_panels(dsi, fpath = './', fration = False):
     try:
         ds = yt.load(fpath + '/DD%0004i/DD%0004i'%(dsi,dsi))
     except:
-	print 'load failed on ', dsi
+	print('load failed on ', dsi)
         return
 
     fg.generate_derived_fields(ds)
@@ -233,7 +233,7 @@ def plot_element_panels(dsi, fpath = './', axis = 'x', width = (14.35,'kpc'),
     try:
         ds = yt.load(fpath + '/DD%0004i/DD%0004i'%(dsi,dsi))
     except:
-        print 'load failed on ', dsi
+        print('load failed on ', dsi)
         return
 
     fg.generate_derived_fields(ds)

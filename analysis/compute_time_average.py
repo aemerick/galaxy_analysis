@@ -32,7 +32,7 @@ def compute_time_average(field_path,
     """
 
     if data_list is None and self_contained:
-        print "Must provide name of file as `data_list' if self_contained is True"
+        print("Must provide name of file as `data_list' if self_contained is True")
         raise ValueError
 
     if data_list is None:
@@ -41,7 +41,7 @@ def compute_time_average(field_path,
     if self_contained:
         if sc_data is None:
             sc_data   = dd.io.load(data_list)
-            data_list = np.sort(sc_data.keys())
+            data_list = np.sort(list(sc_data.keys()))
 
     # get list of times from all data sets
     if times is None:
@@ -118,7 +118,7 @@ def compute_time_average(field_path,
         try:
             temp_field_path     = list(field_path)
             temp_field_path[-1] = x_field
-            print temp_field_path
+            print(temp_field_path)
             x = util.extract_nested_dict(data, temp_field_path)
         except:
             try:
@@ -127,8 +127,8 @@ def compute_time_average(field_path,
                 temp_field_path[-1] = x_field
                 x = util.extract_nested_dict(data, temp_field_path)
             except:
-                print field_path
-                print "x_field not found in current layer or above layer", x_field
+                print(field_path)
+                print(("x_field not found in current layer or above layer", x_field))
                 raise ValueError
 
     else:
@@ -181,10 +181,10 @@ if __name__=="__main__":
 
     # x is bins, want bin centers for plotting
     x = 0.5*(x[1:] + x[:-1])
-    print avg
-    print std
-    print min
-    print max
+    print(avg)
+    print(std)
+    print(min)
+    print(max)
     fig, ax = plot_time_average(x/1000.0, avg, std=std) #min = min, max = max)
 
     ax.set_xlabel(r'R (kpc)')

@@ -17,7 +17,7 @@ yt.funcs.mylog.setLevel(40)
 
 def _parallel_loop(i):
     if not os.path.isfile('DD%0004i/DD%0004i'%(i,i)):
-        print "File path not found : DD%0004i/DD%0004i"%(i,i)
+        print(("File path not found : DD%0004i/DD%0004i"%(i,i)))
         return
 
     galaxy = ga.Galaxy('DD%0004i'%(i))
@@ -48,7 +48,7 @@ def run_analysis(imin, imax, di, n_jobs = None):
 #            outfile.write(line)
 #
 #
-    print "Beginning analysis on %i files on %i processors"%((imax+di-imin)/(1.0*di),n_jobs)
+    print(("Beginning analysis on %i files on %i processors"%((imax+di-imin)/(1.0*di),n_jobs)))
 
     Parallel(n_jobs=n_jobs)(delayed(_parallel_loop)(i) for i in np.arange(imin,imax+di,di))
 

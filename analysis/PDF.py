@@ -148,7 +148,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
             outname = outname + '_fit'
         outname = outname + '.png'
 
-    print outname
+    print(outname)
     fig, ax = plt.subplots(1)
     fig.set_size_inches(8,8)
 
@@ -158,7 +158,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
         try:
             masses[k] = gasdata[k]['Total']
         except:
-            print k
+            print(k)
 
     if not 'over' in element:
         centers = 'bins'
@@ -167,7 +167,7 @@ def single_element(datafile, galaxy_file, dsname, show_fit = True,
         centers = 'abins'
         field = element
     disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
-    print disk_data.keys()
+    print(list(disk_data.keys()))
     disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
     xbins = disk_data['bins']
     xcent = disk_data['centers']
@@ -301,7 +301,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
         try:
             masses[k] = gasdata[k]['Total']
         except:
-          print k
+          print(k)
 
 #    disk_mass = masses['Disk']
 #    for k in masses.keys():
@@ -315,7 +315,7 @@ def element_by_element_panel(datafile, galaxy_file, dsname, show_fit = True,
         index = (axi,axj)
 
         field = element + '_Fraction'
-        print element, axi, axj
+        print(element, axi, axj)
         disk_data = load_distribution_data(datafile, dsname, 'Disk', field, centers = centers)
         disk_data['norm_y'] = disk_data['hist'] / disk_data['binsize']
         xbins = disk_data['bins']
@@ -472,7 +472,7 @@ def plot_time_evolution(datafile, dsarray, denominator = None):
     return
 
 def get_element_list(file_name, dsname):
-    keys = dd.io.load(file_name, '/' + '/'.join([dsname,'CNM','mass_fraction'])).keys()
+    keys = list(dd.io.load(file_name, '/' + '/'.join([dsname,'CNM','mass_fraction'])).keys())
 
     x = [y.split('_over_')[0] for y in keys if '_over_Fe' in y]
     x = x + ['Fe']
@@ -746,7 +746,7 @@ def plot_all_elements(file_name, dsname, phase, elements = None, **kwargs):
                        arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-        print e, fit_dict['name'], fit_dict['popt'], np.sqrt(-0.5 * fit_dict['popt'][0]), np.sum(chisqr) / (1.0*np.size(fit_dict['norm_y'][select]))
+        print(e, fit_dict['name'], fit_dict['popt'], np.sqrt(-0.5 * fit_dict['popt'][0]), np.sum(chisqr) / (1.0*np.size(fit_dict['norm_y'][select])))
         ci = ci + 1
         if ci >= np.size(colors):
             ci = 0
@@ -841,7 +841,7 @@ def plot_phase_panel(file_name, dsname, elements = None, plot_fit = True, **kwar
                     N = fit_dict['fit_function'].N
                 else:
                     N = 0
-                print phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N)
+                print(phase, e, fit_dict['name'], fit_dict['popt'], "%5.5E"%(N))
 
             ci = ci + 1
             if ci >= np.size(colors):
@@ -944,7 +944,8 @@ def plot_phase_abundance_panel(file_name, dsname, elements = None, denominator =
 #                           arrowprops=dict(arrowstyle="-", connectionstyle="arc3"))
 ####
 
-            print phase, e, # fit_dict['name'], fit_dict['popt']
+            print(phase, e, end=' ')
+# fit_dict['name'], fit_dict['popt']
             ci = ci + 1
             if ci >= np.size(colors):
                 ci = 0
@@ -1029,7 +1030,7 @@ if __name__ == '__main__':
 
 
     for dsname in all_ds:
-        print "Beginning on " + dsname
+        print("Beginning on " + dsname)
 
 #        if individual_fail:
 #            data = {dsname : all_data[dsname]}

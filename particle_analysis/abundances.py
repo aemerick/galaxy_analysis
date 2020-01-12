@@ -79,7 +79,7 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
         if '/' in ratio:
             ele1, ele2 = ratio.rsplit('/')
         else:
-            print "Must provide abundance ratio string of style: Fe/H"
+            print("Must provide abundance ratio string of style: Fe/H")
             return
 
         if ele1 == ele2:
@@ -139,7 +139,7 @@ def plot_acf(h5file = 'star_abundances.h5', dir = './abundances/', ds_list = Non
             g   = hf[dsname]['statistics']
             acf = g['all_particles'][ele][ele2]['acf']
             x   = g['all_particles'][ele][ele2]['acf_bins']
-            print x.value, acf.value
+            print(x.value, acf.value)
     #        acf = g['0Myr'][ele][ele2]['acf']
             #print g['0Myr'][ele][ele2]['interp_mean'], np.array(acf)
     #        x   = g['0Myr']['bins'][-len(acf)-1:]
@@ -412,7 +412,7 @@ def plot_MDF(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = '
         denom2 = 'H'
 
     if ds_list is None: # do all
-        ds_list = hf.keys()
+        ds_list =hf.keys()
 
 
     for dsname in ds_list:

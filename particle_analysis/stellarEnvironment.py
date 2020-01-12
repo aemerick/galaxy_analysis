@@ -77,7 +77,7 @@ def stellar_environment(ds, data, dead_only = True, write_to_file = True,
     else:
         loop_indexes = np.arange(np.size(pid)) # all stars
 
-    print np.size(pid), np.size(loop_indexes)
+    print(np.size(pid), np.size(loop_indexes))
 
     for i in loop_indexes:
 
@@ -131,7 +131,7 @@ def stellar_environment(ds, data, dead_only = True, write_to_file = True,
 def _parallel_loop(dsname):
 
     groupname = dsname.rsplit('/')[1]
-    print "starting computation on ", groupname
+    print("starting computation on ", groupname)
     gal = Galaxy(groupname)
 
     dictionary = {groupname : {}}
@@ -147,7 +147,7 @@ def _parallel_loop(dsname):
 
     del(gal)
 
-    print "ending computation on ", groupname
+    print("ending computation on ", groupname)
 
     return dictionary
 
@@ -233,7 +233,7 @@ def compute_stats_all_datasets(overwrite = False,
 
             del(gal)
 
-            print "ending computation on ", groupname
+            print("ending computation on ", groupname)
 
     else: # parallel
 
@@ -250,7 +250,7 @@ def compute_stats_all_datasets(overwrite = False,
         #   operating on many large datasets.
         #
 
-        for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+        for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
 
             sub_list = list(sub_list)
             sub_list = [s for s in sub_list if s is not None] # remove None values

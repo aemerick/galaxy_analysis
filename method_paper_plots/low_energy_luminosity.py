@@ -19,7 +19,7 @@ nmax  = 200
 def _parallel_loop(dsname):
 
     groupname = dsname.rsplit('/')[1]
-    print "starting computation on ", groupname
+    print("starting computation on ", groupname)
     gal = Galaxy(groupname)
 
     M    = gal.df['birth_mass']
@@ -57,7 +57,7 @@ ds_list = ds_list[: np.min([nmax,np.size(ds_list)])]
 times   = np.array(dsi)
 
 fulldict = {}
-for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
+for sub_list in itertools.zip_longest(*(iter(ds_list),) * nproc):
     sub_list = list(sub_list)
     sub_list = [s for s in sub_list if s is not None]
     reduced_nproc = np.min( [len(sub_list), nproc] )
@@ -74,7 +74,7 @@ for sub_list in itertools.izip_longest(*(iter(ds_list),) * nproc):
 
 f = open("low_eV_luminosity_%0004i_%0004i.dat"%(dsimin,dsimax),'w')
 f.write("#Time L_low L_high L_low_LW L_high_LW\n")
-for i, k in enumerate(np.sort(fulldict.keys())):
+for i, k in enumerate(np.sort(list(fulldict.keys()))):
 
     f.write("%2.2E %8.8E %8.8E %8.8E %8.8E\n"%(times[i], fulldict[k][0], fulldict[k][1], fulldict[k][2], fulldict[k][3]))
 

@@ -1,4 +1,11 @@
 import numpy as np
+
+from galaxy_analysis.plot.plot_styles import *
+
+fsize = 17
+rc('text', usetex=False)
+rc('font', size=fsize)#, ftype=42)
+
 import matplotlib as mpl
 mpl.use('Agg')
 
@@ -16,7 +23,9 @@ from galaxy_analysis.utilities import utilities
 from galaxy_analysis.static_data import anum_to_asym
 
 
-phases = ['Disk','CNM','WNM','WIM','HIM','FullBox']
+phases = ['Disk','CNM','WNM','WIM','HIM','FullBox','GravBound']
+figsize = 6
+
 
 
 def get_data(element, directory = './', t0 = None):
@@ -85,7 +94,7 @@ def compute_local_environment(filename = './mixing_events.in',
             dsname = all_files[int(index[i])].strip('_galaxy_data.h5')
             dsname = dsname + '/' + dsname
 
-        print dsname
+        print(dsname)
         ds   = yt.load(dsname)
         gal  = Galaxy(dsname.split('/')[0])
         data = ds.all_data()
@@ -176,40 +185,41 @@ def plot_average(cut_field = None, field_cuts = [],
         fullbox_average = {}
         individual_result = {}
 
-        for e in all_data.keys():
+        for e in list(all_data.keys()):
             individual_result[e] = {}
 
         for field in phases:
-            average[field] = np.zeros(np.size(all_data[ all_data.keys()[0] ][field]))
-            fullbox_average[field] = np.zeros(np.size(all_data[ all_data.keys()[0] ][field]))
+            average[field] = np.zeros(np.size(all_data[ list(all_data.keys())[0] ][field]))
+            fullbox_average[field] = np.zeros(np.size(all_data[ list(all_data.keys())[0] ][field]))
 
-        average['CGM'] = np.zeros(np.size(average['Disk']))
-        fullbox_average['CGM'] = np.zeros(np.size(average['Disk']))
+        for f in ['CGM']:
+            average[f] = np.zeros(np.size(average['Disk']))
+            fullbox_average[f] = np.zeros(np.size(average['Disk']))
 
         for f in phases + ['CGM']:
 
             if f == 'CGM':
-                for e in all_data.keys():
+                for e in list(all_data.keys()):
                     average[f] += (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
                     fullbox_average[f] += (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
                     individual_result[e][f] = (all_data[e]['FullBox'] - all_data[e]['Disk']) / all_data[e]['FullBox']
             else:
-                for e in all_data.keys():
+                for e in list(all_data.keys()):
                     average[f] += all_data[e][f] / all_data[e]['Disk']
                     fullbox_average[f] += (all_data[e][f] / all_data[e]['FullBox'])
                     individual_result[e][f] = all_data[e][f] / all_data[e]['FullBox']
 
-            average[f] = average[f] / (1.0 * np.size(all_data.keys()))
-            fullbox_average[f] = fullbox_average[f] / (1.0 * np.size(all_data.keys()))
+            average[f] = average[f] / (1.0 * np.size(list(all_data.keys())))
+            fullbox_average[f] = fullbox_average[f] / (1.0 * np.size(list(all_data.keys())))
 
         t = all_data[e]['time']
 
         fig, ax = plt.subplots()
-        fig.set_size_inches(8,8)
+        fig.set_size_inches(figsize,figsize)
 
 
         for s in phases:
-            if s == 'FullBox' or s == 'Disk':
+            if s == 'FullBox' or s == 'Disk' or s == 'GravBound':
                 continue
             ax.plot(t, average[s], color = ps.color_dict[s], ls = '-', lw = 3, label = s)
 #        ax.plot(t, average['CGM'], color = 'black', ls = '--', lw = 3, label = 'CGM')
@@ -231,12 +241,12 @@ def plot_average(cut_field = None, field_cuts = [],
         if annotation is None:
             annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
 
-        xytext = (0.02,0.94)
+        xytext = (0.05,0.94)
         ax.annotate(annotation, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
                     textcoords = 'axes fraction')
         annotation2 = r"f$_{\rm outflow}$ = %0.3f"%(val)
-        xytext = (0.02,0.86)
+        xytext = (0.05,0.86)
         ax.annotate(annotation2, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
                     textcoords = 'axes fraction')
@@ -253,11 +263,11 @@ def plot_average(cut_field = None, field_cuts = [],
 #
 #
         fig, ax = plt.subplots()
-        fig.set_size_inches(8,8)
+        fig.set_size_inches(figsize,figsize)
 
 
         for s in phases:
-            if s == 'FullBox' or s == 'Disk':
+            if s == 'FullBox' or s == 'Disk' or s == 'GravBound':
                 continue
             ax.plot(t, fullbox_average[s], color = ps.color_dict[s], ls = '-', lw = 3, label = s)
 
@@ -271,7 +281,7 @@ def plot_average(cut_field = None, field_cuts = [],
         plt.minorticks_on()
 
         if show_legend:
-            ax.legend(loc='best', ncol=3)
+            ax.legend(loc='best', ncol=2)
 
         ax.set_xlabel('Time (Myr)')
         ax.set_ylabel('Fraction of Enrichment Metal')
@@ -280,7 +290,7 @@ def plot_average(cut_field = None, field_cuts = [],
         val = np.average( average['CGM'][-4:-1] )
 
 #        annotation = r"log(E$_{\rm ej}$ / [10$^{51}$ erg]) = %.1f"%(np.log10(np.average(mix_data['E_ej'])))
-        xytext = (0.02,0.94)
+        xytext = (0.05,0.94)
         ax.annotate(annotation, xy=xytext, xytext=xytext,
                     xycoords = 'axes fraction',
                     textcoords = 'axes fraction')
@@ -299,7 +309,7 @@ def plot_average(cut_field = None, field_cuts = [],
 #
 #       --------------------------------------------------------
 #
-        header = "#time CNM WNM WIM HIM Disk CGM\n"
+        header = "#time CNM WNM WIM HIM Disk CGM GravBound\n"
         f = open("average_enrichment_evolution.dat","w")
         f.write(header)
 
@@ -307,14 +317,14 @@ def plot_average(cut_field = None, field_cuts = [],
 
             f.write("%5.5E"%(t[i]))
 
-            for phase in ["CNM","WNM","WIM","HIM","Disk","CGM"]:
+            for phase in ["CNM","WNM","WIM","HIM","Disk","CGM","GravBound"]:
                 f.write(" %5.5E"%( fullbox_average[phase][i]))
             f.write("\n")
 
         f.close()
 
 
-        for e in all_data.keys():
+        for e in list(all_data.keys()):
 
             f = open(e + "_enrichment_evolution.dat","w")
             f.write(header)
@@ -322,7 +332,7 @@ def plot_average(cut_field = None, field_cuts = [],
 
                 f.write("%5.5E"%(t[i]))
 
-                for phase in ["CNM","WNM","WIM","HIM","Disk","CGM"]:
+                for phase in ["CNM","WNM","WIM","HIM","Disk","CGM","GravBound"]:
                     f.write(" %5.5E"%( individual_result[e][phase][i]))
                 f.write("\n")
 
@@ -342,7 +352,7 @@ def enrichment_evolution(element,
     t, plot_data = get_data(element, directory = directory, t0 = t0)
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(8,8)
+    fig.set_size_inches(figsize,figsize)
 
     if normalization == 'Disk' or normalization == 'disk':
         norm = plot_data['Disk']
@@ -422,7 +432,7 @@ def load_mixing_file(filename = './mixing_events.in'):
     if os.path.isfile("./event_data_table.dat"):
         d2 = np.genfromtxt("./event_data_table.dat", names = True)
         for name in d2.dtype.names:
-            if not (name in data.keys()):
+            if not (name in list(data.keys())):
                 data[name] = d2[name]
 
     return data
@@ -441,7 +451,7 @@ def plot_from_mixing_file(filename = './mixing_file',
     for i in np.arange(np.size(data['x'])):
 
         if annotate:
-            if 'n_m' in data.keys():
+            if 'n_m' in list(data.keys()):
                 annotation = "<n> = %2.2E  -  <T> = %2.2E  -   E = %.1E  -  r_cyl = %.1f"%(data['n_m'][i],
                                                                    data['T_m'][i],
                                                                    data['E_ej'][i],
@@ -458,7 +468,7 @@ def plot_from_mixing_file(filename = './mixing_file',
             x = data['M_ej'][i]
         else:
             x = 1.0
-            print "WARNING: Requested normalization not recognized", norm
+            print("WARNING: Requested normalization not recognized", norm)
 
         enrichment_evolution(data['element'][i], t0 = data['time'][i] + 0.1,
                              normalization = x,
@@ -485,7 +495,7 @@ if __name__ == "__main__":
             if len(sys.argv) >= 4:
                 show_legend = (sys.argv[3] == "True") or (sys.argv[3] == "true") or (sys.argv[3] == "TRUE")
 
-            print "show_legend", show_legend
+            print("show_legend", show_legend)
 
             plot_average(annotation = annotation, show_legend = show_legend)
 

@@ -207,9 +207,21 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     gal    = dd.io.load(all_files[0])
     raw_fields = gal['gas_profiles'][mode]['sphere'].keys()
     fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) )  ]
-    fields = [x for x in fields if (len(x[1]) > 1)]
+    fields = [x for x in fields if (len(str(x[1])) > 1)]
     fields = [x[1] for x in fields if ((not ('_p0_' in x[1])) and (not ('_p1_' in x[1])) and (not x[1] == 'a'))]
-    print fields
+
+    if (len(fields) < 2):
+        # try the new way
+        fields = [x for x in raw_fields if (( not ('center' in x)) and (not ('dL' in x)) and ( not ('bin' in x)) and ('gas' in x))]
+        fields = [x.split(', ')[1].strip("''").strip('""').strip("')") for x in fields if '_Mass' in x]
+
+        for val in ['cell_mass','metal_mass']:
+            if not (val in fields):
+                fields = fields + [val]
+
+
+    print(fields)
+
     ele    = copy.copy(fields)
     ele    = [x.replace('_Mass','') for x in ele]
     ele    = [x.replace('_total','') for x in ele]
@@ -217,7 +229,7 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
     ele    = [x.replace('cell', 'm_tot') for x in ele]
     ele    = [x.replace('metal', 'm_metal') for x in ele]
 
-    print ele
+    print(ele)
 
     centers_rvir = gal['gas_profiles'][mode]['sphere']['centers_rvir']
     centers      = gal['gas_profiles'][mode]['sphere']['centers']
@@ -237,19 +249,33 @@ def gather_mass_flow(all_files, t_o = 0.0, r = 0.25, mode = 'outflow'):
         mass[k] = np.zeros(Nfiles)
         norm[k] = np.zeros(Nfiles)
 
+    last_working = 0
     for i, galfile in enumerate(all_files):
         t[i]   = dd.io.load(galfile, '/meta_data/Time')
         sfr[i] = dd.io.load(galfile, '/meta_data/SFR')   # 4/26 need to put this as a meta data point
 
         flow_data = dd.io.load(galfile, '/gas_profiles/' + mode + '/sphere')
-        mass_data = dd.io.load(galfile, '/gas_profiles/accumulation/sphere')
+
+        try:
+            mass_data = dd.io.load(galfile, '/gas_profiles/accumulation/sphere')
+            last_working = i
+        except:
+            print(galfile)
+            mass_data = dd.io.load(all_files[last_working], '/gas_profiles/accumulation/sphere')
+            if i - last_working > 3:
+                print('problem')
+                raise RuntimeError
 
         massbin   = np.argmin( np.abs( pos - mass_data['xbins']) )
 
 
         for j, name in enumerate(ele):
-            flow[name][i] = flow_data[('gas',fields[j])][flowbin]              # outflow rate in Msun / yr at desired r
-            mass[name][i] = np.sum( mass_data[('gas',fields[j])][0:massbin] )  # total mass of species interior to r
+            key = ('gas',fields[j]) # old
+            if not (key in flow_data.keys()): # for backwards compatability
+                key = "('gas', '"+str(fields[j])+"')" # new 
+
+            flow[name][i] = flow_data[key][flowbin]              # outflow rate in Msun / yr at desired r
+            mass[name][i] = np.sum( mass_data[key][0:massbin] )  # total mass of species interior to r
 
         if sfr[i] > 0:
             for name in ele:
@@ -395,19 +421,19 @@ if __name__=="__main__":
             analysis_to_use = ds_files[-1] + '_galaxy_data.h5'
         else:
             if len(gal_files) < 1:
-                print "Need to allow for generating the analysis file, or have files already generated"
+                print("Need to allow for generating the analysis file, or have files already generated")
                 raise ValueError
 
             # if we aren't generating file, use the latest one made
-            print "Warning: Not using most up to date output dump"
+            print("Warning: Not using most up to date output dump")
             analysis_to_use = gal_files[-1]
 
     else:
-        print "Currently, requires data dump to function - None found"
+        print("Currently, requires data dump to function - None found")
         raise ValueError 
 
         if len(gal_files) < 1:
-            print "No data dumps or analysis files found - what are you doing?"
+            print("No data dumps or analysis files found - what are you doing?")
             raise ValueError
 
         analysis_to_use = gal_files[-1]

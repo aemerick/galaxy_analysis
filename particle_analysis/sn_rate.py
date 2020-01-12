@@ -131,7 +131,7 @@ def snr(ds, data, times = None, sn_type = 'II'):
         collapse_threshold = ds.parameters['IndividualStarDirectCollapseThreshold']
         agb_threshold      = ds.parameters['IndividualStarSNIIMassCutoff']
         if not any([(x <= collapse_threshold)*(x > agb_threshold) for x in birth_mass[pcut]]):
-            print "no core collapse supernova present, only direct collapse"
+            print("no core collapse supernova present, only direct collapse")
             return times, np.zeros(np.size(times.value) - 1)
 
         # slice!
@@ -146,9 +146,9 @@ def snr(ds, data, times = None, sn_type = 'II'):
         
         # SNIa are the ones that are just masless tracers, rest are WD
         if not any(mass[pcut] == 0.0):
-            print "no Type Ia supernova, only white dwarfs"
-            print "N_WD = %i -- Lowest mass = %.3f Msun"%(np.size(mass[pcut]), np.min(mass[pcut]))
-            print "Current time = %.2E Myr - Next to explode at t = %.2E Myr"%(current_time, np.min(lifetimes[pcut] + creation_time[pcut]))
+            print("no Type Ia supernova, only white dwarfs")
+            print("N_WD = %i -- Lowest mass = %.3f Msun"%(np.size(mass[pcut]), np.min(mass[pcut])))
+            print("Current time = %.2E Myr - Next to explode at t = %.2E Myr"%(current_time, np.min(lifetimes[pcut] + creation_time[pcut])))
             return times, np.zeros(np.size(times.value) - 1)
 
         # slice!
@@ -166,7 +166,7 @@ def snr(ds, data, times = None, sn_type = 'II'):
   #      pcut = pcut + ( (pt == 13) * (mass <= agb_threshold))
 
     else:
-        print "sn_type :" + sn_type + " not a valid option - check spelling"
+        print("sn_type :" + sn_type + " not a valid option - check spelling")
         return -1
 
 

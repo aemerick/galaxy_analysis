@@ -14,9 +14,9 @@ work_dir      = '/mnt/ceph/users/emerick/enzo_runs/pleiades/starIC/run11_30km/fi
 
 data_list, times = utilities.select_data_by_time(dir = work_dir,
                                                  tmin=0.0,tmax=1000)
-print data_list[0], times[0]
-print data_list[-1], times[-1]
-print times[-1] - times[0]
+print(data_list[0], times[0])
+print(data_list[-1], times[-1])
+print(times[-1] - times[0])
 all_data = {}
 
 # gather metallicities for:
