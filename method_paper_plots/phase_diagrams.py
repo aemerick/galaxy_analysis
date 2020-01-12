@@ -88,7 +88,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         plots = [str(x) for x in sys.argv[3:]]
     else:
-        plots = ['nT','G_o','Q_o']
+        plots = ['nT']
 
     plot_time_average_PD('./', t_min, t_max, nbin = 100,
                          plots = plots)
