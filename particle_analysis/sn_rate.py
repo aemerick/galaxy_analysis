@@ -135,7 +135,7 @@ def snr(ds, data, times = None, sn_type = 'II'):
             return times, np.zeros(np.size(times.value) - 1)
 
         # slice!
-        pcut *= (birth_mass <= collapse_threshold)*(x > agb_threshold)
+        pcut *= (birth_mass <= collapse_threshold)*(birth_mass > agb_threshold)
 
     elif any( [sn_type in x for x in _snia_labels]):
 
@@ -163,7 +163,7 @@ def snr(ds, data, times = None, sn_type = 'II'):
  #       pcut  = (pt == 12)
  #       pcut *= (mass > 0.0)
 
-  #      pcut = pcut + ( (pt == 13) * (mass <= agb_threshold))
+  #      pcut = pcut + ( (pt == 13) * (birth_mass <= agb_threshold))
 
     else:
         print("sn_type :" + sn_type + " not a valid option - check spelling")
