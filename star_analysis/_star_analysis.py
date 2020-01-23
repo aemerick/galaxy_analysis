@@ -12,7 +12,7 @@ __all__ = ['get_list_of_stars', 'get_star_property', 'Star', 'StarList']
 
 def get_list_of_stars(ds, data, dummy_call = False, overload_type = None):
 
-    types = {11 : 'star', 12 : 'WD', 13 : 'remnant', 1 : 'N/A'}
+    types = {11 : 'star', 12 : 'WD', 13 : 'remnant', 1 : 'N/A', 14 : 'PopIII', 15 : 'unresolved'}
 
     M      = data['birth_mass'].value
     Z      = data['metallicity_fraction'].value
