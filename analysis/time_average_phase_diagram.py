@@ -25,6 +25,10 @@ import os
 # result is True if this works
 parallel_on = yt.enable_parallelism()
 
+def _mag_z(field,data):
+    return np.abs( data['cylindrical_z'].to('pc') )
+yt.add_field( ("gas","mag_z"), function=_mag_z, units = "pc")
+
 
 def _create_region(ds, region_type, prop):
     """
@@ -68,6 +72,16 @@ def _create_region(ds, region_type, prop):
           (region_type == 'box') or (region_type == 'region')):
 
         region = ds.region(prop['center'], prop['left_edge'], prop['right_edge'])
+
+    elif (region_type == 'sphere_exclude_disk'):
+        # cut region
+
+        sphere = ds.sphere(prop['center'], prop['sphere_radius'])
+
+        cut_string = "((obj['cylindrical_radius'].in_units('pc') > %5.5E) & (obj['mag_z'].in_units('pc') > %5.5E))"%( prop['disk_radius'].value, prop['disk_height'].value)
+
+        region = sphere.cut_region([ cut_string ])
+
 
 
     return region
