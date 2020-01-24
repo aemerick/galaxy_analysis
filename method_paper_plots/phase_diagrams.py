@@ -21,7 +21,8 @@ def plot_time_average_PD(wdir, t_min, t_max, nbin = 100,
     # --- get data sets associated with output files (this is gross - I am sorry)
     sim_files['DD_files'] =  np.array([ x.split('_galaxy_data')[0] + '/' + x.split('_galaxy_data')[0][-6:] for x in sim_files['files']])
     # --- make sure they exist
-    # sim_files['DD_files'] =  [ x for x in sim_files['DD_files'] if os.path.isfile(x)]
+    sim_files['Time']     =  np.array([ sim_files['Time'][i] for i in np.arange(np.size(sim_files['Time'])) if os.path.isfile( sim_files['DD_files'][i]) ])   
+    sim_files['DD_files'] =  np.array([ x for x in sim_files['DD_files'] if os.path.isfile(x)])
     # --- select the ones in the time range we want
     sim_files['phase_files'] = sim_files['DD_files'][ (sim_files['Time'] >= t_min) *\
                                                       (sim_files['Time'] <= t_max)]
