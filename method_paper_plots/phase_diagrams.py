@@ -77,6 +77,38 @@ def plot_time_average_PD(wdir, t_min, t_max, nbin = 100,
 #                                     outname = 'T_n_cell_mass_2D_phase.png',
                                      outdir  = outdir)
 
+    if 'nT_special' in plots:
+        pd = tapd.time_average_phase_diagram(t_min, t_max,
+                                     ds_list = sim_files['phase_files'], wdir = wdir,
+                                     x_bins = np.logspace(-6, 3, 512)*yt.units.cm**(-3),
+                                     xlog  = True, xfield = 'number_density',
+                                     y_bins = np.logspace(0,7.5, 512) * yt.units.K, yfield = 'Temperature',
+                                     region_type = 'sphere_exclude_disk', region_kwargs = {'sphere_radius': 3.6*yt.units.kpc,
+                                                                                           'disk_radius' : 600*yt.units.pc,
+                                                                                           'disk_height' : 200*yt.units.pc,
+                                                                                           'center': np.array([0.5,0.5,0.5])},
+                                     zlog=True,
+#                                      region_type = 'FullBox', zlog = True,
+                                         ylog=True,
+                                     zlim = [1.0E-2, 6.0E4], zunit = 'Msun', cmap = 'cubehelix',
+                                     outname = 'nT_outside_disk.png',
+                                     outdir  = outdir)
+
+        pd = tapd.time_average_phase_diagram(t_min, t_max,
+                                     ds_list = sim_files['phase_files'], wdir = wdir,
+                                     x_bins = np.logspace(-6, 3, 512)*yt.units.cm**(-3),
+                                     xlog  = True, xfield = 'number_density',
+                                     y_bins = np.logspace(0,7.5, 512) * yt.units.K, yfield = 'Temperature',
+                                     region_type = 'disk', region_kwargs = {'radius' : 600*yt.units.pc,
+                                                                            'height' : 200*yt.units.pc,
+                                                                            'center': np.array([0.5,0.5,0.5])},
+                                     zlog=True,
+#                                      region_type = 'FullBox', zlog = True,
+                                         ylog=True,
+                                     zlim = [1.0E-2, 6.0E4], zunit = 'Msun', cmap = 'cubehelix',
+                                     outname = 'nT_disk.png',
+                                     outdir  = outdir)
+
 
     return
 
@@ -88,7 +120,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         plots = [str(x) for x in sys.argv[3:]]
     else:
-        plots = ['nT']
+        plots = ['nT_special']
 
     plot_time_average_PD('./', t_min, t_max, nbin = 100,
                          plots = plots)
