@@ -11,20 +11,25 @@ import deepdish as dd
 
 # convert to loading factors - compute averages
 
-#file_list = np.sort(glob.glob('loading_factors*.dat'))
+file_list = np.sort(glob.glob('loading_factors*.dat'))
 
-#data_list = [None] * len(file_list)
+data_list = [None] * len(file_list)
 
-#for name in data_list:
-#    data_list[i] = np.genfromtxt(name,names=True)
+i = 0
+for name in file_list:
+    data_list[i] = np.genfromtxt(name,names=True)
+    i = i + 1
 
-data   = np.genfromtxt('loading_factors.dat',names=True)
+#data   = np.genfromtxt('loading_factors.dat',names=True)
 #data2   = np.genfromtxt('loading_factors2.dat',names=True)
 
-#data = {}
-#for k in data1.dtype.names:
-#    data[k] = np.array(list(data1[k]) + list(data2[k])) # ew
+data = {}
+for k in data_list[0].dtype.names:
+    data[k] = list(data_list[0][k])
+    for loaded_data in data_list[1:]:
+        data[k] = data[k] + list(loaded_data[k])
 
+    data[k] = np.array( data[k] )
 
 #
 #correct_orate = np.genfromtxt('orate.dat',names=True)
@@ -63,17 +68,21 @@ starsdens = np.average(   dd.io.load( files[-1], '/time_data/SFR_100')) / A  * 1
 
 # compute other values
 loading_data['Eta_h-Eta_c'] = loading_data['E_hot_out'] / loading_data['E_cold_out']
-loading_data['e_s'] = np.average(  data['E_out'] / (data['M_out']*1.989E33 )) # erg / g
+
+select = data['M_out'] > 0
+loading_data['e_s'] = np.average(  data['E_out'][select] / (data['M_out'][select]*1.989E33 )) # erg / g
 select = data['M_out_hot'] > 0
 loading_data['e_s_hot'] = np.average(  data['E_hot_out'][select] / (data['M_out_hot'][select]*1.989E33 )) # erg / g
-loading_data['e_s_cold'] = np.average(  data['E_cold_out'] / (data['M_out_cold']*1.989E33 )) # erg / g
+select = data['M_out_cold'] > 0
+loading_data['e_s_cold'] = np.average(  data['E_cold_out'][select] / (data['M_out_cold'][select]*1.989E33 )) # erg / g
 loading_data['e_s_h-e_s_c'] = loading_data['e_s_hot'] / loading_data['e_s_cold']
 
 
 loading_data['Sigma_gas'] = gassdens
 loading_data['Sigma_sfr'] = starsdens
 
-loading_data['E_h-Metal_h'] = loading_data['E_hot_out'] / loading_data['Metal_out_hot']
+select = loading_data['Metal_out_hot'] > 0
+loading_data['E_h-Metal_h'] = loading_data['E_hot_out'][select] / loading_data['Metal_out_hot'][select]
 
 names = {  'M_out'      : 'Eta_{mass}',
            'M_out_hot'  : "Eta_{mass,hot}",

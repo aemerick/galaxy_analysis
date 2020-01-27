@@ -234,6 +234,20 @@ def time_average_phase_diagram(tmin, tmax, wdir = './',
     else:
         outname = outdir + outname
 
+    # now output the data to a text file for re-plotting later on
+    #
+    z_data = main_pd.profile.field_data[zf]
+    if not (zunit is None):
+        z_data = z_data.to(zunit).value
+    x_data = main_pd.profile.x_bins.value
+    y_data = main_pd.profile.y_bins.value
+    xmesh, ymesh = np.meshgrid(x_data,y_data)
+    hist_1D_yaxis = np.sum(z_data, axis=0)
+    hist_1D_xaxis = np.sum(z_data, axis=1)
+
+    np.savetxt(outname + "_bins_1D_hist.dat", ( x_data[:-1], hist_1D_xaxis, y_data[:-1], hist_1D_yaxis))
+    np.savetxt(outname + "_2D_hist.dat",      z_data)
+
     # only write one image
     if yt.is_root():
         main_pd.save(outname)
