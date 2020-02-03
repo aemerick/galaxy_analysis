@@ -1,6 +1,7 @@
 import numpy as np
 import glob
 import deepdish as dd
+import os
 
 #
 # This may win awards for quickest-dirtiest scripts I've made 
@@ -31,11 +32,17 @@ for k in data_list[0].dtype.names:
 
     data[k] = np.array( data[k] )
 
+
+if os.path.isfile('orate.dat'):
+    #print("Using adjusted outflow rate")
+    correct_orate = np.genfromtxt('orate.dat', names=True)
+    data['O_rate'] = np.interp( data['time'],
+                                correct_orate['time'],
+                                correct_orate['O_rate'])
 #
 #correct_orate = np.genfromtxt('orate.dat',names=True)
 #
 #data['O_rate'] = correct_orate['O_rate'] #####
-
 
 loading_data = {}
 for k in ['M_out','M_out_hot','M_out_cold']:
