@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from galaxy_analysis.plot.plot_styles import *
 import deepdish as dd
 import glob
+import os
 
 from galaxy_analysis.utilities import utilities
 
@@ -202,8 +203,8 @@ f_Omass = lambda x: np.interp(x,t_100, Omass_100)
 
 dsnames = np.sort(np.array(glob.glob(wdir + "DD???5/DD???5") +glob.glob(wdir+"DD???0/DD???0")))
 
-if len(dsnames) > 100: # only select first 100 assuming only grabbing every 5 Myr (first 500 Myr)
-    dsnames = dsnames[:100]
+if len(dsnames) > 120: # only select first 100 assuming only grabbing every 5 Myr (first 500 Myr)
+    dsnames = dsnames[:120]
 
 j = 0
 ds_select = dsnames[:]
@@ -227,16 +228,35 @@ orate = np.zeros(np.size(snr))
 
 loading = np.zeros(np.size(ds_select))
 
-file = open(wdir + "loading_factors.dat","w")
+if os.path.isfile(wdir + "loading_factors.dat"):
+    previous_data = np.genfromtxt(wdir + "loading_factors.dat", names=True)
 
-file.write("#time E_out E_hot_out E_cold_out E_colder_out M_out M_out_hot M_out_cold Metal_out Metal_out_hot Metal_out_cold SFR SNR O_rate\n")
+    if len(previous_data['time']) == 0: # hack
+        previous_data = {}
+        previous_data['time'] = np.ones(2)*-1
+
+    file = open(wdir + "loading_factors.dat","a")
+
+else:
+    previous_data = {'time' : np.array([-1,-1])}
+    file = open(wdir + "loading_factors.dat","w")
+    file.write("#time E_out E_hot_out E_cold_out E_colder_out M_out M_out_hot M_out_cold Metal_out Metal_out_hot Metal_out_cold SFR SNR O_rate\n")
 
 times = np.zeros(np.size(ds_select))
-for dsname in ds_select:
+for j,dsname in enumerate(ds_select):
+
     ds = yt.load(dsname)
-    data = ds.all_data()
     
     times[j] = ds.current_time.to('Myr')
+
+    if times[j] <= previous_data['time'][-1]:
+        del(ds)
+        continue
+
+    if times[j] > (500.0 + 120.0):
+        break
+
+    data = ds.all_data()
     
     try:
         x,y,z,w = compute_energy_outflow(ds,data)
@@ -260,6 +280,8 @@ for dsname in ds_select:
                                                               mass_load[j],mass_load_hot[j], mass_load_cold[j], metal_load[j], metal_load_hot[j], metal_load_cold[j]
                                                                                                    ,sfr[j],snr[j],orate[j]))
     file.flush()
-    j = j + 1
+
+    del(data)
+    del(ds)
     
 file.close()
