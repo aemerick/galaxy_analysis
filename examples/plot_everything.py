@@ -22,7 +22,7 @@ import multiprocessing
 
 #
 # move to yt field defines
-# 
+#
 def main_sequence(pfilter,data):
     filter = data[(pfilter.filtered_type, "particle_type")] == 11
     return filter
@@ -91,13 +91,21 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
                          width = 2.5*yt.units.kpc, ndx = 10):
 
     if has_particles is None:
-        has_particles = ('io','particle_position_x') in ds.field_list 
+        has_particles = ('io','particle_position_x') in ds.field_list
 
     if fields is None:
         fields = [('gas','number_density'), ('enzo','Temperature')]
 
 #        if thin:
 #            fields += [('gas','a_rad_over_a_grav')]
+    outdata_path = None
+    if save_data:
+        outdata_path = './proj/' + str(ds) + '_Proj_data.h5'
+
+        if os.path.isfile(outdata_path):
+            outH5 = dd.io.load(outdata_path)
+        else:
+            outH5 = {}
 
     m = 0.0
     t = ds.current_time.convert_to_units('Myr').value
@@ -157,8 +165,20 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
         else:
             outdir = './proj/'
 
+        if save_data:
+            if not (a in outH5.keys()):
+                outH5[a] = {}
+
+            for f in fields:
+                outH5[a][f] = pp.frb.data[f]
+
+
         pp.save(outdir)
         del(pp)
+
+    if save_data:
+        dd.io.save(outdata_path, outH5)
+
 
     return
 
@@ -174,6 +194,15 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*
     if has_particles:
         m = np.sum(data['particle_mass'][data['particle_type'] == 11].convert_to_units('Msun'))
         m = m.value
+
+    outdata_path = None
+    if save_data:
+        outdata_path = './slice/' + str(ds) + '_Slice_data.h5'
+
+        if os.path.isfile(outdata_path):
+            outH5 = dd.io.load(outdata_path)
+        else:
+            outH5 = {}
 
 
     for a in axis:
@@ -194,13 +223,24 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*
         sp.annotate_title(" Time = %.1f Myr     M_star = %.3E Msun"%(t,m))
         sp.save('./slice/')
 
+        if save_data:
+            if not (a in outH5.keys()):
+                outH5[a] = {}
+
+            for f in fields:
+                outH5[a][f] = sp.frb.data[f]
+
+
         del(sp)
+
+    if save_data:
+        dd.io.save(outdata_path, outH5)
 
     return
 
 
 
-def _parallel_loop(dsname, fields, axis = ['x','z']):
+def _parallel_loop(dsname, fields, axis = ['x','z'], save_data = False):
 
 
     ds   = yt.load(dsname)
@@ -222,20 +262,20 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
         width = 5.0 * yt.units.kpc
     else:
         width = 2.5 * yt.units.kpc
-#    width = 1.0 # 
+#    width = 1.0 #
 
     region = ds.disk(ds.domain_center, [0,0,1], radius = width / 1.5, height = 2.0*yt.units.kpc)
 
     #phase_plots(ds, region = region)
 
     slice_plots(ds, [('gas','number_density'),('enzo','Temperature')], axis,
-                has_particles = has_particles, width = width)
+                has_particles = has_particles, width = width, save_data = save_data)
 
 #    projection_plots(ds, axis = axis, has_particles = has_particles,
 #                     thin = True, width = width, fields = ['O_Fraction','Fe_Fraction'])
 
     projection_plots(ds, axis = axis, has_particles = has_particles,
-                     thin = False, width = width)
+                     thin = False, width = width, save_data = save_data)
 
 
 
@@ -244,7 +284,18 @@ def _parallel_loop(dsname, fields, axis = ['x','z']):
     return
 
 
-def make_plots(ds_list, fields, axis = ['x', 'z'], n_jobs = None):
+def make_plots(ds_list,
+               fields,
+               axis = ['x', 'z'],
+               save_data = False,
+               n_jobs = None):
+"""
+   Loop over all yt-readable output files in ds_list and plot
+   list of given fields over given axis (list, default 'x' and 'z') using
+   n_jobs processors (default, all available CPUs). If save_data is true,
+   saves image data for replotting later using np.savetxt.
+"""
+
 
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
@@ -252,7 +303,7 @@ def make_plots(ds_list, fields, axis = ['x', 'z'], n_jobs = None):
     print(("Starting to make %i plots for each of %i datasets with %i processors"%(len(fields) * len(axis), len(ds_list), n_jobs)))
 
     Parallel(n_jobs = n_jobs)(\
-            delayed(_parallel_loop)(dsname,fields,axis) for dsname in ds_list)
+            delayed(_parallel_loop)(dsname,fields,axis,save_data) for dsname in ds_list)
 
     return
 
@@ -276,6 +327,7 @@ if __name__ == "__main__":
     all_ds_list = np.sort(all_ds_list)
 
     n_jobs = None
+    save_data = False
 
     if len(sys.argv) == 1:
         ds_list = all_ds_list
@@ -297,5 +349,10 @@ if __name__ == "__main__":
         imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:]]
         ds_list = all_ds_list[np.arange(imin,imax,di)]
 
-    make_plots(ds_list, fields, n_jobs = n_jobs)
-        
+    elif len(sys.argv) == 6:
+        imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:5]]
+        save_data = bool(int(sys.argv[5]))
+
+        ds_list = all_ds_list[np.arange(imin,imax,di)]
+
+    make_plots(ds_list, fields, save_data = save_data, n_jobs = n_jobs)
