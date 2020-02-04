@@ -343,21 +343,21 @@ if __name__ == "__main__":
     elif len(sys.argv) == 3:
         imin, imax = [ int(x) for x in sys.argv[1:]]
 
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,1)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,1)]
 
     elif len(sys.argv) == 4:
         imin, imax, di = [int(x) for x in sys.argv[1:]]
 
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     elif len(sys.argv) == 5:
         imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:]]
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     elif len(sys.argv) == 6:
         imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:5]]
         save_data = bool(int(sys.argv[5]))
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     ds_list = [x for x in possible_ds_list if x in all_ds_list]
 
