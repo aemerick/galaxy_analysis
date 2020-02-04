@@ -16,9 +16,12 @@ import glob
 import os
 import numpy as np
 import sys
+import deepdish as dd
 
 from joblib import Parallel, delayed
 import multiprocessing
+
+BUFF = 1024
 
 #
 # move to yt field defines
@@ -88,7 +91,7 @@ def phase_plots(ds, to_plot = 'all', region = None):
     return
 
 def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, thin = False,
-                         width = 2.5*yt.units.kpc, ndx = 10):
+                         width = 2.5*yt.units.kpc, ndx = 10, save_data = False):
 
     if has_particles is None:
         has_particles = ('io','particle_position_x') in ds.field_list
@@ -142,7 +145,7 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
 
         pp = yt.ProjectionPlot(ds, axis = a, fields = fields,
                                width = width, weight_field = 'density', data_source = data_source)
-        pp.set_buff_size(2048)
+        pp.set_buff_size(BUFF)
 
         print(fields)
         for f in fields:
@@ -170,7 +173,7 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
                 outH5[a] = {}
 
             for f in fields:
-                outH5[a][f] = pp.frb.data[f]
+                outH5[a][f] = pp.frb.data[str(f)]
 
 
         pp.save(outdir)
@@ -182,7 +185,8 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
 
     return
 
-def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*yt.units.kpc):
+def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*yt.units.kpc,
+                save_data = False):
 
     if has_particles is None:
         has_particles = ('io','particle_position_x') in ds.field_list
@@ -208,7 +212,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*
     for a in axis:
         sp   = yt.SlicePlot(ds, axis = a, fields = fields,
                                 width = width)
-        sp.set_buff_size(2048)
+        sp.set_buff_size(BUFF)
 
         for f in fields:
             sp.set_cmap(f, ga.static_data.CMAPS[f])
@@ -228,7 +232,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*
                 outH5[a] = {}
 
             for f in fields:
-                outH5[a][f] = sp.frb.data[f]
+                outH5[a][f] = sp.frb.data[str(f)]
 
 
         del(sp)
@@ -289,12 +293,12 @@ def make_plots(ds_list,
                axis = ['x', 'z'],
                save_data = False,
                n_jobs = None):
-"""
-   Loop over all yt-readable output files in ds_list and plot
-   list of given fields over given axis (list, default 'x' and 'z') using
-   n_jobs processors (default, all available CPUs). If save_data is true,
-   saves image data for replotting later using np.savetxt.
-"""
+    """
+    Loop over all yt-readable output files in ds_list and plot
+    list of given fields over given axis (list, default 'x' and 'z') using
+    n_jobs processors (default, all available CPUs). If save_data is true,
+    saves image data for replotting later using np.savetxt.
+    """
 
 
     if n_jobs is None:
@@ -339,21 +343,21 @@ if __name__ == "__main__":
     elif len(sys.argv) == 3:
         imin, imax = [ int(x) for x in sys.argv[1:]]
 
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,1)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,1)]
 
     elif len(sys.argv) == 4:
         imin, imax, di = [int(x) for x in sys.argv[1:]]
 
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     elif len(sys.argv) == 5:
         imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:]]
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     elif len(sys.argv) == 6:
         imin, imax, di, n_jobs = [int(x) for x in sys.argv[1:5]]
         save_data = bool(int(sys.argv[5]))
-        possible_ds_list = ["./DD%0004i/DD%0004i"%(i) for i in np.arange(imin,imax,di)]
+        possible_ds_list = ["./DD%0004i/DD%0004i"%(i,i) for i in np.arange(imin,imax,di)]
 
     ds_list = [x for x in possible_ds_list if x in all_ds_list]
 
