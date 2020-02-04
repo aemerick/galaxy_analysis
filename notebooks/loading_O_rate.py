@@ -25,23 +25,29 @@ def compute_orate(directory):
     Orate[-1]  = Orate[-2]
 
     # now rebin
-    temp_all_times, temp_Orate = simple_rebin(np.round(all_times,0), Orate[:-1], 100.0, 'average', force = True)
+#    temp_all_times, temp_Orate = simple_rebin(np.round(all_times,0), Orate[:-1], 10.0, 'average', force = True)
 
-    if len(temp_Orate) <= 2:
-        temp_all_times, temp_Orate = simple_rebin(np.round(all_times,0), Orate[:-1], 25.0, 'average', force = True)
-    all_times = 1.0 * temp_all_times
-    Orate = 1.0 * temp_Orate
+#    if len(temp_Orate) <= 2:
+#        temp_all_times, temp_Orate = simple_rebin(np.round(all_times,0), Orate[:-1], 25.0, 'average', force = True)
+#    all_times = 1.0 * temp_all_times
+#    Orate = 1.0 * temp_Orate
 
 #    print(all_times, Orate)
 
     f = open("orate.dat","w")
     f.write("#time O_rate\n")
 
+    Orate_out = np.zeros(np.size(Orate))
     for i in np.arange(np.size(Orate)):
-        if Orate[i] < 0:
-            Orate[i] = np.average([ Orate[i-1], np.max([Orate[i+1],0.0])])
 
-        f.write("%5.5E %5.5E\n"%(all_times[i], Orate[i]))
+        Orate_out[i] = np.average( Orate[((all_times > all_times[i] - 50.0)) * (all_times <all_times[i])])
+
+#        if Orate[i] < 0:
+#            Orate[i] = np.average([ Orate[i-1], np.max([Orate[i+1],0.0])])
+    Orate_out[0] = 1.0 * Orate_out[1]
+
+    for i in np.arange(np.size(Orate)):
+        f.write("%5.5E %5.5E\n"%(all_times[i], Orate_out[i]))
     f.close()
 
     return
