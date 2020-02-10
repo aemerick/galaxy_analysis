@@ -45,7 +45,7 @@ def bin_edges(x):
     xnew[-1] = x[-1] + 0.5*dx[-1]
     return xnew
 
-def simple_rebin(bins, y, new_bins, method = "sum"):
+def simple_rebin(bins, y, new_bins, method = "sum", force=False):
     """
     Re-bin data (y) placed in evenly spaced bins (bins)
     where len(bins) = len(y) + 1. It is assumed the newly
@@ -58,6 +58,11 @@ def simple_rebin(bins, y, new_bins, method = "sum"):
     of the previous bins. new_bins can either be a float, representing
     a desired bin spacing, or an array representing the
     new bins.
+
+    force computes new data even if bins are not evenly spaced. prints
+    just the error message instead of failing.
+
+    returns new bins and new values
     """
 
     if not (len(bins) == len(y) + 1):
@@ -72,7 +77,10 @@ def simple_rebin(bins, y, new_bins, method = "sum"):
             print(dx)
             print(np.diff(bins))
             print(bins)
-            raise ValueError
+
+            if not force:
+                raise ValueError
+
     dx = dx[0] # unique returns an array even if only 1 value
 
     if np.size(new_bins) <= 1:

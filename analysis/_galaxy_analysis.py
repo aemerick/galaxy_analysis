@@ -1,7 +1,7 @@
 
 
 import yt
-yt.funcs.mylog.setLevel(40)
+#yt.funcs.mylog.setLevel(40)
 
 #
 # Nov 2017: Units bug in Enzo domain mass flux that needs to be corrected
