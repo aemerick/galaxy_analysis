@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from collections import Iterable, OrderedDict
 
 import glob
-import os
+import os, sys
 import h5py
 import deepdish as dd
 
@@ -128,7 +128,8 @@ def compute_stats_all_masks(galaxy, fraction_fields = None,
                                     abundance_fields = None, combine_fields = None):
 
     # define the standard masks, then compute things for all of them
-    all_masks   = {'star_forming': _star_forming_region,
+    all_masks   = {
+                   # 'star_forming': _star_forming_region,
                    'CNM': _CNM,
                    'WNM': _WNM,
                    'HIM': _HIM,
@@ -899,7 +900,13 @@ def collate_to_time_array(filepath = None):
 
 if __name__ == '__main__':
 
-    generate_all_stats(overwrite=False, nproc = 18,
+
+    if len(sys.argv) > 1:
+        nproc = int(sys.argv[1])
+    else:
+        nproc = 12
+
+    generate_all_stats(overwrite=False, nproc = nproc,
                        output_interval        =  5)
 
 #    plot_time_evolution(abundance=True, plot_type = 'Fe')

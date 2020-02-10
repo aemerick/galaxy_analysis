@@ -173,7 +173,7 @@ def projection_plots(ds, fields = None, axis=['x','z'], has_particles = None, th
                 outH5[a] = {}
 
             for f in fields:
-                outH5[a][f] = pp.frb.data[str(f)]
+                outH5[a][str(f)] = pp.frb.data[f]
 
 
         pp.save(outdir)
@@ -232,7 +232,7 @@ def slice_plots(ds, fields, axis = ['x','z'], has_particles = None, width = 2.5*
                 outH5[a] = {}
 
             for f in fields:
-                outH5[a][f] = sp.frb.data[str(f)]
+                outH5[a][str(f)] = sp.frb.data[f]
 
 
         del(sp)
