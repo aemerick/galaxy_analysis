@@ -119,6 +119,10 @@ if __name__ == "__main__":
         plot_panel(axis = 'x')
         plot_panel(axis = 'z')
     elif len(sys.argv) > 1:
-        ds_list = [  "DD%0004i/DD%0004i"%(int(i),int(i)) for i in np.array(sys.argv)[1:]]
+        if str(sys.argv[1]) == "range":
+            ds_list = ["DD%0004i/DD%0004i"%(int(i),int(i)) for i in np.arange(int(sys.argv[2]),int(sys.argv[3]),int(sys.argv[4]))]
+        else:
+            ds_list = [  "DD%0004i/DD%0004i"%(int(i),int(i)) for i in np.array(sys.argv)[1:]]
+    
         plot_panel(ds_list = ds_list, axis = 'x')
         plot_panel(ds_list = ds_list, axis = 'z')
