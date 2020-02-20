@@ -190,6 +190,10 @@ PLOT_DATA = {
                  ( ('gas','number_density'), r'n (cm$^{-3}$)', (1.0E-3, 1.0E3), (1.0E-3, 800.0),
                    u.cm**(-3), 'viridis'),
 
+             ('gas','H2_p0_number_density'):
+                 ( ('gas','H2_p0_number_density'), r'n (cm$^{-3}$)', (1.0E-4,5.0), (1.0E-4,5.0),
+                    u.cm**(-3), 'plasma'),
+
              ('gas', 'Temperature'):
                  (('enzo','Temperature'), r'Temperature (K)', (10.0, 1.0E7), (10.0, 1.0E7),
                  u.K, 'RdYlBu_r'),
