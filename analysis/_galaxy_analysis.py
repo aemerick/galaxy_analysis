@@ -9,7 +9,7 @@ import yt
 #           just make this a global post-process correction. Leaving as bug
 #           in Enzo.
 #
-APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES = True
+APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES = False
 
 import numpy as np
 from scipy import optimize
