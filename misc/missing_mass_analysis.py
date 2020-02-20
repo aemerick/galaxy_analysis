@@ -56,13 +56,19 @@ def generate_model_stars(m, z, abund = ['m_tot','m_metal'], M_o = None):
             val = 0.0
 
         ele[k] = val
+    sum = 0.0
 
     for i in np.arange(np.size(m)):
-        s = star.Star(M=m[i],Z=z[i], abundances=ele, M_o = M_o[i])
-        s.set_SNII_properties()
-        s.set_SNIa_properties(check_mass = True)
+        all_star[i] = star.Star(M=m[i],Z=z[i], abundances=ele, M_o = M_o[i])
+        all_star[i].set_SNII_properties(True)
+#        if m[i] > 8.0:
+#            print(s.sn_ejecta_masses['O'])
 
-        all_star[i] = s
+        all_star[i].set_SNIa_properties(check_mass = True)
+        sum += all_star[i].sn_ejecta_masses['O']
+
+#    print("yyyyy", np.sum( [x.sn_ejecta_masses['O'] for x in all_star]), sum)
+
     return all_star
 
 def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
@@ -81,10 +87,10 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     age      = ds.current_time.convert_to_units('Myr') - birth
 
     model_wind_ejecta = {} # total_wind_ejecta
-    for k in list(all_stars[0].wind_ejecta_masses().keys()):
+    for k in all_stars[0].wind_ejecta_masses().keys():
         model_wind_ejecta[k] = np.array([x.wind_ejecta_masses()[k] for x in all_stars])
     model_sn_ejecta = {}
-    for k in list(all_stars[0].sn_ejecta_masses.keys()):
+    for k in all_stars[0].sn_ejecta_masses.keys():
         model_sn_ejecta[k] = np.array([x.sn_ejecta_masses[k] for x in all_stars])
 
     # correct for AGB stars that haven't died
@@ -104,7 +110,7 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     for k in list(model_wind_ejecta.keys()):
         total_model_ejecta[k] = np.sum(model_sn_ejecta[k][time_select]) + np.sum(model_wind_ejecta[k][time_select])
 
-
+    print("xxxxxx", np.sum(model_sn_ejecta['O']), np.sum(model_sn_ejecta['O'][bm>8.0]), np.sum(model_sn_ejecta['O'][bm<8.0]))
     # construct the indivdual mode dictionary
     separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'Total' : {}}
     for k in list(model_wind_ejecta.keys()):
@@ -115,6 +121,7 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
         separate_mode_ejecta['Total'][k] = np.sum( [separate_mode_ejecta[x][k] for x in ['AGB','SWind','SNII','SNIa'] ])
     for k in list(separate_mode_ejecta.keys()):
         separate_mode_ejecta[k]['Total Tracked Metals'] = np.sum( [separate_mode_ejecta[k][x] for x in list(separate_mode_ejecta[k].keys()) if (not x in ['m_tot','m_metal','H','He'])] )
+
 
     if os.path.exists(str(ds) + '_galaxy_data.h5'):
         dd_data = dd.io.load(str(ds) + '_galaxy_data.h5')
@@ -220,10 +227,10 @@ def check_wind_ejecta(ds, data):
     model_wind_ejecta = model_wind_ejecta[select]
     actual_wind_ejecta = actual_wind_ejecta[select]
     total_wind_ejecta = total_wind_ejecta[select]
-    print("BM   PM   Percent_error    Model_wind    actual_wind    lifetime_wind")
-    for i in np.arange(np.size(error_mass)):
-        print("%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i]*100,model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i]))
-    print(np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass))
+    #print("BM   PM   Percent_error    Model_wind    actual_wind    lifetime_wind")
+    #for i in np.arange(np.size(error_mass)):
+    #    print("%5.5f %3.3f %5.5f %5.5E %5.5E %5.5E"%(bm[i],pm[i],error_mass[i]*100,model_wind_ejecta[i], actual_wind_ejecta[i], total_wind_ejecta[i]))
+    #print(np.min(error_mass), np.max(error_mass), np.average(error_mass), np.median(error_mass))
 
    
 
@@ -259,7 +266,7 @@ def compute_SNII_error(ds, data, uselog = True):
     sn_error     = np.zeros(np.size(bm))
     ej_frac = np.zeros(np.size(bm))
     for i,s in enumerate(all_stars):
-        s.set_SNII_properties()
+        s.set_SNII_properties(True)
         wind = s.wind_ejecta_masses()
         sn   = s.sn_ejecta_masses
 
@@ -283,7 +290,6 @@ def compute_SNII_error(ds, data, uselog = True):
     else:
         xdata = pos_error
         bins  = np.linspace(0.0, 1.0, 200)
-
     hist,bins = np.histogram(np.log10(ej_frac), bins = bins)
     cent = (bins[1:] + bins[:-1])*0.5
 
@@ -322,10 +328,10 @@ def compute_SNII_error(ds, data, uselog = True):
 #
     fig, ax = plt.subplots()
     if uselog:
-	xdata = np.log10(pos_error)
+        xdata = np.log10(pos_error)
         bins  = np.arange(-2, 0.05, 0.025)
     else:
-	xdata = pos_error
+        xdata = pos_error
         bins  = np.linspace(0.0, 1.0, 200)
 
     hist,bins = np.histogram(xdata, bins = bins)
@@ -367,16 +373,16 @@ if __name__=="__main__":
 
     data = ds.all_data()
 
-    if ('enzo','wind_mass_ejected') in ds.field_list or\
-       ('io','wind_mass_ejected') in ds.field_list:
-        try:
-            check_wind_ejecta(ds,data)
-        except:
-            print("failing in wind ejecta")
-        try:
-            error, fig, ax = compute_SNII_error(ds,data, uselog=True)
-        except:
-            print("failing in SNII check")
+#    if ('enzo','wind_mass_ejected') in ds.field_list or\
+#       ('io','wind_mass_ejected') in ds.field_list:
+#        try:
+#            check_wind_ejecta(ds,data)
+#        except:
+#            print("failing in wind ejecta")
+#        try:
+#            error, fig, ax = compute_SNII_error(ds,data, uselog=True)
+#        except:
+#            print("failing in SNII check")
 #    ds0 = yt.load('./../lowres/DD0035/DD0035')
 #    d0  = ds0.all_data()
 
