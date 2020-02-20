@@ -374,7 +374,9 @@ def snII_yields(i, element = None, Z = 1.0E-5, FIRE_Z_scaling=False, MSNe = 10.5
     return yields[i]
 
 def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = False):
-
+    """
+    Z is in fraction, not solar
+    """
 
     # Z = Z / SOLAR_METALLICITY
 
