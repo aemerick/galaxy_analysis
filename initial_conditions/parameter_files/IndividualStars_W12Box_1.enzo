@@ -58,90 +58,170 @@ GravitationalConstant      = 1       // this must be true for cosmology
 #
 #StopCycle              = 3          // stop after this many cycles
 #CycleSkipDataDump      = 10
-DataDumpName            = output_
-dtDataDump 	 = 0.2611326
+DataDumpName            = DD
+dtDataDump              = 0.2611326
+
 #
 #  set hydro parameters
 #
 Gamma                  = 1.6667
 PPMDiffusionParameter  = 0       // diffusion off
 DualEnergyFormalism    = 1       // use total & internal energy
-InterpolationMethod    = 1     // SecondOrderA
-FluxCorrection         = 1
+InterpolationMethod    = 1       // SecondOrderA
+FluxCorrection         = 2       // Explicit mass conservation
 ConservativeInterpolation = 0
 CourantSafetyNumber    = 0.3
 ParticleCourantSafetyNumber = 0.8
-RadiativeCooling            = 1
-MultiSpecies                = 2
-MetalCooling                = 3
-CloudyCoolingGridFile       = solar_2009_4D_metals.h5
-UseMinimumPressureSupport   = 0
+
+UseMinimumPressureSupport        = 0
 RefineByJeansLengthSafetyFactor  = 4.0
 
 #
 #  set grid refinement parameters
 #
 StaticHierarchy           = 0    // dynamic hierarchy
-MaximumRefinementLevel 	 = 12
-MaximumGravityRefinementLevel 	 = 12
-MaximumParticleRefinementLevel 	 = 12
-RefineBy                  = 2    // refinement factor
-CellFlaggingMethod        = 2 4   // use baryon mass for refinement 
-#CellFlaggingMethod        = 4    // use DM mass for refinement 
-MinimumEfficiency         = 0.3  // fraction efficiency
+MaximumRefinementLevel           = 7
+MaximumGravityRefinementLevel    = 7
+MaximumParticleRefinementLevel   = 7
+RefineBy                  = 2       // refinement factor
+CellFlaggingMethod        = 2 4 6 8 // baryon mass, DM mass, jeans, and must-refine
+MinimumEfficiency         = 0.3     // fraction efficiency
 MinimumOverDensityForRefinement = 3.0 3.0 // times the initial density refers to top grid: divide by 8 for each additional level
 MinimumMassForRefinementLevelExponent = -0.2 -0.2
-MinimumEnergyRatioForRefinement = 0.4 // min Egas/Etot for shock refinement
+MinimumEnergyRatioForRefinement       = 0.4 // min Egas/Etot for shock refinement
+
+LoadBalancing = 1
 #
 #  set some global parameters
 #
-GreensFunctionMaxNumber   = 30   // # of greens function at any one time
-
 InlineHaloFinder = 0
 HaloFinderCycleSkip = 0
+
+
+#
+# Cooling and Chemistry (Grackle)
+#
+use_grackle                 = 1
+
+RadiativeCooling            = 1
+MultiSpecies                = 2
+MetalCooling                = 1         // set to 1 for Grackle
+UVbackground                = 1
+ThreeBodyRate               = 4         // double check
+
+
+grackle_data_file           = CloudyData_UVB=HM2012_shielded.h5
+H2_self_shielding           = 1
+self_shielding_method       = 3 // recommended
+use_volumetric_heating_rate = 1 // needed for FUV
+
+dust_chemistry              = 2 // enables PE heating model (by default)
+                                // but turned off below, dust cooling, and 
+                                // h2 formation on dust, option 2
+                                // is unique to my version of Grackle which uses 
+                                // a special low-z D/G ratio
+
+photoelectric_heating        = 0 // I deal with this separately for now
+
+use_isrf_field               = 0 // set to 1 once changes made
+interstellar_radiation_field = 0 // using isrf_habing pointer
+
+LWbackground_model           = 1 // fit from Wise+2012 (override HM2012)
+
+PhotoelectricHeatingDustModel = 1 // Remy-Ruer (low-Z) same in Grackle
+                                  // with local attenuation
+PhotoelectricHeatingDustModelefficiency = 0.05 // < 0 to use scaling
+
 #
 # Star formation and feedback
 #
-StarParticleCreation   = 40   // star particle creation turned on, using model #5 and #3
-StarParticleFeedback   = 40   // stellar feedback turned on, using model #5 #3 ray tracing
+StarParticleCreation   = 32768 // Individual Stars
+StarParticleFeedback   = 32768 // Individual Stars
+
+
+#
+# Individual Stars Parameters
+#
  
+# 
+IndividualStarRefineToLevel    = 7 // 
+IndividualStarRefineBufferSize = 4
+
+# ---- physics paramters for star formation ------------
+StarMakerMaximumFractionCell            = 0.5
+IndividualStarMassFraction              = 0.5
+StarMakerOverDensityThreshold           = 1000
+IndividualStarSecondaryDensityThreshold = 1000
+StarMakerMassEfficiency                 = 1
+IndividualStarCheckVelocityDiv          = 1
+IndividualStarSFGasMassThreshold        = 100.0
+IndividualStarTemperatureThreshold      = 500.0
+IndividualStarCreationStencilSize       = 3
+IndividualStarVelocityDispersion        = 0.1    // km / s
+
+PopIIIH2CriticalFraction = 0.001
+PopIIIMetalCriticalFraction = 6.45E-8
+
+IndividualStarPopIIIFormation           = 1
+IndividualStarIMF                       = 2      // Kroupa
+IndividualStarIMFUpperMassCutoff        = 120.000
+IndividualStarIMFLowerMassCutoff        =   0.080
+IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particle
+
+
+# ---- feedback and yields ------------------------------
+IndividualStarFollowStellarYields  = 1
+IndividualStarRProcessModel        = 1    // Does nothing for now
+IndividualStarTrackAGBMetalDensity = 1
+IndividualStarTrackSNMetalDensity  = 1
+IndividualStarPrintSNStats         = 1
+
+IndividualStarOutputChemicalTags   = 0    // track as particle attributes(0)
+IndividualStarSaveTablePositions   = 0    // cheaper interp, increased mem if 1
+
+IndividualStarFeedbackStencilSize  = 3
+IndividualStarAGBWindVelocity      = 10.0 // km / s
+IndividualStarStellarWinds         = 1
+IndividualStarStellarWindVelocity  = 10.0
+IndividualStarMaximumStellarWindVelocity = 10.0 // km / s
+
+IndividualStarDTDSlope     = 1.12       // Maoz+2012
+IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that explode as SNIa
+
+IndividualStarLWRadiation = 1
+IndividualStarFUVHeating  = 1
+
+# --- pop III settings ----
+TypeIILowerMass  = 11.0
+TypeIIUpperMass  = 40.0
+PISNLowerMass    = 140.0
+PISNUpperMass    = 260.0
+PopIIIPISNEnergy = 1.0   // in 1.0E51
+
+# ---- Yields -------
+StellarYieldsNumberOfSpecies = 12
+# H He (redundant) C N O Mg Ca Fe Sr Ba
+StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
+
+
+# ---- Radiative Transfer Solver Parameters -------------
 RadiativeTransfer = 1
 RadiativeTransferRaysPerCell            = 5.1
 RadiativeTransferInitialHEALPixLevel    = 1
-RadiativeTransferHydrogenOnly           = 0
-RadiativeTransferOpticallyThinH2        = 1
+RadiativeTransferHydrogenOnly           = 0 
+RadiativeTransferOpticallyThinH2        = 1  // 1/r^2
+RadiativeTransferOpticallyThinFUV       = 1  // 1/r^2
 RadiativeTransferPeriodicBoundary       = 1
 RadiativeTransferAdaptiveTimestep       = 1
 RadiativeTransferRadiationPressure      = 1
 RadiativeTransferHubbleTimeFraction     = 1
-#RadiativeTransferPhotonMergeRadius      = 2.5 #2.5 is the default
+RadiativeTransferFluxBackgroundLimit    = 0.05 
+RadiativeTransferSourceClustering       = 1
+RadiativeTransferOpticallyThinSourceClustering = 1
+RadiativeTransferPhotonMergeRadius      = 10.0     // controls clustering
+RadiativeTransferAdaptiveTimestep       = 1
+RadiativeTransferRayMaximumLength       = 1.732051 // length units
+RadiativeTransferUseH2Shielding         = 1
+RadiativeTransferH2IIDiss               = 1
 
-RadiationFieldType = 14
-RadiationShield = 2 
- 
-#InlineHaloFinder = 1
-#HaloFinderCycleSkip = 0
- 
-#
-#PopIII/II parameters
-#
- 
-PopIIIOverDensityThreshold            = -1e6  # negative means units in cm^-3
-PopIIIMetalCriticalFraction           = 6.45e-8 #default 1e-4
-PopIIIH2CriticalFraction              = 1e-3
-PopIIISupernovaRadius                 = 10
-PopIIISupernovaUseColour              = 1
-PopIIIHeliumIonization                = 1
 
-PopIIIStarMass                        = 20
-PopIIIInitialMassFunction             = 1
-PopIIIInitialMassFunctionSeed         = 1823
-PopIIIMassRange                       = 1.000000 300.000000 
-
-StarClusterUseMetalField              = 1
-StarClusterMinDynamicalTime           = 3e+06 
-StarClusterIonizingLuminosity         = 1.12e+46
-StarClusterSNEnergy                   = 1e49
-StarClusterSNRadius                   = 10
-StarClusterFormEfficiency             = 0.07
-StarClusterMinimumMass                = 1000
