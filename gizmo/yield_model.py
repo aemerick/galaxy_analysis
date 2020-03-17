@@ -256,12 +256,17 @@ def wind_yields(i,element=None, Z = 1.0E-5, FIRE_Z_scaling = False):
 
     if FIRE_Z_scaling:
         # only first 5 elements
-        i = 4
+        i = 5
         yields[:i] = yields[:i]*(1.0-Z)+(Zsolar*SolarAbundances[:i]-SolarAbundances[:i])
 
-    yields[0] = np.sum(yields) # total yield
+    yields[0] = np.sum(yields[2:]) # total yield
+
+    if yields[4] < 0:
+        yields[4] = 0.0
+        print("Total O yield in winds is negative due to Z scaling")
 
     if (np.any(yields <	0.0)):
+
         print(yields)
        	print("Error in	wind yields - negative", Z)
        	raise RuntimeError
@@ -380,7 +385,7 @@ def construct_yields(agebins, yieldtype = 'total', Z = 1.0E-5, FIRE_Z_scaling = 
 
     # Z = Z / SOLAR_METALLICITY
 
-    points = [0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10, 1.0, 14.0]
+    points = np.sort([0.003401, 0.010370, 0.03753, 0.001, 0.05, 0.10, 1.0, 14.0])
 
     yields = np.zeros( (np.size(agebins)-1 , np.size(elements)))
 
