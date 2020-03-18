@@ -102,6 +102,7 @@ use_grackle                 = 1
 
 RadiativeCooling            = 1
 MultiSpecies                = 2
+MultiMetals                 = 2
 MetalCooling                = 1         // set to 1 for Grackle
 UVbackground                = 1
 ThreeBodyRate               = 4         // double check
