@@ -1,0 +1,161 @@
+#;-*-C-*-
+StopCycle           = 100000
+StopCPUTime         = 3600000
+
+LoadBalancing = 4
+ParallelRootGridIO              =  1
+#ExternalBoundaryIO = 1
+#ExternalBoundaryTypeIO = 0
+#ExternalBoundaryValueIO = 0
+#SimpleConstantBoundary = 1
+UnigridTranspose = 2
+
+# AMR PROBLEM DEFINITION FILE: Cosmology Simulation (amr version)
+#
+#  define problem
+#
+ProblemType                = 30      // cosmology simulation
+TopGridRank                = 3
+TopGridDimensions          = 256 256 256
+PotentialIterations        = 6
+SelfGravity                = 1       // gravity on
+TopGridGravityBoundary     = 0       // Periodic BC for gravity
+LeftFaceBoundaryCondition  = 3 3 3   // same for fluid
+RightFaceBoundaryCondition = 3 3 3
+#
+#  problem parameters
+#
+CosmologySimulationOmegaBaryonNow       = 0.0449
+CosmologySimulationOmegaCDMNow          = 0.2211
+CosmologySimulationInitialTemperature   = 380
+CosmologySimulationDensityName          = GridDensity
+CosmologySimulationVelocity1Name        = GridVelocities_x
+CosmologySimulationVelocity2Name        = GridVelocities_y
+CosmologySimulationVelocity3Name        = GridVelocities_z
+#CosmologySimulationParticlePositionName = ParticlePositions
+CosmologySimulationParticleVelocity1Name = ParticleVelocities_x
+CosmologySimulationParticleVelocity2Name = ParticleVelocities_y
+CosmologySimulationParticleVelocity3Name = ParticleVelocities_z
+CosmologySimulationCalculatePositions   = 1
+CosmologySimulationNumberOfInitialGrids = 1
+#CosmologySimulationGridDimension[1]     = 64 64 64
+#CosmologySimulationGridLeftEdge[1]      = 0.25 0.25 0.25
+#CosmologySimulationGridRightEdge[1]     = 0.75 0.75 0.75
+#CosmologySimulationGridLevel[1]         = 1
+#CosmologySimulationGridDimension[2]     = 64 64 64
+#CosmologySimulationGridLeftEdge[2]      = 0.375 0.375 0.375
+#CosmologySimulationGridRightEdge[2]     = 0.625 0.625 0.625
+#CosmologySimulationGridLevel[2]         = 2
+
+#RefineRegionLeftEdge   = 0.25 0.25 0.25
+#RefineRegionRightEdge  = 0.75 0.75 0.75
+
+#
+#  define cosmology parameters
+#
+ComovingCoordinates        = 1       // Expansion ON
+CosmologyOmegaMatterNow    = 0.266
+CosmologyOmegaLambdaNow    = 0.734
+CosmologyHubbleConstantNow = 0.71    // in km/s/Mpc
+CosmologyComovingBoxSize   = 0.71     // in Mpc/h = 100 Mpc comoving
+CosmologyMaxExpansionRate  = 0.015   // maximum allowed delta(a)/a
+CosmologyInitialRedshift 	 = 129.397138
+CosmologyFinalRedshift 	 = 8.000000
+GravitationalConstant      = 1       // this must be true for cosmology
+#
+#  set I/O and stop/start parameters
+#
+#StopCycle              = 3          // stop after this many cycles
+#CycleSkipDataDump      = 2
+DataDumpName            = output_
+dtDataDump 	 = 0.884621
+#
+#  set hydro parameters
+#
+Gamma                  = 1.6667
+PPMDiffusionParameter  = 0       // diffusion off
+DualEnergyFormalism    = 1       // use total & internal energy
+InterpolationMethod    = 1     // SecondOrderA
+FluxCorrection         = 1
+RiemannSolver          = 4
+ConservativeReconstruction = 0
+ReconstructionMethod   = 1
+ConservativeInterpolation = 0
+CourantSafetyNumber    = 0.5
+ParticleCourantSafetyNumber = 0.8
+RadiativeCooling            = 1
+MultiSpecies                = 2
+UseMinimumPressureSupport   = 0
+RefineByJeansLengthSafetyFactor  = 4
+#
+#  star formation parameters
+#
+StarParticleCreation = 40
+StarParticleFeedback = 40
+
+PopIIIStarMass = 100
+PopIIIInitialMassFunction = 1
+PopIIIInitialMassFunctionSeed = 12345
+PopIIIH2CriticalFraction = 0.0005
+PopIIIMetalCriticalFraction = 2.2e-6
+PopIIISupernovaRadius = 10
+PopIIISupernovaUseColour = 1
+
+StarClusterUseMetalField = 1
+StarClusterHeliumIonization = 0
+StarClusterMinDynamicalTime = 3e6
+StarClusterFormEfficiency = 0.07
+PopIIIOverDensityThreshold = 5e5
+StarClusterIonizingLuminosity = 1.12e46
+StarClusterSNEnergy = 1.25e49
+
+#
+# radiative transfer parameters
+#
+RadiationFieldType = 0
+RadiativeTransfer           = 1
+RadiativeTransferHydrogenOnly = 1
+RadiativeTransferAdaptiveTimestep         = 1
+RadiativeTransferHIIRestrictedTimestep    = 0
+RadiativeTransferRaysPerCell              = 3.100000
+RadiativeTransferInitialHEALPixLevel      = 1
+RadiativeTransferPeriodicBoundary         = 1
+RadiativeTransferPhotonMergeRadius = 15.0
+RadiativeTransferSourceClustering = 1
+RadiativeTransferTimestepVelocityLimit = 50
+#
+#  set grid refinement parameters
+#
+StaticHierarchy           = 0    // dynamic hierarchy
+MaximumRefinementLevel 	 = 12
+MaximumGravityRefinementLevel 	 = 12
+MaximumParticleRefinementLevel 	 = 12
+RefineBy                  = 2
+CellFlaggingMethod        = 2 4 6
+MinimumEfficiency         = 0.3
+SubgridSizeAutoAdjust     = 1
+#MaximumSubgridSize        = 65536
+#MinimumSubgridEdge        = 8
+MinimumOverDensityForRefinement = 3.0 3.0
+MinimumMassForRefinementLevelExponent = -0.2 0.0
+#
+#  set some global parameters
+#
+GreensFunctionMaxNumber   = 30   // # of greens function at any one time
+
+InlineHaloFinder = 0
+HaloFinderCycleSkip = 0
+
+CosmologyOutputRedshift[0] = 30.0
+CosmologyOutputRedshift[1] = 25.0
+CosmologyOutputRedshift[2] = 20.0
+CosmologyOutputRedshift[3] = 17.5
+CosmologyOutputRedshift[4] = 15.0
+CosmologyOutputRedshift[5] = 14.0
+CosmologyOutputRedshift[6] = 13.0
+CosmologyOutputRedshift[7] = 12.0
+CosmologyOutputRedshift[8] = 11.0
+CosmologyOutputRedshift[9] = 10.0
+CosmologyOutputRedshift[10] = 9.0
+CosmologyOutputRedshift[11] = 8.5
+CosmologyOutputRedshift[12] = 8.0
