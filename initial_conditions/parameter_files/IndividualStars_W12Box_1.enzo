@@ -142,8 +142,9 @@ StarParticleFeedback   = 32768 // Individual Stars
 #
  
 # 
-IndividualStarRefineToLevel    = 7 // 
-IndividualStarRefineBufferSize = 4
+IndividualStarRefineToLevel      = 7 // 
+IndividualStarRefineForRadiation = 1 // use above when just rad feedback (pop III)
+IndividualStarRefineBufferSize   = 4
 
 # ---- physics paramters for star formation ------------
 StarMakerMaximumFractionCell            = 0.5
