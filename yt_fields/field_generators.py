@@ -582,7 +582,7 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 # Construct arbitrary abundance ratio fields in yt
 # using a function generator
 #
-def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
+def _abundance_ratio_function_generator(ratios, metals, H_mode = 'total'):
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -651,18 +651,20 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
                               units = "")
         nfields = nfields + 1
 
-    def _return_alpha_over_x(element_name):
-        def _alpha_over_x(field, data):
-            alpha = data[('gas','alpha_Abundance')]
-            x     = data[('gas',element_name + '_Abundance')]
-            return convert_abundances.abundance_ratio(('alpha',alpha),(element_name,x),'abundances')
 
-        return _alpha_over_x
+    if ('O' in metals) and ('Mg' in metals) and ('Si' in metals):
+        def _return_alpha_over_x(element_name):
+            def _alpha_over_x(field, data):
+                alpha = data[('gas','alpha_Abundance')]
+                x     = data[('gas',element_name + '_Abundance')]
+                return convert_abundances.abundance_ratio(('alpha',alpha),(element_name,x),'abundances')
 
-    denoms = [x.split('/')[1] for x in ratios]
-    denoms = np.unique(denoms)
-    for x in denoms:
-        yt.add_field(('gas','alpha_over_' + x), function = _return_alpha_over_x(x), units = "")
+            return _alpha_over_x
+
+        denoms = [x.split('/')[1] for x in ratios]
+        denoms = np.unique(denoms)
+        for x in denoms:
+            yt.add_field(('gas','alpha_over_' + x), function = _return_alpha_over_x(x), units = "")
 
     return nfields
 
@@ -1161,7 +1163,7 @@ def generate_derived_fields(ds):
     # lets figure out the metal tracers present
     metals = utilities.species_from_fields(fields)
     ratios = utilities.ratios_list(metals)
-
+    print("defining for the following metals ", metals)
     # make new functions to do correct units for species fields
     _density_function_generator(metals + ['Metal'])
 
@@ -1177,7 +1179,7 @@ def generate_derived_fields(ds):
         nfields = _ionization_state_generator(metals)
         print(nfields, "ionization state fields defined")
 
-    nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
+    nfields = _abundance_ratio_function_generator(ratios, metals, H_mode = 'total')
     print(nfields, "abundance ratio fields defined")
     nfields = _abundance_function_generator(metals)
 
