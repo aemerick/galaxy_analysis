@@ -19,6 +19,8 @@ SelfGravity                = 1       // gravity on
 TopGridGravityBoundary     = 0       // Periodic BC for gravity
 LeftFaceBoundaryCondition  = 3 3 3   // same for fluid
 RightFaceBoundaryCondition = 3 3 3
+
+OutputTemperature = 1
 #
 #  problem parameters
 #
@@ -151,6 +153,7 @@ StarParticleFeedback   = 32768 // Individual Stars
 
 # 
 IndividualStarRefineToLevel    = 7 //
+IndividualStarRefineForRadiation = 1 // use above when just rad feedback (pop III)
 IndividualStarRefineBufferSize = 4
 
 # ---- physics paramters for star formation ------------
@@ -205,7 +208,7 @@ PISNUpperMass    = 260.0
 PopIIIPISNEnergy = 1.0   // in 1.0E51
 
 # ---- Yields -------
-StellarYieldsNumberOfSpecies = 12
+StellarYieldsNumberOfSpecies = 10
 # H He (redundant) C N O Mg Ca Fe Sr Ba
 StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
 
