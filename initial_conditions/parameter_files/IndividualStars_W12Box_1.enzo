@@ -194,8 +194,8 @@ IndividualStarFeedbackStencilSize  = -1   // turn this OFF
 IndividualStarFeedbackRadius       = 3.0  // in parsecs
 IndividualStarAGBWindVelocity      = 10.0 // km / s
 IndividualStarStellarWinds         = 1
-IndividualStarStellarWindVelocity  = 10.0
-IndividualStarMaximumStellarWindVelocity = 10.0 // km / s
+IndividualStarStellarWindVelocity  = 100.0
+IndividualStarMaximumStellarWindVelocity = 100.0 // km / s
 
 IndividualStarDTDSlope     = 1.12       // Maoz+2012
 IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that explode as SNIa
