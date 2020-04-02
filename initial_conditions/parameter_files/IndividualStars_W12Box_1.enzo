@@ -15,7 +15,14 @@ TopGridGravityBoundary     = 0       // Periodic BC for gravity
 LeftFaceBoundaryCondition  = 3 3 3   // same for fluid
 RightFaceBoundaryCondition = 3 3 3
 
+#
+# Extra output fields
+#
 OutputTemperature = 1
+WritePotential    = 1
+
+PopIIIOutputOnFeedback = 0 // enable ?
+
 #
 #  problem parameters
 #
@@ -88,8 +95,8 @@ MinimumEnergyRatioForRefinement       = 0.4 // min Egas/Etot for shock refinemen
 SubgridSizeAutoAdjust = 1
 LoadBalancing         = 4
 UnigridTranspose      = 2
+ParallelRootGridIO    = 1
 
-ParallelRootGridIO = 1
 #
 #  set some global parameters
 #
@@ -116,9 +123,9 @@ self_shielding_method       = 3 // recommended
 use_volumetric_heating_rate = 1 // needed for FUV
 
 dust_chemistry              = 2 // enables PE heating model (by default)
-                                // but turned off below, dust cooling, and 
+                                // but turned off below, dust cooling, and
                                 // h2 formation on dust, option 2
-                                // is unique to my version of Grackle which uses 
+                                // is unique to my version of Grackle which uses
                                 // a special low-z D/G ratio
 
 photoelectric_heating        = 0 // I deal with this separately for now
@@ -142,9 +149,9 @@ StarParticleFeedback   = 32768 // Individual Stars
 #
 # Individual Stars Parameters
 #
- 
-# 
-IndividualStarRefineToLevel      = 7   // 
+
+#
+IndividualStarRefineToLevel      = 7   //
 IndividualStarRefineForRadiation = 1   // use above when just rad feedback (pop III)
 IndividualStarRefineBufferSize   = 4
 MustRefineParticleRefineToLevel  = 7   // redundant with above
@@ -193,15 +200,19 @@ IndividualStarMaximumStellarWindVelocity = 10.0 // km / s
 IndividualStarDTDSlope     = 1.12       // Maoz+2012
 IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that explode as SNIa
 
-IndividualStarLWRadiation = 1
+IndividualStarIRRadiation = 1
 IndividualStarFUVHeating  = 1
+IndividualStarLWRadiation = 1
+
+IndividualStarOTRadiationMass              = 8.000000
+IndividualStarIonizingRadiationMinimumMass = 8.000000
 
 # --- pop III settings ----
 TypeIILowerMass  = 11.0
 TypeIIUpperMass  = 40.0
-PISNLowerMass    = 140.0
+PISNLowerMass    = 140.0    // change these to turn off entirely
 PISNUpperMass    = 260.0
-PopIIIPISNEnergy = 1.0   // in 1.0E51
+PopIIIPISNEnergy = 1.0     // change this to < 0 to keep yields but no FB
 
 # ---- Yields -------
 StellarYieldsNumberOfSpecies = 10
@@ -213,21 +224,25 @@ StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
 RadiativeTransfer = 1
 RadiativeTransferRaysPerCell            = 3.1
 RadiativeTransferInitialHEALPixLevel    = 1
-RadiativeTransferHydrogenOnly           = 0 
+RadiativeTransferHydrogenOnly           = 0
 RadiativeTransferOpticallyThinH2        = 1  // 1/r^2
 RadiativeTransferOpticallyThinFUV       = 1  // 1/r^2
 RadiativeTransferPeriodicBoundary       = 1
 RadiativeTransferAdaptiveTimestep       = 1
 RadiativeTransferRadiationPressure      = 1
 RadiativeTransferHubbleTimeFraction     = 1
-RadiativeTransferFluxBackgroundLimit    = 0.05 
+RadiativeTransferFluxBackgroundLimit    = 0.05
 RadiativeTransferSourceClustering       = 1
 RadiativeTransferOpticallyThinSourceClustering = 1
 RadiativeTransferPhotonMergeRadius      = 10.0     // controls clustering
 RadiativeTransferAdaptiveTimestep       = 1
 RadiativeTransferRayMaximumLength       = 1.732051 // length units
-RadiativeTransferUseH2Shielding         = 1
-RadiativeTransferH2IIDiss               = 1
+
+
+RadiativeTransferUseH2Shielding         = 0   // turn this OFF (handled in Grackle) - but turn on and Grackle's off if doing H2 RT
+RadiativeTransferH2IIDiss               = 1   // set this ON
+
+
 RadiativeTransferTimestepVelocityLimit  = 50
 
 
@@ -253,6 +268,3 @@ CosmologyOutputRedshift[15] =  8.5
 CosmologyOutputRedshift[16] =  8.0
 CosmologyOutputRedshift[17] =  7.5
 CosmologyOutputRedshift[18] =  7.0
-
-
-
