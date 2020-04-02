@@ -1,0 +1,28 @@
+These are the data file inputs used in the series of "Leo P"
+isolated galaxy runs published in my (Andrew Emerick) thesis
+and subsequent papers (Emerick+2018-2020). These are stored here
+for posterity and since the new version of the code (as of April 2020)
+is no longer compatible with these tables.
+
+In particular, these tables include 2 known bugs:
+
+    1) A factor of pi was missing in computing the integration
+       for the FUV flux and LW flux bands. This means the adopted
+       radiation rates for these bands were low by a factor of pi.
+       The radiation rates for HI and HeI ionization were O.K.
+
+    2) The FUV and LW rate tables were constructed using a method
+       that relied on a dictionary. In Python 2, the dictionary
+       keyword order did not persist and this led to the columns
+       being scrambled such that the metallicities were incorrect.
+       This is a much smaller issue than #1.
+
+    3) The FUV band in this table covers 5.6 - 13.6 eV and LW 
+       11.2 - 13.6 eV. Changes to Enzo implementation were made 
+       such that these should not be overlapping. The new tables
+       contain FUV and LW from 5.6 - 11.2 and 11.2 - 13.6 
+       respectively
+
+
+
+----------------------------------------------------------------------------
