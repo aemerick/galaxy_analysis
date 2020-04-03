@@ -38,6 +38,7 @@ CosmologySimulationParticleVelocity2Name = ParticleVelocities_y
 CosmologySimulationParticleVelocity3Name = ParticleVelocities_z
 CosmologySimulationCalculatePositions    = 1
 CosmologySimulationNumberOfInitialGrids  = 1
+CosmologySimulationUseMetallicityField   = 1
 
 #
 #  define cosmology parameters (WMAP-7)
@@ -137,7 +138,7 @@ LWbackground_model           = 1 // fit from Wise+2012 (override HM2012)
 
 PhotoelectricHeatingDustModel = 1 // Remy-Ruer (low-Z) same in Grackle
                                   // with local attenuation
-PhotoelectricHeatingDustModelefficiency = 0.05 // < 0 to use scaling
+PhotoelectricHeatingDustModelEfficiency = 0.05 // < 0 to use scaling
 
 #
 # Star formation and feedback
@@ -161,7 +162,7 @@ IndividualStarRefineTime         = 0.1 // Myr
 StarMakerMaximumFractionCell            = 0.5
 IndividualStarMassFraction              = 0.5
 StarMakerOverDensityThreshold           = 1000
-IndividualStarSecondaryDensityThreshold = 1000
+IndividualStarSecondaryOverDensityThreshold = 1000
 StarMakerMassEfficiency                 = 1
 IndividualStarCheckVelocityDiv          = 1
 IndividualStarSFGasMassThreshold        = 100.0
@@ -171,6 +172,7 @@ IndividualStarVelocityDispersion        = 0.1    // km / s
 
 PopIIIH2CriticalFraction    = 0.0005
 PopIIIMetalCriticalFraction = 2.2e-6
+PopIIIRadiationModel        = 1
 
 IndividualStarPopIIIFormation           = 1
 IndividualStarIMF                       = 2      // Kroupa
