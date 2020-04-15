@@ -32,7 +32,8 @@ import deepdish as dd
 # Step 6: Plot cumulative distribution of SNII remnants error
 
 
-def generate_model_stars(m, z, abund = ['m_tot','m_metal'], M_o = None):
+def generate_model_stars(m, z, abund = ['m_tot','m_metal'], M_o = None,
+                               include_popIII = False, PopIII_crit_z=2.2E-6):
     """
     Makes a list of star objects from one zone model
     """
@@ -59,39 +60,64 @@ def generate_model_stars(m, z, abund = ['m_tot','m_metal'], M_o = None):
     sum = 0.0
 
     for i in np.arange(np.size(m)):
-        all_star[i] = star.Star(M=m[i],Z=z[i], abundances=ele, M_o = M_o[i])
-        all_star[i].set_SNII_properties(True)
+
+        if include_popIII:
+            if z[i] < PopIII_crit_z:
+                ptype = 'popIII'
+            else:
+                ptype = 'star'
+        else:
+            ptype = 'star'
+
+        all_star[i] = star.Star(M=m[i],Z=z[i], abundances=ele, M_o = M_o[i], star_type = ptype)
+
+        if ptype == 'popIII':
+            all_star[i].set_popIII_properties(True)
+        else:
+            all_star[i].set_SNII_properties(True)
 #        if m[i] > 8.0:
 #            print(s.sn_ejecta_masses['O'])
+            all_star[i].set_SNIa_properties(check_mass = True)
 
-        all_star[i].set_SNIa_properties(check_mass = True)
         sum += all_star[i].sn_ejecta_masses['O']
 
 #    print("yyyyy", np.sum( [x.sn_ejecta_masses['O'] for x in all_star]), sum)
 
     return all_star
 
-def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
+def check_all_masses(ds, data, ds0 = None, time_cut = -1.0):
 
-    bm = data['birth_mass'].value
-    pm = data['particle_mass'].convert_to_units('Msun').value
-    z  = data['metallicity_fraction'].value
     pt = data['particle_type']
+
+    # cut out DM
+    select = pt >= 11
+
+    pt = pt[select]
+
+    bm = data['birth_mass'][select].value
+    pm = data['particle_mass'][select].convert_to_units('Msun').value
+    z  = data['metallicity_fraction'][select].value
 
     elements = util.species_from_fields(ds.field_list)
 
-    all_stars = generate_model_stars(pm,z, abund = elements, M_o = bm)
+    all_stars = generate_model_stars(bm,z, abund = elements,
+                                     include_popIII = ds.parameters['IndividualStarPopIIIFormation'])
 
-    lifetime = data['dynamical_time'].convert_to_units('Myr')
-    birth    = data['creation_time'].convert_to_units('Myr')
+    lifetime = data['dynamical_time'][select].convert_to_units('Myr')
+    birth    = data['creation_time'][select].convert_to_units('Myr')
     age      = ds.current_time.convert_to_units('Myr') - birth
 
     model_wind_ejecta = {} # total_wind_ejecta
     for k in all_stars[0].wind_ejecta_masses().keys():
         model_wind_ejecta[k] = np.array([x.wind_ejecta_masses()[k] for x in all_stars])
+ 
     model_sn_ejecta = {}
     for k in all_stars[0].sn_ejecta_masses.keys():
         model_sn_ejecta[k] = np.array([x.sn_ejecta_masses[k] for x in all_stars])
+
+    for x in all_stars:
+        if x.properties['type'] == 'popIII':
+            print(x.M_o, x.Z, x.sn_ejecta_masses['Fe'], x.wind_ejecta_masses()['Fe'])
 
     # correct for AGB stars that haven't died
     AGB = (bm < 8.0) * (pt == 11)
@@ -101,9 +127,13 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     time_select = birth > time_cut
 
+    #
+    # Apply correction and zero out SN abundances for stars that have not gone SNe
+    #
     for k in list(model_wind_ejecta.keys()):
         model_wind_ejecta[k][AGB]        = 0.0
-        model_sn_ejecta[k][ (pt == 11) ] = 0.0
+        model_sn_ejecta[k][ (pt == 11) ] = 0.0 # regular stars
+        model_sn_ejecta[k][ (pt == 14) ] = 0.0 # popIII stars
         model_wind_ejecta[k][select] = model_wind_ejecta[k][select]*factor[select]
 
     total_model_ejecta = {}
@@ -112,13 +142,14 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
     print("xxxxxx", np.sum(model_sn_ejecta['O']), np.sum(model_sn_ejecta['O'][bm>8.0]), np.sum(model_sn_ejecta['O'][bm<8.0]))
     # construct the indivdual mode dictionary
-    separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'Total' : {}}
+    separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'PopIII' : {}, 'Total' : {}}
     for k in list(model_wind_ejecta.keys()):
-        separate_mode_ejecta['SNII'][k] = np.sum(model_sn_ejecta[k][bm > 8.0])
-        separate_mode_ejecta['SNIa'][k] = np.sum(model_sn_ejecta[k][bm < 8.0])
+        separate_mode_ejecta['PopIII'][k] = np.sum(model_sn_ejecta[k][(pt==13)*(z<2.2E-6)])
+        separate_mode_ejecta['SNII'][k] = np.sum(model_sn_ejecta[k][(bm > 8.0)*(z>2.2E-6)])
+        separate_mode_ejecta['SNIa'][k] = np.sum(model_sn_ejecta[k][(bm < 8.0)*(z>2.2E-6)])
         separate_mode_ejecta['SWind'][k] = np.sum(model_wind_ejecta[k][bm > 8.0])
         separate_mode_ejecta['AGB'][k]   = np.sum(model_wind_ejecta[k][bm < 8.0])
-        separate_mode_ejecta['Total'][k] = np.sum( [separate_mode_ejecta[x][k] for x in ['AGB','SWind','SNII','SNIa'] ])
+        separate_mode_ejecta['Total'][k] = np.sum( [separate_mode_ejecta[x][k] for x in ['AGB','SWind','SNII','SNIa','PopIII'] ])
     for k in list(separate_mode_ejecta.keys()):
         separate_mode_ejecta[k]['Total Tracked Metals'] = np.sum( [separate_mode_ejecta[k][x] for x in list(separate_mode_ejecta[k].keys()) if (not x in ['m_tot','m_metal','H','He'])] )
 
@@ -137,9 +168,11 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
         grid_masses[k] = np.sum(data[k + '_Density'] * ds.mass_unit / ds.length_unit**3 *\
                                    data['cell_volume']).convert_to_units('Msun').value
 
-        if not (d0 is None):
-            grid_masses[k] = grid_masses[k] - np.sum(d0[k + '_Density'] * ds.mass_unit / ds.length_unit**3 *\
-                                       d0['cell_volume']).convert_to_units('Msun').value
+        if not (ds0 is None):
+            grid_masses[k] = grid_masses[k] - np.sum(ds0[k + '_Density'] * ds0.mass_unit / ds0.length_unit**3 *\
+                                       ds0['cell_volume']).convert_to_units('Msun').value
+#        else:
+#            grid_masses[k] = grid_masses[k] - 1.0E-10 * np.sum(data['cell_mass'].to('Msun')).value
 
     gal = Galaxy(str(ds))
     outflow_masses = gal.boundary_mass_flux
@@ -147,6 +180,9 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
     #print total_model_ejecta
     #print grid_masses
     #print outflow_masses
+
+    for k in separate_mode_ejecta.keys():
+        print(k, separate_mode_ejecta[k]['O'], separate_mode_ejecta[k]['N'])
 
     print(list(grid_masses.keys()))
     print("Element Total_on_Grid Total_Outflow Sum_Injected Total_model_mass Percent_error")
@@ -163,17 +199,24 @@ def check_all_masses(ds, data, d0 = None, time_cut = -1.0):
 
 def check_wind_ejecta(ds, data):
 
-    bm = data['birth_mass'].value
-    pm = data['particle_mass'].convert_to_units('Msun').value
-    z  = data['metallicity_fraction'].value
     pt = data['particle_type']
+
+    # cut out DM
+    select = pt >= 11
+
+    pt = pt[select]
+
+    bm = data['birth_mass'][select].value
+    pm = data['particle_mass'][select].convert_to_units('Msun').value
+    z  = data['metallicity_fraction'][select].value
 
     elements = util.species_from_fields(ds.field_list)
 
-    all_stars = generate_model_stars(bm,z, abund = elements)
+    all_stars = generate_model_stars(bm,z, abund = elements,
+                                     include_popIII = ds.parameters['IndividualStarPopIIIFormation'])
 
-    lifetime = data['dynamical_time'].convert_to_units('Myr')
-    birth    = data['creation_time'].convert_to_units('Myr')
+    lifetime = data['dynamical_time'][select].convert_to_units('Myr')
+    birth    = data['creation_time'][select].convert_to_units('Myr')
     age      = ds.current_time.convert_to_units('Myr') - birth
 
     # total wind ejecta over entire lifetime
@@ -191,7 +234,7 @@ def check_wind_ejecta(ds, data):
     model_wind_ejecta[select] = model_wind_ejecta[select] * factor[select]
 
     # load actual injection from simulation
-    actual_wind_ejecta = data['wind_mass_ejected'].value
+    actual_wind_ejecta = data['wind_mass_ejected'][select].value
 
     # compute percent error
     model_wind_ejecta = model_wind_ejecta[age>1]
@@ -245,16 +288,22 @@ def check_wind_ejecta(ds, data):
 
 def compute_SNII_error(ds, data, uselog = True):
 
-    pm = data['particle_mass'].convert_to_units('Msun').value
-    bm = data['birth_mass'].value
     pt = data['particle_type']
 
+    select = pt >= 11
+
+    pt = pt[select]
+    pm = data['particle_mass'][select].convert_to_units('Msun').value
+    bm = data['birth_mass'][select].value
+    z  = data['metallicity_fraction'][select].value
+
     # select all particles that could have gone supernova
-    select = (pt == 13) * (bm > 8.0) * (bm < 25.0)
+    select = ((pt == 13) * (bm > 8.0) * (bm < 25.0)) +\
+             ((pt == 13) * (z < 2.2E-6) * ((bm > 11.0) * (bm<40.0) + (bm>140.0)*(bm<260.0)))
 
     pm = pm[select]
     bm = bm[select]
-    z  = data['metallicity_fraction'][select]
+    z  = z[select]
 
     elements = util.species_from_fields(ds.field_list)
 
@@ -368,7 +417,9 @@ if __name__=="__main__":
             print("Could not load ", name_list[-1], " trying the next one")
             ds = yt.load(name_list[-2])
     else:
-        name = 'DD%0004i'%( int(sys.argv[1]))
+
+#        name = 'DD%0004i'%( int(sys.argv[1]))
+        name = str( sys.argv[1] )
         ds = yt.load( name + '/' + name)
 
     data = ds.all_data()
@@ -383,8 +434,8 @@ if __name__=="__main__":
 #            error, fig, ax = compute_SNII_error(ds,data, uselog=True)
 #        except:
 #            print("failing in SNII check")
-#    ds0 = yt.load('./../lowres/DD0035/DD0035')
-#    d0  = ds0.all_data()
+#    ds0 = yt.load('./../lowres/Dds0035/Dds0035')
+#    ds0  = ds0.all_data()
 
 
-    check_all_masses(ds,data) #, d0 = d0)
+    check_all_masses(ds,data) #, ds0 = ds0)
