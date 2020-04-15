@@ -1013,8 +1013,13 @@ def _additional_helper_fields(fields):
         try:
             x = (data['PotentialField'] * -1.0).convert_to_units('erg/g')
         except:
-            x = ( (data['GravPotential'].value * data.ds.velocity_unit**2)
+            try:
+                x = ( (data['GravPotential'].value * data.ds.velocity_unit**2)
                    * -1.0).convert_to_units('erg/g')
+            except:
+                x = ( (data['Grav_Potential'].value * data.ds.velocity_unit**2)
+                   * -1.0).convert_to_units('erg/g')
+
 
         return x
 
@@ -1022,7 +1027,10 @@ def _additional_helper_fields(fields):
         try:
             x = data['PotentialField']
         except:
-            x = data['GravPotential'].value * data.ds.velocity_unit**2
+            try:
+                x = data['GravPotential'].value * data.ds.velocity_unit**2
+            except:
+                x = data['Grav_Potential'].value * data.ds.velocity_unit**2
 
         x = x + data[('index','DM_background_potential')]
 
@@ -1032,7 +1040,10 @@ def _additional_helper_fields(fields):
         try:
             x = data['PotentialField']
         except:
-            x = data['GravPotential'].value * data.ds.velocity_unit**2
+            try:
+                x = data['GravPotential'].value * data.ds.velocity_unit**2
+            except:
+                x = data['Grav_Potential'].value * data.ds.velocity_unit**2
 
         return x.convert_to_units('erg/g')
 
@@ -1131,7 +1142,7 @@ def _additional_helper_fields(fields):
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
+    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields or ('enzo','Grav_Potential'):
         yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
         yt.add_field(('gas','gas_gravitational_potential'), function=_gas_grav_pot, units = 'erg/g')
         yt.add_field(('gas','total_gravitational_potential'), function=_tot_grav_pot, units = 'erg/g')
@@ -1212,29 +1223,30 @@ def load_and_define(name):
 
     ds = yt.load(name)
 
-    generate_gradient_fields(ds)
+    gradient_available = generate_gradient_fields(ds)
 
-    def _grav_accel_x(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
-    def _grav_accel_y(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
-    def _grav_accel_z(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
-    def _grav_accel(field,data):
-        return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
+    if gradient_available:
+        def _grav_accel_x(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
+        def _grav_accel_y(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
+        def _grav_accel_z(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
+        def _grav_accel(field,data):
+            return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
 
-    def _a_rad_a_grav(field,data):
-        a = data[('gas','a_rad')] / data[('gas','a_grav')]
+        def _a_rad_a_grav(field,data):
+            a = data[('gas','a_rad')] / data[('gas','a_grav')]
     
-        a[data[('gas','a_grav')] == 0.0] = 0.0
+            a[data[('gas','a_grav')] == 0.0] = 0.0
 
-        return a
+            return a
 
-    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
+        ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
 
     generate_particle_filters(ds)
     #generate_grackle_fields(ds)
@@ -1259,7 +1271,7 @@ def generate_gradient_fields(ds):
 
     ds.add_gradient_fields(("gas","gas_gravitational_potential"))
 
-    return
+    return True
 
 def generate_particle_filters(ds):
     """
