@@ -21,7 +21,7 @@ RightFaceBoundaryCondition = 3 3 3
 OutputTemperature = 1
 WritePotential    = 1
 
-PopIIIOutputOnFeedback = 0 // enable ?
+PopIIIOutputOnFeedback = 2 // enable ?
 
 #
 #  problem parameters
@@ -215,7 +215,7 @@ IndividualStarStellarWindVelocity  = 100.0
 IndividualStarMaximumStellarWindVelocity = 100.0 // km / s
 
 IndividualStarDTDSlope     = 1.12       // Maoz+2012
-IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that expl$
+IndividualStarSNIaFraction = 0.0234     // " " Fraction of stars between 3 and 8 Msun that expl$
 
 IndividualStarIRRadiation = 1
 IndividualStarFUVHeating  = 1

@@ -21,7 +21,7 @@ RightFaceBoundaryCondition = 3 3 3
 OutputTemperature = 1
 WritePotential    = 1
 
-PopIIIOutputOnFeedback = 0 // enable ?
+PopIIIOutputOnFeedback = 2 // enable ?
 
 #
 #  problem parameters
@@ -176,7 +176,7 @@ PopIIIRadiationModel        = 1
 
 IndividualStarPopIIIFormation           = 1
 IndividualStarIMF                       = 2      // Kroupa
-IndividualStarIMFUpperMassCutoff        = 120.000
+IndividualStarIMFUpperMassCutoff        = 100.000
 IndividualStarIMFLowerMassCutoff        =   0.080
 IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particle
 
@@ -200,7 +200,7 @@ IndividualStarStellarWindVelocity  = 100.0
 IndividualStarMaximumStellarWindVelocity = 100.0 // km / s
 
 IndividualStarDTDSlope     = 1.12       // Maoz+2012
-IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that explode as SNIa
+IndividualStarSNIaFraction = 0.0234     // Fraction of stars between 3 and 8 Msun (Kroupa IMF)
 
 IndividualStarIRRadiation = 1
 IndividualStarFUVHeating  = 1
