@@ -115,9 +115,6 @@ def check_all_masses(ds, data, ds0 = None, time_cut = -1.0):
     for k in all_stars[0].sn_ejecta_masses.keys():
         model_sn_ejecta[k] = np.array([x.sn_ejecta_masses[k] for x in all_stars])
 
-    for x in all_stars:
-        if x.properties['type'] == 'popIII':
-            print(x.M_o, x.Z, x.sn_ejecta_masses['Fe'], x.wind_ejecta_masses()['Fe'])
 
     # correct for AGB stars that haven't died
     AGB = (bm < 8.0) * (pt == 11)
@@ -140,7 +137,7 @@ def check_all_masses(ds, data, ds0 = None, time_cut = -1.0):
     for k in list(model_wind_ejecta.keys()):
         total_model_ejecta[k] = np.sum(model_sn_ejecta[k][time_select]) + np.sum(model_wind_ejecta[k][time_select])
 
-    print("xxxxxx", np.sum(model_sn_ejecta['O']), np.sum(model_sn_ejecta['O'][bm>8.0]), np.sum(model_sn_ejecta['O'][bm<8.0]))
+    #print("xxxxxx", np.sum(model_sn_ejecta['O']), np.sum(model_sn_ejecta['O'][bm>8.0]), np.sum(model_sn_ejecta['O'][bm<8.0]))
     # construct the indivdual mode dictionary
     separate_mode_ejecta = {'AGB' : {}, 'SWind' : {}, 'SNII' : {}, 'SNIa' : {} , 'PopIII' : {}, 'Total' : {}}
     for k in list(model_wind_ejecta.keys()):
