@@ -20,7 +20,7 @@ RightFaceBoundaryCondition = 3 3 3
 #
 OutputTemperature = 1
 WritePotential    = 1
-
+OutputCoolingTime = 1
 PopIIIOutputOnFeedback = 2 // enable ?
 
 #
