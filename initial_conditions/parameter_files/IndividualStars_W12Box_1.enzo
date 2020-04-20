@@ -161,6 +161,7 @@ MustRefineParticleRefineToLevel  = 7   // redundant with above
 IndividualStarRefineTime         = 0.1 // Myr
 
 # ---- physics paramters for star formation ------------
+StarMakerUseJeansMass                   = 0
 StarMakerMaximumFractionCell            = 0.5
 IndividualStarMassFraction              = 0.5
 StarMakerOverDensityThreshold           = 1000
@@ -178,7 +179,7 @@ PopIIIRadiationModel        = 1
 
 IndividualStarPopIIIFormation           = 1
 IndividualStarIMF                       = 2      // Kroupa
-IndividualStarIMFUpperMassCutoff        = 100.000
+IndividualStarIMFUpperMassCutoff        = 120.000
 IndividualStarIMFLowerMassCutoff        =   0.080
 IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particle
 
@@ -227,6 +228,7 @@ StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
 
 # ---- Radiative Transfer Solver Parameters -------------
 RadiativeTransfer = 1
+RadiativeTransferLoadBalance              = 1
 RadiativeTransferRaysPerCell            = 3.1
 RadiativeTransferInitialHEALPixLevel    = 1
 RadiativeTransferHydrogenOnly           = 0
