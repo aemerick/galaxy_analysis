@@ -164,8 +164,8 @@ IndividualStarRefineTime         = 0.1 // Myr
 StarMakerUseJeansMass                   = 0
 StarMakerMaximumFractionCell            = 0.5
 IndividualStarMassFraction              = 0.5
-StarMakerOverDensityThreshold           = 1000
-IndividualStarSecondaryOverDensityThreshold = 1000
+StarMakerOverDensityThreshold           = 10000       # maybe go to 10^6
+IndividualStarSecondaryOverDensityThreshold = 10000 
 StarMakerMassEfficiency                 = 1
 IndividualStarCheckVelocityDiv          = 1
 IndividualStarSFGasMassThreshold        = 100.0
@@ -173,9 +173,10 @@ IndividualStarTemperatureThreshold      = 500.0
 IndividualStarCreationStencilSize       = 3
 IndividualStarVelocityDispersion        = 0.1    // km / s
 
-PopIIIH2CriticalFraction    = 0.0005
-PopIIIMetalCriticalFraction = 2.2e-6
+PopIIIH2CriticalFraction    = 0.001     # 0.0005 at lower res
+PopIIIMetalCriticalFraction = -1        # < 0 uses new model
 PopIIIRadiationModel        = 1
+PopIIIStarMass              = 20        # Characteristic Mass
 
 IndividualStarPopIIIFormation           = 1
 IndividualStarIMF                       = 2      // Kroupa
