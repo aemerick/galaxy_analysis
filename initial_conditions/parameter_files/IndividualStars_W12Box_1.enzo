@@ -119,8 +119,8 @@ MetalCooling                = 1         // set to 1 for Grackle
 UVbackground                = 1
 ThreeBodyRate               = 4         // double check
 
-RadiationFieldRedshiftOn     = 50
-RadiationFieldRedshiftFullOn = 50
+RadiationRedshiftOn     = 50
+RadiationRedshiftFullOn = 50
 
 
 grackle_data_file           = CloudyData_HM2012_highz_shielded.h5
