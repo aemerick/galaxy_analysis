@@ -20,6 +20,8 @@ import h5py
 
 from galaxy_analysis import static_data as const  # for elements and things
 
+from galaxy_analysis.individualstar_data.construct_tables import compile_popIII
+
 available_yields = {'FRUITY' : 'fruity_elem_stable.npy',
                     'LC18_R_0' : 'LC18_R_0_elem_stable.npy',
                     'LC18_R_150': 'LC18_R_150_elem_stable.npy',
@@ -34,11 +36,11 @@ available_yields = {'FRUITY' : 'fruity_elem_stable.npy',
 
 info = {}
 # temporary for now. better description later
-for k in available_yields.keys()
+for k in available_yields.keys():
     info[k] = available_yields[k]
+verbose = True
 
-
-def massage_dataset(dataset):
+def massage_benoit_dataset(dataset):
     """
     Take kwargs and things from Benoits dict to what I need
     """
@@ -48,21 +50,38 @@ def massage_dataset(dataset):
     outdict['M'] = dataset['M_list']
     outdict['Z'] = dataset['Z_list']
 
+    flip_z = False
+    if outdict['Z'][0] > outdict['Z'][-1]:
+        # need to flip to be in ascending order
+        outdict['Z'] = outdict['Z'][::-1]
+        flip_z = True
+
     outdict['num_M'] = np.size(outdict['M'])
     outdict['num_Z'] = np.size(outdict['Z'])
 
     outdict['colnames'] = np.array(['Mtot','Metal_Mtot'] + dataset['elem_list'])
+    outdict['ncol']     = np.size(outdict['colnames'])
     outdict['anums']    = np.array([-1,0] + [const.asym_to_anum[x] for x in dataset['elem_list']])
     outdict['num_Y']    = np.size(outdict['anums'])
 
     # probably a few different ways to do this, but most fool-proof is to loop:
     yields = np.zeros( (outdict['num_M'], outdict['num_Z'], outdict['num_Y']))
-    for i,Mkey in enumerate(list(dataset['yields'][ list(dataset.keys())[0] ].keys())):
-        for j,zkey in enumerate(list(dataset['yields'].keys())):
+
+    # get metallicities:
+    z_list = np.array(list(dataset['yields'].keys()))
+    if flip_z:
+        z_list = z_list[::-1]
+
+    for i,Mkey in enumerate(list(dataset['yields'][ list(dataset['yields'].keys())[0] ].keys())):
+
+        for j,zkey in enumerate(z_list):
+
             for k,e in enumerate(dataset['elem_list']):
-                yields[i][j][k+2] = dataset['yields'][Zkey][Mkey][e]
+
+                yields[i][j][k+2] = dataset['yields'][zkey][Mkey][e]
 
                 yields[i][j][0] += yields[i][j][k+2]
+
                 if (not (e=='H')) and (not (e=='He')):
                     yields[i][j][1] += yields[i][j][k+2]
 
@@ -71,7 +90,70 @@ def massage_dataset(dataset):
 
     return outdict
 
+def massage_ascii_dataset(data):
+    """
+    Given data loaded as ASCII table in old format,
+    returns (in dictionary) the things needed to feed
+    into the H5 file
+    """
+
+    outdict = {}
+
+    outdict['M'] = np.unique( data[:,0])
+    outdict['Z'] = np.unique( data[:,1])
+
+    outdict['num_M'] = np.size(outdict['M'])
+    outdict['num_Z'] = np.size(outdict['Z'])
+
+    yields = data[:,2:]
+
+    outdict['num_Y'] = np.shape(yields)[1]
+
+    final_shape = (outdict['num_M'],outdict['num_Z'],outdict['num_Y'])
+    outdict['yields'] = yields.reshape(final_shape)
+
+    # all element names to Bi
+    elements = list(const.anum_to_asym.values())
+    outdict['colnames'] = np.array(['Mtot','Metal_Mtot']+elements)
+    outdict['ncol'] = np.size(outdict['colnames'])
+
+    outdict['anums'] = [-1,0] + list(const.anum_to_asym.keys())
+
+    return outdict
+
+def massage_popIII_dataset(low_mass_model='heger_woosley_2010',
+                           pisne_model = 'heger_woosley_2010'):
+    """
+    Given data from popIII functions, convert ot format needed in a dict
+    """
+
+    yields, M = compile_popIII.generate_table(low_mass_model, pisne_model)
+
+    outdict = {}
+
+    outdict['M'] = M
+    outdict['Z'] = np.array([0])
+
+    outdict['num_M'] = np.size(M)
+    outdict['num_Z'] = 1
+
+    outdict['num_Y'] = np.shape(yields)[0]
+
+    final_shape = (outdict['num_M'], 1, outdict['num_Y'])
+    outdict['yields'] = yields.reshape(final_shape)
+
+    # all element names to Bi
+    elements = list(const.anum_to_asym.values())
+    outdict['colnames'] = np.array(['Mtot','Metal_Mtot']+elements)
+    outdict['ncol'] = np.size(outdict['colnames'])
+    outdict['anums'] = [-1,0] + list(const.anum_to_asym.keys())
+
+    return outdict
+
 def dict_to_dataset(grp, outdict, info_str = ''):
+    """
+    Take the converted dictionary and write it to the HDF5 group
+    """
 
     grp.create_dataset("M", (outdict['num_M'],), dtype='f', data=outdict['M'])
     grp.create_dataset("Z", (outdict['num_Z'],), dtype='f', data=outdict['Z'])
@@ -103,11 +185,48 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
     #
     # Load each set one-by-one
     #
-    hf.create_group('SN')
-    SN_yields = np.load( wdir + available_yields[SN_model], allow_pickle=True).item()
-    outdict   = massage_dataset(SN_yields)
-    dict_to_dataset('SN',outdict,info_str=info[SN_model])
+    model = {'SN' : SN_model, 'AGB' : AGB_model, 'Wind' : wind_model,
+             'PopIII' : PopIII_model}
 
+    for gname in ['SN','Wind','AGB']:
+        grp       = hf.create_group(gname)
+        yields    = np.load( wdir + available_yields[model[gname]], allow_pickle=True).item()
+        outdict   = massage_benoit_dataset(yields)
 
+        print("Name = %8s - Model = %20s: Nm = %i Nz = %i Ny = %i"%(gname, model[gname],
+                                                                    outdict['num_M'],
+                                                                    outdict['num_Z'],
+                                                                    outdict['num_Y']))
+        if verbose:
+            print("M: ", outdict['M'])
+            print("Z: ", outdict['Z'])
+            print("--------------------")
+
+        dict_to_dataset(grp,outdict,info_str=info[ model[gname]])
+
+    #
+    # PopIII table
+    #
+    gname   = 'PopIII'
+    grp     = hf.create_group(gname)
+    outdict = massage_popIII_dataset('heger_woosley_2010','heger_woosley_2002')
+    print("Name = %8s - Model = %20s: Nm = %i Nz = %i Ny = %i"%(gname, model[gname],
+                                                                outdict['num_M'],
+                                                                outdict['num_Z'],
+                                                                outdict['num_Y']))
+    if verbose:
+        print("M: ", outdict['M'])
+        print("Z: ", outdict['Z'])
+        print("--------------------")
+
+    popIII_info = "Yields from Heger Woosley 2002 for PISNe and Heger Woosley 2010 for SNe"
+    dict_to_dataset(grp,outdict,info_str = popIII_info)
+
+    hf.close()
 
     return
+
+
+if __name__ == "__main__":
+
+    construct_table()
