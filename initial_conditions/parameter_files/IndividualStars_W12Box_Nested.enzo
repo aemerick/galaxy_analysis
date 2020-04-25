@@ -213,6 +213,9 @@ IndividualStarTrackAGBMetalDensity = 1
 IndividualStarTrackSNMetalDensity  = 1
 IndividualStarPrintSNStats         = 1
 IndividualStarSurfaceAbundances    = 1
+IndividualStarExtrapolateYields    = 1    // if star is above / below masses on grid
+                                          // scale abundances to closet grid point (same ratios)
+
 
 IndividualStarOutputChemicalTags   = 0    // track as particle attributes(0)
 IndividualStarSaveTablePositions   = 0    // cheaper interp, increased mem if 1
