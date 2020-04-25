@@ -189,6 +189,7 @@ IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particl
 
 
 # ---- feedback and yields ------------------------------
+StellarYieldsFilename              = IndividualStarYields.h5
 IndividualStarFollowStellarYields  = 1
 IndividualStarRProcessModel        = 1    // Does nothing for now
 IndividualStarTrackAGBMetalDensity = 1
