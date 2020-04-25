@@ -69,7 +69,7 @@ def dict_to_dataset(grp, outdict, info_str = ''):
 
 
 #
-# A bad experiment... won't work without a lot of work 
+# A bad experiment... won't work without a lot of work
 #
 #def generate_new_form_table(outname="IndividualStarYields_Merged"):
 #    """
@@ -90,11 +90,11 @@ def dict_to_dataset(grp, outdict, info_str = ''):
 
 #    info = {'SN' : "NuGrid yields for CCSNe. Used in Emerick+2018-2020",
 #            'AGB_winds' :
-#            'winds' : "NuGrid yields for massive stars to 25 Msun"+\
+#            'Wind' : "NuGrid yields for massive stars to 25 Msun"+\
 #                      " combined with yields from Slemer+ (unpublished). Used in Emerick2018-2020",
 #            'popIII' : "Heger+Woosley 2002 and 2010 yields for PopIII SNe and PISNe."}
 
-#    fnames = {'SN' : 'stellar_yields_sn.in', 'winds' : 'stellar_yields_wind.in',
+#    fnames = {'SN' : 'stellar_yields_sn.in', 'Wind' : 'stellar_yields_wind.in',
 #              'massive_star' : 'stellar_yields_massive_star.in', 'popIII' : 'popIII_yields.in'}
 
 
@@ -112,7 +112,7 @@ def dict_to_dataset(grp, outdict, info_str = ''):
     #
     # do winds
     #
-#    winds_NuGrid = load_ascii_data(fnames['winds'])
+#    winds_NuGrid = load_ascii_data(fnames['Wind'])
 #    winds_Slemer = load_ascii_data(fnames['massive_star'])
 #
 #    # stitch tables together. NuGrid 1 - 25, slemer above
@@ -128,17 +128,17 @@ def generate_basic_table(outname="IndividualStarYields"):
     hf = h5py.File(outname, 'w')
 
     # need to load and create a few groups
-    group_names = ["SN", "winds", "massive_star", "popIII"]
+    group_names = ["SN", "Wind", "Massive_star", "PopIII"]
 
     info = {'SN' : "NuGrid Yields for core collapse SNe. Used in Emerick+2018-2020",
-            'winds' : 'NuGrid wind yields for massive stars. Used in Emerick+2018-2020',
-            'massive_star' : "Slemer+ (unpublished) yields for star winds above NuGrid tables. Used in Emerick+2018-2020",
-            'popIII' : "Heger+Woosley 2002 and 2010 yields for PopIII SNe and PISNe."}
+            'Wind' : 'NuGrid wind yields for massive stars. Used in Emerick+2018-2020',
+            'Massive_star' : "Slemer+ (unpublished) yields for star winds above NuGrid tables. Used in Emerick+2018-2020",
+            'PopIII' : "Heger+Woosley 2002 and 2010 yields for PopIII SNe and PISNe."}
 
     fnames = {'SN' : 'stellar_yields_sn.in',
-              'winds' : 'stellar_yields_wind.in',
-              'massive_star' : 'stellar_yields_massive_star.in',
-              'popIII' : 'popIII_yields.in'}
+              'Wind' : 'stellar_yields_wind.in',
+              'Massive_star' : 'stellar_yields_massive_star.in',
+              'PopIII' : 'popIII_yields.in'}
 
     # do basic things here
     for gn in group_names:
@@ -165,4 +165,3 @@ if __name__ == "__main__":
 
     generate_basic_table()
 
-    generate_new_form_table()
