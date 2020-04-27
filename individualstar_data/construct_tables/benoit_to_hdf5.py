@@ -42,9 +42,12 @@ for k in available_yields.keys():
 verbose = True
 
 
-def subtract_benoit_yields(setA, setB):
+def add_benoit_yields(setA, setB, factor = 1.0):
     """
-    returns yields = setA - setB
+    returns yields = setA + factor*setB.
+
+    By default, factor is 1.0 (addition),
+    but this can be easily switched to subtraction (factor = -1.0)
     """
 
     yields = copy.deepcopy(setA)
@@ -52,8 +55,8 @@ def subtract_benoit_yields(setA, setB):
     for zkey in setA['yields'].keys():
         for Mkey in setA['yields'][zkey].keys():
             for e in setA['yields'][zkey][Mkey].keys():
-                yields['yields'][zkey][Mkey][e] = setA['yields'][zkey][Mkey][e] -\
-                                                  setB['yields'][zkey][Mkey][e]
+                yields['yields'][zkey][Mkey][e] = setA['yields'][zkey][Mkey][e] +\
+                                                  factor*setB['yields'][zkey][Mkey][e]
 
                 if yields['yields'][zkey][Mkey][e] < 0.0:
                     print("Getting negative yields in subtract operation")
@@ -65,6 +68,14 @@ def subtract_benoit_yields(setA, setB):
 
 
     return yields
+
+def subtract_benoit_yields(setA, setB):
+    """
+    returns yields = setA - setB
+    """
+
+    return add_benoit_yields(setA,setB,factor = -1.0)
+
 
 def massage_benoit_dataset(dataset):
     """
