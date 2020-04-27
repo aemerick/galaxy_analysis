@@ -17,6 +17,7 @@
 
 import numpy as np
 import h5py
+import copy
 
 from galaxy_analysis import static_data as const  # for elements and things
 
@@ -39,6 +40,31 @@ info = {}
 for k in available_yields.keys():
     info[k] = available_yields[k]
 verbose = True
+
+
+def subtract_benoit_yields(setA, setB):
+    """
+    returns yields = setA - setB
+    """
+
+    yields = copy.deepcopy(setA)
+
+    for zkey in setA['yields'].keys():
+        for Mkey in setA['yields'][zkey].keys():
+            for e in setA['yields'][zkey][Mkey].keys():
+                yields['yields'][zkey][Mkey][e] = setA['yields'][zkey][Mkey][e] -\
+                                                  setB['yields'][zkey][Mkey][e]
+
+                if yields['yields'][zkey][Mkey][e] < 0.0:
+                    print("Getting negative yields in subtract operation")
+                    print(zkey,Mkey,e)
+                    print(setA['yields'][zkey][Mkey][e])
+                    print(setB['yields'][zkey][Mkey][e])
+                    print(yields['yields'][zkey][Mkey][e])
+                    raise RuntimeError
+
+
+    return yields
 
 def massage_benoit_dataset(dataset):
     """
@@ -188,7 +214,14 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
     model = {'SN' : SN_model, 'AGB' : AGB_model, 'Wind' : wind_model,
              'PopIII' : PopIII_model}
 
-    for gname in ['SN','Wind','AGB']:
+    # special cases
+    group_list = ['Wind','AGB']
+    if not ('LC18' in SN_model): # this needs special treatment
+
+        group_list = group_list + ['SN']
+
+    # loop over all the ones that don't need special treatment
+    for gname in group_list:
         grp       = hf.create_group(gname)
         yields    = np.load( wdir + available_yields[model[gname]], allow_pickle=True).item()
         outdict   = massage_benoit_dataset(yields)
@@ -203,6 +236,30 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
             print("--------------------")
 
         dict_to_dataset(grp,outdict,info_str=info[ model[gname]])
+
+    #
+    # If LC18 models are used for SN, wind yields need to be subtracted from total
+    #
+    if ('LC18' in SN_model):
+        print("Generating LC18 SN table from total - winds")
+        gname = 'SN'
+        grp = hf.create_group(gname)
+        total_yields = np.load(wdir + available_yields[model[gname]], allow_pickle=True).item()
+        wind_yields  = np.load(wdir + available_yields[model[gname]], allow_pickle=True).item()
+
+        yields  = subtract_benoit_yields(total_yields, wind_yields)
+        outdict = massage_benoit_dataset(yields)
+
+        print("Name = %8s - Model = %20s: Nm = %i Nz = %i Ny = %i"%(gname, model[gname],
+                                                                    outdict['num_M'],
+                                                                    outdict['num_Z'],
+                                                                    outdict['num_Y']))
+        if verbose:
+            print("M: ", outdict['M'])
+            print("Z: ", outdict['Z'])
+            print("--------------------")
+
+        dict_to_dataset(grp, outdict,info_str=info[model[gname]])
 
     #
     # PopIII table
