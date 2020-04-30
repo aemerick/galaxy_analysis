@@ -27,9 +27,11 @@ available_yields = {'FRUITY' : 'fruity_elem_stable.npy',
                     'LC18_R_0' : 'LC18_R_0_elem_stable.npy',
                     'LC18_R_150': 'LC18_R_150_elem_stable.npy',
                     'LC18_R_300': 'LC18_R_300_elem_stable.npy',
+                    'LC18_mixture': 'LC18_mixture_elem_stable.npy',
                     'LC18_winds_R_0' : 'LC18_winds_R_0_elem_stable.npy',
                     'LC18_winds_R_150': 'LC18_winds_R_150_elem_stable.npy',
                     'LC18_winds_R_300': 'LC18_winds_R_300_elem_stable.npy',
+                    'LC18_winds_mixture': 'LC18_winds_mixture_elem_stable.npy',
                     'Monash' : 'monash_elem_stable.npy',
                     'Nomoto' : 'nomoto_elem_stable.npy',
                     'Nomoto-HNe' : 'nomoto_HNe_elem_stable.npy',
@@ -164,7 +166,11 @@ def massage_popIII_dataset(low_mass_model='heger_woosley_2010',
     Given data from popIII functions, convert ot format needed in a dict
     """
 
-    yields, M = compile_popIII.generate_table(low_mass_model, pisne_model)
+    #yields, M = compile_popIII.generate_table(low_mass_model, pisne_model)
+
+    data   = np.genfromtxt('popIII_yields.in')
+    M      = np.unique(data[:,0])
+    yields = data[:,2:]
 
     outdict = {}
 
@@ -174,9 +180,10 @@ def massage_popIII_dataset(low_mass_model='heger_woosley_2010',
     outdict['num_M'] = np.size(M)
     outdict['num_Z'] = 1
 
-    outdict['num_Y'] = np.shape(yields)[0]
+#    outdict['num_Y'] = np.shape(yields)[0]
+    outdict['num_Y'] = np.shape(yields)[1]
 
-    final_shape = (outdict['num_M'], 1, outdict['num_Y'])
+    final_shape = (outdict['num_M'], outdict['num_Z'], outdict['num_Y'])
     outdict['yields'] = yields.reshape(final_shape)
 
     # all element names to Bi
@@ -256,7 +263,7 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
         gname = 'SN'
         grp = hf.create_group(gname)
         total_yields = np.load(wdir + available_yields[model[gname]], allow_pickle=True).item()
-        wind_yields  = np.load(wdir + available_yields[model[gname]], allow_pickle=True).item()
+        wind_yields  = np.load(wdir + available_yields[model["Wind"]], allow_pickle=True).item()
 
         yields  = subtract_benoit_yields(total_yields, wind_yields)
         outdict = massage_benoit_dataset(yields)
@@ -298,3 +305,6 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
 if __name__ == "__main__":
 
     construct_table()
+    construct_table(SN_model = 'LC18_R_150', wind_model = 'LC18_winds_R_150')
+    construct_table(SN_model = 'LC18_R_300', wind_model = 'LC18_winds_R_300')
+    construct_table(SN_model = 'LC18_mixture', wind_model = 'LC18_winds_mixture')
