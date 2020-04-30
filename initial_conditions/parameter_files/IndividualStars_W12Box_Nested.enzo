@@ -77,6 +77,7 @@ GravitationalConstant      = 1       // this must be true for cosmology
 #StopCycle              = 3          // stop after this many cycles
 #CycleSkipDataDump      = 10
 DataDumpName            = DD
+RedshiftDumpName        = RD
 dtDataDump 	 = 2.195905
 #
 #  set hydro parameters
@@ -193,6 +194,9 @@ IndividualStarTemperatureThreshold      = 500.0
 IndividualStarCreationStencilSize       = 3
 IndividualStarVelocityDispersion        = 0.1    // km / s
 
+IndividualStarTemperatureLimit          = 1.0E8
+IndividualStarTemperatureLimitFactor    = 100.0
+
 PopIIIH2CriticalFraction    = 0.0005    // go up to 0.001 in higher res / higher SF thresh
 PopIIIMetalCriticalFraction = -1        // use new model
 PopIIIRadiationModel        = 1
@@ -208,11 +212,14 @@ IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particl
 # ---- feedback and yields ------------------------------
 StellarYieldsFilename              = IndividualStarYields.h5
 IndividualStarFollowStellarYields  = 1
-IndividualStarRProcessModel        = 1    // Does nothing for now
+IndividualStarRProcessModel        = 1      // Does nothing for now
+IndividualStarRProcessMinMass      = 24.37  // 1% of SNII in Kroupa IMF with 8 - 25 Msun SNII
+IndividualStarRProcessMaxMass      = 25.00  // 
 IndividualStarTrackAGBMetalDensity = 1
 IndividualStarTrackSNMetalDensity  = 1
 IndividualStarPrintSNStats         = 1
 IndividualStarSurfaceAbundances    = 1
+LimongiAbundances                  = 1    // if SA is on and using Limongi yields
 IndividualStarExtrapolateYields    = 1    // if star is above / below masses on grid
                                           // scale abundances to closet grid point (same ratios)
 
@@ -239,8 +246,8 @@ IndividualStarOTRadiationMass              = 8.000000
 IndividualStarIonizingRadiationMinimumMass = 8.000000
 
 # --- pop III settings ----
-TypeIILowerMass  = 11.0
-TypeIIUpperMass  = 40.0
+TypeIILowerMass  = 10.0
+TypeIIUpperMass  = 100.0
 PISNLowerMass    = 140.0   // change these to turn off entirely
 PISNUpperMass    = 260.0
 PopIIIPISNEnergy = 1.0     // change this to < 0 to keep yields but no FB

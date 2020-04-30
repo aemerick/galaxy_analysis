@@ -60,6 +60,7 @@ GravitationalConstant      = 1       // this must be true for cosmology
 #StopCycle              = 3          // stop after this many cycles
 #CycleSkipDataDump      = 10
 DataDumpName            = DD
+RedshiftDumpName        = RD
 dtDataDump              = 0.2611326
 
 #
@@ -83,10 +84,10 @@ RefineByJeansLengthSafetyFactor  = 4.0
 #  set grid refinement parameters
 #
 StaticHierarchy           = 0    // dynamic hierarchy
-MaximumRefinementLevel           = 7
+MaximumRefinementLevel           = 7  // set to 7 for now, and let grow with physical scale
 MaximumGravityRefinementLevel    = 7
 MaximumParticleRefinementLevel   = 7
-MaximumRefinementLevelPhysicalScale = 0.25 // max resolution in pc (approx)
+MaximumRefinementLevelPhysicalScale = 0.5 // max resolution in pc (approx)
 
 RefineBy                  = 2       // refinement factor
 CellFlaggingMethod        = 2 4 6 8 // baryon mass, DM mass, jeans, and must-refine
@@ -167,8 +168,8 @@ IndividualStarRefineTime         = 0.1 // Myr
 StarMakerUseJeansMass                   = 0
 StarMakerMaximumFractionCell            = 0.5
 IndividualStarMassFraction              = 0.5
-StarMakerOverDensityThreshold           = 10000       # maybe go to 10^6
-IndividualStarSecondaryOverDensityThreshold = 10000 
+StarMakerOverDensityThreshold           = 60000       # maybe go to 10^6
+IndividualStarSecondaryOverDensityThreshold = 60000 
 StarMakerMassEfficiency                 = 1
 IndividualStarCheckVelocityDiv          = 1
 IndividualStarSFGasMassThreshold        = 100.0
@@ -176,7 +177,10 @@ IndividualStarTemperatureThreshold      = 500.0
 IndividualStarCreationStencilSize       = 3
 IndividualStarVelocityDispersion        = 0.1    // km / s
 
-PopIIIH2CriticalFraction    = 0.001     # 0.0005 at lower res
+IndividualStarTemperatureLimit          = 1.0E8
+IndividualStarTemperatureLimitFactor    = 100.0
+
+PopIIIH2CriticalFraction    = 0.0005    # 0.0005 at 6x10^4 density threshold
 PopIIIMetalCriticalFraction = -1        # < 0 uses new model
 PopIIIRadiationModel        = 1
 PopIIIStarMass              = 20        # Characteristic Mass
@@ -191,11 +195,14 @@ IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particl
 # ---- feedback and yields ------------------------------
 StellarYieldsFilename              = IndividualStarYields.h5
 IndividualStarFollowStellarYields  = 1
-IndividualStarRProcessModel        = 1    // Does nothing for now
+IndividualStarRProcessModel        = 1      // Does nothing for now
+IndividualStarRProcessMinMass      = 24.37  // 1% of SNII in Kroupa IMF with 8 - 25 Msun SNII
+IndividualStarRProcessMaxMass      = 25.00  // 
 IndividualStarTrackAGBMetalDensity = 1
 IndividualStarTrackSNMetalDensity  = 1
 IndividualStarPrintSNStats         = 1
 IndividualStarSurfaceAbundances    = 1    // surface abundance return
+LimongiAbundances                  = 1    // if using surface abundances with Limongi yields
 IndividualStarExtrapolateYields    = 1    // if star is above / below masses on grid
                                           // scale abundances to closet grid point (same ratios)
 
@@ -221,8 +228,8 @@ IndividualStarOTRadiationMass              = 8.000000
 IndividualStarIonizingRadiationMinimumMass = 8.000000
 
 # --- pop III settings ----
-TypeIILowerMass  = 11.0
-TypeIIUpperMass  = 40.0
+TypeIILowerMass  = 10.0
+TypeIIUpperMass  = 100.0
 PISNLowerMass    = 140.0    // change these to turn off entirely
 PISNUpperMass    = 260.0
 PopIIIPISNEnergy = 1.0     // change this to < 0 to keep yields but no FB
