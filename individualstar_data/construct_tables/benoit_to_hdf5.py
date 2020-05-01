@@ -279,6 +279,11 @@ def construct_table(SN_model = 'LC18_R_0', wind_model = 'LC18_winds_R_0',
 
         dict_to_dataset(grp, outdict,info_str=info[model[gname]])
 
+        # also add the total yields (why not)
+        grp = hf.create_group("SN+Wind")
+        outdict = massage_benoit_dataset(total_yields)
+        dict_to_dataset(grp, outdict, info_str = info[model['SN']] + ' --- ' + info[model['Wind']])
+
     #
     # PopIII table
     #
