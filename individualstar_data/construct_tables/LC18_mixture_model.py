@@ -45,7 +45,7 @@ def prantzos_mixture(Z, vtype='v0'):
     return np.interp(FeH, prantzos_data['FeH'], prantzos_data[vtype])
 
 
-def make_mixture(wdir = "./", resample=True, nsamples=3):
+def make_mixture(wdir = "./", resample=True, nsamples=3, Mg_factor = 1.0):
     """
     Generate the mixture model with optional re-sampling and interpolation
     in metallicity.
@@ -53,6 +53,8 @@ def make_mixture(wdir = "./", resample=True, nsamples=3):
     If resampling is True, `nsamples` provides the number of new metallicity
     points in between each current Z value (default = 2 gives 10 total
     metallicity points: 4 original + 2 in between each).
+
+    Mg factor raises Mg yields across the board by a constant factor (default 1.0)
     """
 
 
@@ -147,6 +149,10 @@ def make_mixture(wdir = "./", resample=True, nsamples=3):
                               (t*v300yields['yields'][Zkeyold_next][Mkey][e] + (1.0-t)*v300yields['yields'][Zkeyold][Mkey][e]) * f300
 
 
+                        # make factors into a dict to do more than oen if needed, but for now
+                        # just hard code Mg since that's all we will likely adjust
+                        newset['yields'][Zkeynew][Mkey]['Mg'] = newset['yields'][Zkeynew][Mkey]['Mg'] * Mg_factor
+
             np.save("LC18" + typestr + "resampled_mixture_elem_stable.npy", newset, allow_pickle=True)
 
     else: # we do not need to resample. This is now easy
@@ -171,13 +177,16 @@ def make_mixture(wdir = "./", resample=True, nsamples=3):
                                                           v150yields['yields'][Zkey][Mkey][e] * f150 +\
                                                           v300yields['yields'][Zkey][Mkey][e] * f300
 
+                    # see note in the above on this same section
+                    newset['yields'][Zkey][Mkey]['Mg'] = newset['yields'][Zkey][Mkey]['Mg'] * Mg_factor
+
             np.save("LC18" + typestr + "mixture_elem_stable.npy", newset, allow_pickle=True)
     return
 
 if __name__ == "__main__":
 
-    make_mixture()
-    make_mixture(resample=False)
+    make_mixture(Mg_factor = 2.2)
+    make_mixture(resample=False, Mg_factor = 2.2)
 
     #test = np.load( 'test.npy', allow_pickle=True).item()
 
