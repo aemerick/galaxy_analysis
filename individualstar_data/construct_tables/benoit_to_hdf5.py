@@ -28,10 +28,12 @@ available_yields = {'FRUITY' : 'fruity_elem_stable.npy',
                     'LC18_R_150': 'LC18_R_150_elem_stable.npy',
                     'LC18_R_300': 'LC18_R_300_elem_stable.npy',
                     'LC18_mixture': 'LC18_mixture_elem_stable.npy',
+                    'LC18_resampled_mixture' : 'LC18_resampled_mixture_elem_stable.npy',
                     'LC18_winds_R_0' : 'LC18_winds_R_0_elem_stable.npy',
                     'LC18_winds_R_150': 'LC18_winds_R_150_elem_stable.npy',
                     'LC18_winds_R_300': 'LC18_winds_R_300_elem_stable.npy',
                     'LC18_winds_mixture': 'LC18_winds_mixture_elem_stable.npy',
+                    'LC18_winds_resampled_mixture' : 'LC18_winds_resampled_mixture_elem_stable.npy',
                     'Monash' : 'monash_elem_stable.npy',
                     'Nomoto' : 'nomoto_elem_stable.npy',
                     'Nomoto-HNe' : 'nomoto_HNe_elem_stable.npy',
@@ -313,3 +315,5 @@ if __name__ == "__main__":
     construct_table(SN_model = 'LC18_R_150', wind_model = 'LC18_winds_R_150')
     construct_table(SN_model = 'LC18_R_300', wind_model = 'LC18_winds_R_300')
     construct_table(SN_model = 'LC18_mixture', wind_model = 'LC18_winds_mixture')
+    construct_table(SN_model = 'LC18_resampled_mixture', wind_model = 'LC18_winds_resampled_mixture')
+
