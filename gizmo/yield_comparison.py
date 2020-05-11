@@ -20,7 +20,7 @@ import os, sys
 class GizmoData:
 
     def __init__(self, snapshot_path, yield_table = None,
-                       yield_model_Z = 0.002, yield_model_FIRE_Z_scaling = True):
+                       yield_model_Z = 0.01, yield_model_FIRE_Z_scaling = True):
 
         self.work_dir = snapshot_path.split("output/snapshot_")[0]
         self.snapshot_name = snapshot_path.split("output/")[-1]
@@ -405,8 +405,8 @@ def logbin_comparison(snapshot, ptype = 'star'):
                 color = 'C%i'%(i), label = k)
         plot_ax(axes[2], 'N', 'H',all_data[k],age=True,color='C%i'%(i),label=k)
 
-    plot_ax(axes[0],'O','H',all_data['log16'],age=False,color='black',label='FIRE')
-    plot_ax(axes[1],'Fe','H',all_data['log16'],age=False,color='black',label='FIRE')
+    plot_ax(axes[0],'O','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
+    plot_ax(axes[1],'Fe','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
 
     for a in axes:
         a.set_ylim(0.0,0.2)
@@ -451,9 +451,12 @@ def logbin_comparison(snapshot, ptype = 'star'):
                          color=color, label = label,lw=3)
 
         yoff = 0.6 + 0.05*yshift
-        ax.annotate(label + ' < 0.05 = %0.3f dex'%stats['0.05dex'],
-                    xy=(xy[0]-0.32,xy[1]-0.2-yoff),xycoords='axes fraction',
-                    size = 15)
+        ax.text(xy[0]-0.22,xy[1]-yoff, label + ' = %0.3f dex'%stats['0.05dex'],
+                verticalalignment='bottom',horizontalalignment='left',
+                transform = ax.transAxes, color = color, fontsize = 15)
+
+                #xy=(xy[0]-0.32,xy[1]-0.2-yoff),xycoords='axes fraction',
+#                    size = 15)
 
         return stats
 
@@ -475,6 +478,11 @@ def logbin_comparison(snapshot, ptype = 'star'):
         axes[i].set_xticks([0.001,0.01,0.1,1.0])
         axes[i].set_xticklabels(["0.001","0.01","0.1","1.0"])
         axes[i].yaxis.set_minor_locator(AutoMinorLocator())
+
+    xy = (0.02,0.92)
+    axes[0].annotate('[O/H] ', xy=xy,xycoords='axes fraction', size = 30)
+    axes[1].annotate('[Fe/H]', xy=xy,xycoords='axes fraction', size = 30)
+    axes[2].annotate('[N/H]',xy=xy,xycoords='axes fraction',size=30)
 
     fig.savefig(basename + "_logbin_comparison_diff_" + ptype + ".png")
 
