@@ -31,7 +31,8 @@ def sfhFromParticles(ds, data, selection = None, times = None):
             bin_spacing = bin_spacing * yt.units.Myr
 
         times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
-        times = times *yt.units.Myr
+        if not hasattr(times, 'value'):
+            times = times *yt.units.Myr
 
     mass  = np.zeros(np.shape(times))
 

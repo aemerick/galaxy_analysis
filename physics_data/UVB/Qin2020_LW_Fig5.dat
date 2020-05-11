@@ -1,0 +1,16 @@
+# Points from Qin+2020 Figure 5
+# Reference model for J_LW_eff 
+#    WebPlotDigitizer could not interpolate x-axis
+#    (and I couldn't figure out how this was plotted)
+#    so points exist only at the labelled x-ticks in figure.
+#    y-axis seems to be OK.
+#
+# z  J_LW
+25.0 0.019801737394049276
+18.0 0.20829618638110267
+13.0 0.8811603465429532
+10.0 2.1910855798920714
+8.00 3.727593720314694
+7.00 5.050061921840956
+6.00 6.841712731578209
+

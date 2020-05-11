@@ -1,0 +1,239 @@
+#;-*-C-*-
+StopCycle           = 100000
+StopCPUTime         = 3600000
+
+ParallelRootGridIO = 1
+UnigridTranspose = 2
+#PartitionNestedGrids = 1
+#ParticleTypeInFile = 1
+
+# AMR PROBLEM DEFINITION FILE: Cosmology Simulation (amr version)
+#
+#  define problem
+#
+ProblemType                = 30      // cosmology simulation
+TopGridRank                = 3
+TopGridDimensions          = 64 64 64
+#PotentialIterations        = 3
+SelfGravity                = 1       // gravity on
+TopGridGravityBoundary     = 0       // Periodic BC for gravity
+LeftFaceBoundaryCondition  = 3 3 3   // same for fluid
+RightFaceBoundaryCondition = 3 3 3
+
+OutputTemperature = 1
+#
+#  problem parameters
+#
+CosmologySimulationOmegaBaryonNow       = 0.0449
+CosmologySimulationOmegaCDMNow          = 0.2211
+CosmologySimulationInitialTemperature   = 380
+CosmologySimulationDensityName          = GridDensity
+CosmologySimulationVelocity1Name        = GridVelocities_x
+CosmologySimulationVelocity2Name        = GridVelocities_y
+CosmologySimulationVelocity3Name        = GridVelocities_z
+CosmologySimulationParticleVelocity1Name = ParticleVelocities_x
+CosmologySimulationParticleVelocity2Name = ParticleVelocities_y
+CosmologySimulationParticleVelocity3Name = ParticleVelocities_z
+CosmologySimulationParticleDisplacement1Name = ParticleDisplacements_x
+CosmologySimulationParticleDisplacement2Name = ParticleDisplacements_y
+CosmologySimulationParticleDisplacement3Name = ParticleDisplacements_z
+CosmologySimulationCalculatePositions   = 1
+CosmologySimulationNumberOfInitialGrids  = 3
+CosmologySimulationGridDimension[1]      =               58               58               58
+CosmologySimulationGridLeftEdge[1]       =          0.28125          0.28125          0.28125
+CosmologySimulationGridRightEdge[1]      =         0.734375         0.734375         0.734375
+CosmologySimulationGridLevel[1]          = 1
+CosmologySimulationGridDimension[2]      =               80               80               80
+CosmologySimulationGridLeftEdge[2]       =          0.34375          0.34375          0.34375
+CosmologySimulationGridRightEdge[2]      =          0.65625          0.65625          0.65625
+CosmologySimulationGridLevel[2]          = 2
+#
+# region allowed for further refinement
+#
+RefineRegionLeftEdge                     =            0.375            0.375            0.375
+RefineRegionRightEdge                     =            0.625            0.625            0.625
+RefineRegionAutoAdjust = 0
+#
+#  define cosmology parameters
+#
+ComovingCoordinates        = 1       // Expansion ON
+CosmologyOmegaMatterNow    = 0.266
+CosmologyOmegaLambdaNow    = 0.734
+CosmologyHubbleConstantNow = 0.710    // in km/s/Mpc
+CosmologyComovingBoxSize   = 0.71     // in Mpc/h = 100 Mpc comoving
+CosmologyMaxExpansionRate  = 0.015   // maximum allowed delta(a)/a
+CosmologyInitialRedshift 	 = 100.000000
+CosmologyFinalRedshift 	 = 6.000000
+GravitationalConstant      = 1       // this must be true for cosmology
+#
+#  set I/O and stop/start parameters
+#
+#StopCycle              = 3          // stop after this many cycles
+#CycleSkipDataDump      = 10
+DataDumpName            = output_
+dtDataDump 	 = 2.195905
+#
+#  set hydro parameters
+#
+Gamma                  = 1.6667
+PPMDiffusionParameter  = 0       // diffusion off
+DualEnergyFormalism    = 1       // use total & internal energy
+InterpolationMethod    = 1       // SecondOrderA
+FluxCorrection         = 2       // Explicit mass conservation
+RiemannSolver          = 4
+ReconstructionMethod   = 1
+CorrectParentBoundaryFlux = 1
+ConservativeInterpolation = 0
+CourantSafetyNumber       = 0.5
+ParticleCourantSafetyNumber = 0.8
+UseMinimumPressureSupport        = 0
+RefineByJeansLengthSafetyFactor  = 4.0
+
+#
+#  set grid refinement parameters
+#
+StaticHierarchy           = 0    // dynamic hierarchy
+MaximumRefinementLevel 	 = 8
+MaximumGravityRefinementLevel 	 = 8
+MaximumParticleRefinementLevel 	 = 8
+MaximumRefinementLevelPhysicalScale = 8.0
+
+RefineBy                  = 2    // refinement factor
+CellFlaggingMethod        = 2 4 6 8   // use baryon mass for refinement 
+MinimumEfficiency         = 0.3  // fraction efficiency
+MinimumOverDensityForRefinement = 0.0625 0.0625 // times the initial density refers to top grid: devide by 8 for each additional level
+MinimumMassForRefinementLevelExponent = -0.2 0.0
+MinimumEnergyRatioForRefinement = 0.4 // min Egas/Etot for shock refinement
+
+#
+# Cooling and Chemistry (Grackle)
+#
+use_grackle                 = 1
+
+RadiativeCooling            = 1
+MultiSpecies                = 2
+MultiMetals                 = 2
+MetalCooling                = 1         // set to 1 for Grackle
+UVbackground                = 1
+ThreeBodyRate               = 4         // double check
+
+
+grackle_data_file           = CloudyData_UVB=HM2012_shielded.h5
+H2_self_shielding           = 1
+self_shielding_method       = 3 // recommended
+use_volumetric_heating_rate = 1 // needed for FUV
+
+dust_chemistry              = 2 // enables PE heating model (by default)
+                                // but turned off below, dust cooling, and
+                                // h2 formation on dust, option 2
+                                // is unique to my version of Grackle which uses
+                                // a special low-z D/G ratio
+
+photoelectric_heating        = 0 // I deal with this separately for now
+
+use_isrf_field               = 0 // set to 1 once changes made
+interstellar_radiation_field = 0 // using isrf_habing pointer
+
+LWbackground_model           = 1 // fit from Wise+2012 (override HM2012)
+
+PhotoelectricHeatingDustModel = 1 // Remy-Ruer (low-Z) same in Grackle
+                                  // with local attenuation
+PhotoelectricHeatingDustModelefficiency = 0.05 // < 0 to use scaling
+
+#
+# Star formation and feedback
+#
+StarParticleCreation   = 32768 // Individual Stars
+StarParticleFeedback   = 32768 // Individual Stars
+
+
+#
+# Individual Stars Parameters
+#
+
+# 
+IndividualStarRefineToLevel    = 7 //
+IndividualStarRefineForRadiation = 1 // use above when just rad feedback (pop III)
+IndividualStarRefineBufferSize = 4
+
+# ---- physics paramters for star formation ------------
+StarMakerMaximumFractionCell            = 0.5
+IndividualStarMassFraction              = 0.5
+StarMakerOverDensityThreshold           = 1000
+IndividualStarSecondaryDensityThreshold = 1000
+StarMakerMassEfficiency                 = 1
+IndividualStarCheckVelocityDiv          = 1
+IndividualStarSFGasMassThreshold        = 100.0
+IndividualStarTemperatureThreshold      = 500.0
+IndividualStarCreationStencilSize       = 3
+IndividualStarVelocityDispersion        = 0.1    // km / s
+
+PopIIIH2CriticalFraction    = 0.0005
+PopIIIMetalCriticalFraction = 2.2e-6
+
+IndividualStarPopIIIFormation           = 1
+IndividualStarIMF                       = 2      // Kroupa
+IndividualStarIMFUpperMassCutoff        = 120.000
+IndividualStarIMFLowerMassCutoff        =   0.080
+IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particle
+
+
+# ---- feedback and yields ------------------------------
+IndividualStarFollowStellarYields  = 1
+IndividualStarRProcessModel        = 1    // Does nothing for now
+IndividualStarTrackAGBMetalDensity = 1
+IndividualStarTrackSNMetalDensity  = 1
+IndividualStarPrintSNStats         = 1
+
+IndividualStarOutputChemicalTags   = 0    // track as particle attributes(0)
+IndividualStarSaveTablePositions   = 0    // cheaper interp, increased mem if 1
+
+IndividualStarFeedbackStencilSize  = 3
+IndividualStarAGBWindVelocity      = 10.0 // km / s
+IndividualStarStellarWinds         = 1
+IndividualStarStellarWindVelocity  = 10.0
+IndividualStarMaximumStellarWindVelocity = 10.0 // km / s
+
+IndividualStarDTDSlope     = 1.12       // Maoz+2012
+IndividualStarSNIaFraction = 0.043      // " " Fraction of stars between 3 and 8 Msun that expl$
+
+IndividualStarLWRadiation = 1
+IndividualStarFUVHeating  = 1
+
+# --- pop III settings ----
+TypeIILowerMass  = 11.0
+TypeIIUpperMass  = 40.0
+PISNLowerMass    = 140.0
+PISNUpperMass    = 260.0
+PopIIIPISNEnergy = 1.0   // in 1.0E51
+
+# ---- Yields -------
+StellarYieldsNumberOfSpecies = 10
+# H He (redundant) C N O Mg Ca Fe Sr Ba
+StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
+
+
+# ---- Radiative Transfer Solver Parameters -------------
+RadiativeTransfer = 1
+RadiativeTransferRaysPerCell            = 3.1
+RadiativeTransferInitialHEALPixLevel    = 1
+RadiativeTransferHydrogenOnly           = 0
+RadiativeTransferOpticallyThinH2        = 1  // 1/r^2
+RadiativeTransferOpticallyThinFUV       = 1  // 1/r^2
+RadiativeTransferPeriodicBoundary       = 1
+RadiativeTransferAdaptiveTimestep       = 1
+RadiativeTransferRadiationPressure      = 1
+RadiativeTransferHubbleTimeFraction     = 1
+RadiativeTransferFluxBackgroundLimit    = 0.05
+RadiativeTransferSourceClustering       = 1
+RadiativeTransferOpticallyThinSourceClustering = 1
+RadiativeTransferPhotonMergeRadius      = 10.0     // controls clustering
+RadiativeTransferAdaptiveTimestep       = 1
+RadiativeTransferRayMaximumLength       = 1.732051 // length units
+RadiativeTransferUseH2Shielding         = 1
+RadiativeTransferH2IIDiss               = 1
+RadiativeTransferTimestepVelocityLimit  = 50
+
+
+#
+
