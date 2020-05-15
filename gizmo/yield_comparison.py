@@ -210,6 +210,7 @@ class GizmoData:
         stats = {'median' : np.median(abund), 'mean' : np.average(abund),
                  'Q1'     : np.quantile(abund,0.25), 'Q3' : np.quantile(abund,0.75),
                  'IQR'    : np.quantile(abund,0.75) - np.quantile(abund,0.25),
+                 '96'     : np.quantile(abund,0.96), 'D1' : np.quantile(abund,0.1), 'D9' : np.quantile(abund,0.9),
                  'std'    : np.std(abund), 'D9' : np.quantile(abund,0.9), 'D1' : np.quantile(abund,0.1) }
 
         # compute fraction < a given offset
@@ -336,7 +337,7 @@ def test_metallicity(snapshot):
 
 
 #
-def logbin_comparison(snapshot, ptype = 'star'):
+def logbin_comparison(snapshot, ptype = 'star', skip_MDF=True):
 
 #    all_data = {'match16' : GizmoData("./m12q_res5700/output/" + snapshot),
 #                'log4'  : GizmoData("./m12q_res5700_logage4/output/" + snapshot),
@@ -363,67 +364,69 @@ def logbin_comparison(snapshot, ptype = 'star'):
 
     basename = snapshot.strip(".hdf5")
 
-    #
-    # Plot the MDFs
-    #
+    
+    if skip_MDF:
+        #
+        # Plot the MDFs
+        #
+ 
+        fig,axes = plt.subplots(1,3,sharey=True,sharex=True)
+        fig.set_size_inches(18,6)
+        fig.subplots_adjust(wspace=0,hspace=0)
 
-    fig,axes = plt.subplots(1,3,sharey=True,sharex=True)
-    fig.set_size_inches(18,6)
-    fig.subplots_adjust(wspace=0,hspace=0)
+        xy=(0.05,0.20)
 
-    xy=(0.05,0.20)
-
-    def plot_ax(ax, e1, e2, gizmo_data, db = 0.1,
+        def plot_ax(ax, e1, e2, gizmo_data, db = 0.1,
                             amin=-3, amax=3, age=True,
                             color = None, label = None):
-        if age:
-            if color is None:
-                color = 'C0'
-            if label is None:
-                label = "Post-process"
+            if age:
+                if color is None:
+                    color = 'C0'
+                if label is None:
+                    label = "Post-process"
+ 
+                bins, hist1 = gizmo_data.MDF(e1,e2,amin,amax, dbin=db, age=True, ptype = ptype)
 
-            bins, hist1 = gizmo_data.MDF(e1,e2,amin,amax, dbin=db, age=True, ptype = ptype)
+            else: # plot simulation abundances
+                if color is None:
+                    color = 'black'
+                if label is None:
+                    label = 'Simulation'
 
-        else: # plot simulation abundances
-            if color is None:
-                color = 'black'
-            if label is None:
-                label = 'Simulation'
+                bins, hist1 = gizmo_data.MDF(e1,e2,amin,amax,dbin=db, age=False, ptype = ptype)
 
-            bins, hist1 = gizmo_data.MDF(e1,e2,amin,amax,dbin=db, age=False, ptype = ptype)
-
-        ax.step(bins,hist1/(1.0*np.sum(hist1)),where='post',
+            ax.step(bins,hist1/(1.0*np.sum(hist1)),where='post',
                          color=color, label = label,lw=3)
 
-        return
+            return
 
 
-    for i,k in enumerate(all_data.keys()):
-        plot_ax(axes[0], 'O','H', all_data[k], age = True,
-                color = 'C%i'%(i), label = k)
-        plot_ax(axes[1],'Fe','H',all_data[k], age = True,
-                color = 'C%i'%(i), label = k)
-        plot_ax(axes[2], 'N', 'H',all_data[k],age=True,color='C%i'%(i),label=k)
+        for i,k in enumerate(all_data.keys()):
+            plot_ax(axes[0], 'O','H', all_data[k], age = True,
+                    color = 'C%i'%(i), label = k)
+            plot_ax(axes[1],'Fe','H',all_data[k], age = True,
+                    color = 'C%i'%(i), label = k)
+            plot_ax(axes[2], 'N', 'H',all_data[k],age=True,color='C%i'%(i),label=k)
 
-    plot_ax(axes[0],'O','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
-    plot_ax(axes[1],'Fe','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
+        plot_ax(axes[0],'O','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
+        plot_ax(axes[1],'Fe','H',all_data[list(all_data.keys())[0]],age=False,color='black',label='FIRE')
 
-    for a in axes:
-        a.set_ylim(0.0,0.2)
-        a.set_xlim(-4,2)
-        a.set_xlabel('[X/H] [dex]')
-    axes[0].set_ylabel('Fraction of Stars')
+        for a in axes:
+            a.set_ylim(0.0,0.2)
+            a.set_xlim(-4,2)
+            a.set_xlabel('[X/H] [dex]')
+        axes[0].set_ylabel('Fraction of Stars')
 
-    axes[0].annotate('[O/H] ', xy=xy,xycoords='axes fraction', size = 30)
-    axes[1].annotate('[Fe/H]', xy=xy,xycoords='axes fraction', size = 30)
-    axes[2].annotate('[N/H]',xy=xy,xycoords='axes fraction',size=30)
+        axes[0].annotate('[O/H] ', xy=xy,xycoords='axes fraction', size = 30)
+        axes[1].annotate('[Fe/H]', xy=xy,xycoords='axes fraction', size = 30)
+        axes[2].annotate('[N/H]',xy=xy,xycoords='axes fraction',size=30)
+ 
+        plt.minorticks_on()
 
-    plt.minorticks_on()
+        axes[0].legend(loc='upper left')
+        fig.savefig(basename + "_logbin_comparison_" + ptype + ".png")
 
-    axes[0].legend(loc='upper left')
-    fig.savefig(basename + "_logbin_comparison_" + ptype + ".png")
-
-    plt.close()
+        plt.close()
 
     #
     #
@@ -435,7 +438,7 @@ def logbin_comparison(snapshot, ptype = 'star'):
     fig.set_size_inches(18,6)
     fig.subplots_adjust(wspace=0,hspace=0)
 
-    xy=(0.7, 0.90)
+    xy=(0.8, 0.90)
 
     def plot_ax_2(ax, e1, e2, gizmo_data, db = 0.001,
                             amin=0, amax=3,
@@ -450,10 +453,15 @@ def logbin_comparison(snapshot, ptype = 'star'):
         ax.step(bins,np.cumsum(hist1/(1.0*np.sum(hist1))),where='post',
                          color=color, label = label,lw=3)
 
-        yoff = 0.6 + 0.05*yshift
-        ax.text(xy[0]-0.22,xy[1]-yoff, label + ' = %0.3f dex'%stats['0.05dex'],
+        yoff = 0.6 + 0.05*(yshift)
+
+        ax.text(xy[0]-0.22,xy[1]-yoff, label + '= %0.3f '%stats['0.1dex'],
                 verticalalignment='bottom',horizontalalignment='left',
                 transform = ax.transAxes, color = color, fontsize = 15)
+
+        ax.text(0.02, 0.80-0.05*yshift, label + '= %0.3f dex'%stats['D9'],
+                verticalalignment='bottom',horizontalalignment='left',
+                transform=ax.transAxes, color=color, fontsize=15)
 
                 #xy=(xy[0]-0.32,xy[1]-0.2-yoff),xycoords='axes fraction',
 #                    size = 15)
@@ -462,6 +470,16 @@ def logbin_comparison(snapshot, ptype = 'star'):
 
 
     all_stats = {'O' : {}, 'Fe' : {}, 'N' : {}}
+    for a in axes:
+        a.text(xy[0]-0.22,xy[1] - (0.6-0.05), "Frac < 0.1 dex",
+                verticalalignment = 'bottom', horizontalalignment='left',
+                transform = a.transAxes, color = 'black', fontsize = 15)
+
+    for a in axes:
+        a.text(0.02, .85, "90% Level:",
+                verticalalignment = "bottom", horizontalalignment='left',
+                transform = a.transAxes, color = 'black', fontsize = 15)
+
     for i,k in enumerate(all_data.keys()):
         all_stats['O'][k] = plot_ax_2(axes[0], 'O','H', all_data[k],
                 color = 'C%i'%(i), label = k, yshift=i)
