@@ -165,6 +165,17 @@ if __name__ == "__main__":
                 Xtable, fd['UVBRates']['Photoheating'][rate].value, Xnew)
             photo_rates[rate] = rate_int * chem_ramp
 
+        # Set cross sections. Rather than integrating new background (since
+        # we don't have the full frequency) take the new Z values as just the 
+        # same as the last bin
+        if 'CrossSections' in fd['UVBRates'].keys():
+            cross_sections = {}
+            for crs in ['hi_avg_crs','hei_avg_crs','heii_avg_crs']:
+                cross_sections[crs] = np.zeros(np.size(znew))
+                old_crs = fd['UVBRates']['CrossSections'][crs].value
+                cross_sections[crs][:np.size(old_crs)] = old_crs
+                cross_sections[crs][np.size(old_crs):] = old_crs[-1]
+
         # Update values in h5 object and save new file
         for rate in chem_rates:
             del fd['UVBRates']['Chemistry'][rate]
@@ -174,6 +185,11 @@ if __name__ == "__main__":
             del fd['UVBRates']['Photoheating'][rate]
             fd['UVBRates']['Photoheating'].create_dataset(
                 rate, data=photo_rates[rate])
+        if 'CrossSections' in fd['UVBRates'].keys():
+            for crs in cross_sections:
+                del fd['UVBRates']['CrossSections'][crs]
+                fd['UVBRates']['CrossSections'].create_dataset(
+                   crs, data=cross_sections[crs])
 
         del fd['UVBRates']['z']
         fd['UVBRates'].create_dataset('z', data=znew)
