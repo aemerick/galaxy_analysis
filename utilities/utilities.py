@@ -583,9 +583,10 @@ def compute_weighted_stats(x, w, return_dict = True):
         _w = w.value
 
     d = {}
-    d['mean']     = np.average(                _x, weights=_w)
-    d['variance'] = np.average( (_x-d['mean'])**2, weights=_w)
-    d['std']      = np.sqrt(d['variance'])
+    d['w-avg_mean'] = np.average(                _x, weights=_w) # not necessarily the actual mean we might be interested in
+    d['mean']       = 1.0*d['w-avg_mean'] # for backwards compatability (but this is bad)
+    d['variance']   = np.average( (_x-d['mean'])**2, weights=_w)
+    d['std']        = np.sqrt(d['variance'])
 
     # no weighted quantiles in numpy - need to use defined function
     q             = weighted_quantile(_x, [0.1, 0.25, 0.5, 0.75, 0.9], weight=_w)
