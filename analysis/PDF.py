@@ -501,8 +501,12 @@ def load_distribution_data(file_name, dsname, phase, field, centers = None):
         if not (np.size(centers) == np.size(y)):
             if centers == 'bins' or centers == 'abins':
                 bins = dd.io.load(file_name, '/' + '/'.join([dsname,phase,'mass_fraction',centers]))
+                rdata['binsize'] = bins[1:] - bins[:-1]
+                rdata['bins'] = bins
+
 
             centers = 0.5 * (bins[1:] + bins[:-1])
+
 
     if rdata['Q3'] is None or rdata['Q1'] is None:
         rdata['iqr']           = None
@@ -523,8 +527,7 @@ def load_distribution_data(file_name, dsname, phase, field, centers = None):
         rdata['median'] = np.log10(rdata['median'])
 
     rdata['centers'] = centers
-    rdata['binsize'] = bins[1:] - bins[:-1]
-    rdata['bins'] = bins
+#    rdata['bins'] = bins
     rdata['q90'] = q90
     rdata['q10'] = q10
     return rdata
@@ -558,13 +561,13 @@ def fit_multifunction_PDF(bins, y, data):
     ln_pl['error'] = _error(ln_pl['fit_function']._f(centers, *ln_pl['popt']) , ln_pl['norm_y'])
     rdict['lognormal_powerlaw'] = ln_pl
 
-    if False: #try:
+    try:
         gau_pl = fit_PDF(bins*1.0, y*1.0, data=data, function_to_fit = 'gaussian_powerlaw')
         success['gaussian_powerlaw'] = True
         gau_pl['error'] = _error(gau_pl['fit_function']._f(centers, *gau_pl['popt']), gau_pl['norm_y'])
         rdict['gaussian_powerlaw'] = gau_pl
-    #except RuntimeError:
-    #    success['gaussian_powerlaw'] = False
+    except RuntimeError:
+        success['gaussian_powerlaw'] = False
 
     # powerlaw
     try:
@@ -592,6 +595,7 @@ def fit_multifunction_PDF(bins, y, data):
     for k in success.keys():
 
         if success[k]:
+            print(k, success[k])
             rdict[k]['name'] = k
             if rdict[k]['error'] < min_error:
                 min_error = rdict[k]['error']
