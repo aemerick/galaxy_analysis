@@ -1282,6 +1282,7 @@ def generate_derived_fields(ds):
     return
 
 
+
 def load_and_define(name):
     """
     Wrapper around yt to load a data set and define gradient
@@ -1289,7 +1290,13 @@ def load_and_define(name):
     simulation file separately (unlike the above)
     """
 
+
     ds = yt.load(name)
+
+    if not FIELDS_DEFINED:
+        generate_derived_fields(ds)
+        ds = yt.load(name)
+        generate_derived_fields(ds)
 
     gradient_available = generate_gradient_fields(ds)
 
@@ -1320,6 +1327,10 @@ def load_and_define(name):
     #generate_grackle_fields(ds)
 
     return ds
+
+
+def load(name):
+    return load_and_define(name)
 
 def generate_grackle_fields(ds):
 
@@ -1359,13 +1370,13 @@ def generate_particle_filters(ds):
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
     def all_popIII_stars(pfilter, data):
-        filter = filter * data[(pfilter.filtered_type,"particle_is_popiii")]
+        filter = data[(pfilter.filtered_type,"particle_is_popiii")].astype(np.bool)
 
         return filter
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
     def all_popII_stars(pfilter, data):
-        filter = filter * np.logical_not(data[(pfilter.filtered_type,"particle_is_popiii")])
+        filter = np.logical_not(data[(pfilter.filtered_type,"particle_is_popiii")])
 
         return filter
 
@@ -1478,8 +1489,8 @@ def generate_particle_filters(ds):
 
                     filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
 
-                filter = filter * ((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNeLowerMass']) *\
-                               (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNeUpperMass']))
+                filter = filter * ((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                               (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass']))
         else:
             filter = np.logical_not(data[(pfilter.filtered_type, "birth_mass")] == data[(pfilter.filtered_type, "birth_mass")])
 
@@ -1499,8 +1510,8 @@ def generate_particle_filters(ds):
 
                     filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
 
-                filter = filter *  (np.logical_not((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNeLowerMass']) *\
-                                                  (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNeUpperMass'])) *\
+                filter = filter *  (np.logical_not((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                                                  (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass'])) *\
                                     np.logical_not((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
                                                   (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass'])))
         else:
@@ -1522,7 +1533,7 @@ def generate_particle_filters(ds):
                 if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
                     filter = filter * data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
-                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')]
+                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
 
         return filter
 
@@ -1538,7 +1549,7 @@ def generate_particle_filters(ds):
                 if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
                     filter = filter * data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
-                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')]
+                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
 
         return filter
 
@@ -1574,8 +1585,8 @@ def generate_particle_filters(ds):
                                   'snia_hers_metal_fraction',
                                   'snia_metal_fraction'], filtered_type='all_stars')
     def snia_progenitor(pfilter,data):
-        filter = (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass'] *\
-                  data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass'])
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * ( (data[(pfilter.filtered_type, 'snia_sch_metal_fraction')] < 0) +\
                             (data[(pfilter.filtered_type, 'snia_sds_metal_fraction')] < 0) +\
@@ -1587,8 +1598,8 @@ def generate_particle_filters(ds):
                                   'snia_hers_metal_fraction',
                                   'snia_metal_fraction'], filtered_type='all_stars')
     def snia_dds_progenitor(pfilter,data):
-        filter = (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass'] *\
-                  data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass'])
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                   (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (data[(pfilter.filtered_type, 'snia_metal_fraction')] < 0)
 
@@ -1598,8 +1609,8 @@ def generate_particle_filters(ds):
                                   'snia_hers_metal_fraction',
                                   'snia_metal_fraction'], filtered_type='all_stars')
     def snia_sch_progenitor(pfilter,data):
-        filter = (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass'] *\
-                  data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass'])
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (data[(pfilter.filtered_type, 'snia_sch_metal_fraction')] < 0)
 
@@ -1609,8 +1620,8 @@ def generate_particle_filters(ds):
                                   'snia_hers_metal_fraction',
                                   'snia_metal_fraction'], filtered_type='all_stars')
     def snia_hers_progenitor(pfilter,data):
-        filter = (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass'] *\
-                  data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass'])
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (data[(pfilter.filtered_type, 'snia_hers_metal_fraction')] < 0)
 
@@ -1620,8 +1631,8 @@ def generate_particle_filters(ds):
                                   'snia_hers_metal_fraction',
                                   'snia_metal_fraction'], filtered_type='all_stars')
     def snia_sds_progenitor(pfilter,data):
-        filter = (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass'] *\
-                  data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass'])
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (data[(pfilter.filtered_type, 'snia_sds_metal_fraction')] < 0)
 
