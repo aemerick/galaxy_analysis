@@ -2,7 +2,82 @@ import yt
 import numpy as np
 
 
+from galaxy_analysis.utilities import utilities
 
+def compute_stellar_MDFs(data,
+                         particle_types = ['main_sequence_stars','main_sequence_popIII_stars'],
+                         species = 'all',
+                         bins=None, amin = -20, amax = -1,
+                         talive = None):
+    """
+    Compute the stellar MDFs for given particle types and elements
+    in a given yt data object.
+
+    MDFs are all computed as [X/H], which can be used to derive aother ratios,
+    (e.g. [X/Y] = [X/H] - [Y/H]). Solar normalization follows abundances from
+    Asplund+2009.
+
+    In addition, we compute the mass fraction MDFs for each fraction type
+    followed (for convenience this is only done if elements = 'all' at the
+    moment).
+    """
+
+    popiii_metals = None
+
+
+    #
+    # organized
+    #
+    MDFs = {}
+
+
+    if species == 'all':
+
+        metals = utilities.species_from_fields(data.ds.field_list)
+        metal_fields = ['particle_' + x + '_fraction' for x in metals]
+
+        popiii_metal_fields = [x[1] for x in data.ds.field_list if ('popIII_particle_' in x[1]) and ('_fraction' in x[1])]
+        source_fractions = ['intermediate_wind','agb','massive_wind','popIII','rprocess','snii','snia',
+                             'snia_sch','snia_hers','snia_sds']
+
+        source_fraction_fields = []
+        for name in source_fractions:
+            if ('io',name) in data.ds.field_list:
+                source_fraction_fields.append(name + '_fraction')
+
+        #
+        # now gather these together
+        #
+        bracket_species  = metals + popiii_metals
+        fraction_species = ['metallicity_fraction'] + source_fraction_fields
+
+        print("Not complete 'all' does not yet work")
+        raise RuntimeError
+
+    elif species == 'metals_only':
+
+        metals = utilities.species_from_fields(data.ds.field_list)
+
+        # we want to make [X/H] for all of these
+        for pt in particle_types:
+            MDF[pt] = {}
+            bm = data[(pt,'birth_mass')].value
+            for e in metals:
+                abund = data[(pt,'particle_' + e + '_over_H')].value
+
+                MDF[pt][e + '_over_H'] = np.histogram(abund, bins=bins, weights=weights)[0] / db
+
+
+
+
+
+
+        #for i in np.arange(np.size(elements)):
+        #    if ('all','particle_' + e + '_popiii_fraction') in data.ds.field_list:
+        #        elements =
+
+
+    return
 
 def compute_binned_sfr(data,
                        particle_types = ['all_stars','all_popIII_stars','all_popII_stars'],
