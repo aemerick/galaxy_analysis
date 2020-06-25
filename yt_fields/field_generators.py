@@ -1382,7 +1382,9 @@ def generate_particle_filters(ds):
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
     def main_sequence_stars(pfilter, data):
-        filter = data[(pfilter.filtered_type, "particle_type")] == 11
+        filter = (data[(pfilter.filtered_type, "particle_type")] == 11) +\
+                 (data[(pfilter.filtered_type, "particle_type")] == 15)
+                 
         return filter
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
