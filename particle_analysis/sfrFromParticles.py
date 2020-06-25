@@ -20,8 +20,8 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
         selection = np.array( [True]*nstars )
 
     particle_mass = data['birth_mass'][selection].value * yt.units.Msun
-    creation_time = data['creation_time'][selection].convert_to_units('Myr')
-    currentTime   = ds.current_time.convert_to_units('Myr')
+    creation_time = data['creation_time'][selection].to('Myr')
+    currentTime   = ds.current_time.to('Myr')
 
     # set start time of array
     if t_o is None:
@@ -30,7 +30,7 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
         if not hasattr(t_o, 'value'):
             t_o = t_o * yt.units.Myr
         else:
-            t_o = t_o.convert_to_units('Myr')
+            t_o = t_o.to('Myr')
 
     if times is None:
         bin_spacing = 10.0 * yt.units.Myr
@@ -40,7 +40,7 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
         if not hasattr(bin_spacing, 'value'):
             bin_spacing = bin_spacing * yt.units.Myr
         else:
-            bin_spacing = bin_spacing.convert_to_units('Myr')
+            bin_spacing = bin_spacing.to('Myr')
 
         t_f = currentTime + bin_spacing
 
@@ -50,7 +50,7 @@ def sfrFromParticles(ds, data, selection = None, times = None, t_o = None):
 
     sfr   = np.zeros(np.size(times)-1)
 
-    times = times.convert_to_units('yr')
+    times = times.to('yr')
 
     for i in np.arange(np.size(times)-1):
         dt = times[i+1] - times[i]
@@ -72,7 +72,7 @@ if __name__=='__main__':
 
     dt = 10.0*yt.units.Myr
 
-    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr')+dt, dt)
+    times = np.arange(0.0*yt.units.Myr, ds.current_time.to('Myr')+dt, dt)
     times = times*yt.units.Myr
 
     times, sfr = sfrFromParticles(ds, data, times = times)
@@ -97,6 +97,3 @@ if __name__=='__main__':
         ax.set_ylim(0.0, np.max(sfr)*1.1*1.0E4)
     ax.minorticks_on()
     plt.savefig('sfr.png')
-
-
-

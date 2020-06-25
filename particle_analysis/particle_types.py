@@ -3,8 +3,8 @@ def select_formed_stars(ds, data, t_min, t_max):
     Select stars formed in a given time range - useful for determining
     'instantaneous' properties of formed stars...
     """
-    lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr')
-    t_o      = data[('io','creation_time')].convert_to_units('Myr')
+    lifetime = data[('io','particle_model_lifetime')].to('Myr')
+    t_o      = data[('io','creation_time')].to('Myr')
 
     pcut     = (t_o >= t_min) * (t_o <= t_max)
 
@@ -22,8 +22,8 @@ def select_alive_stars(ds, data, t_min, t_max,
                       range, rather than the entire time range. Defualt True
     """
 
-    lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr')
-    t_o      = data[('io','creation_time')].convert_to_units('Myr')
+    lifetime = data[('io','particle_model_lifetime')].to('Myr')
+    t_o      = data[('io','creation_time')].to('Myr')
 
     if include_partial: # include stars that were alive at some point during range
         pcut = (t_o + lifetime >= t_min) * ( t_o <= t_max )
@@ -68,4 +68,3 @@ def direct_collapse(ds,data):
     pcut = pcut * (data['birth_mass'] > ds.parameters['IndividualStarDirectCollapseThreshold'])
 
     return pcut
-

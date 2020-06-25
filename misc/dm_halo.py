@@ -20,21 +20,21 @@ def burkert_solve_virial(r_s, rho_o, rho_crit = 9.74E-30 * u.g/u.cm**3):
                      np.arctan(x) )
 
     # Solve the profile for radius with average density equal to
-    # 200 * rho_crit (i.e. solve for R200) 
+    # 200 * rho_crit (i.e. solve for R200)
     if hasattr(rho_o, 'value'):
-        rho_o    = (rho_o.convert_to_cgs()).value
+        rho_o    = (rho_o.to('g/cm**3')).value
 
     if hasattr(rho_crit, 'value'):
-        rho_crit = (rho_crit.convert_to_cgs()).value
+        rho_crit = (rho_crit.to('g/cm**3')).value
 
     eq_solve = lambda x : (rho_o)*f_M(x)/(x**3)-200.0*rho_crit
 
     R200 = r_s * opt.bisect(eq_solve, .1, 10000.0, xtol=1.0E-12)
     rho_crit = rho_crit * u.g / u.cm**3
     M200 = 4.0 * np.pi * R200**3 * (200.0 * rho_crit) / 3.0
-    
 
-    return M200.convert_to_units('Msun') , R200
+
+    return M200.to('Msun') , R200
 
 def burkert_density(r, r_s, rho_o):
     """
@@ -45,7 +45,7 @@ def burkert_density(r, r_s, rho_o):
 
     density = rho_o / ( (x) * (1.0 + x)**2)
 
-    return density.convert_to_cgs()
+    return density.to('g/cm**3')
 
 def burkert_potential(r, r_s, rho_o):
     """
@@ -54,7 +54,8 @@ def burkert_potential(r, r_s, rho_o):
 
     x = r / r_s
 
-    G = const.G.convert_to_cgs()
+    G = 1.0 * const.G
+    G.convert_to_cgs()
 
     phi_o = 4.0 * np.pi * G * r_s**2 * rho_o
 
@@ -62,6 +63,5 @@ def burkert_potential(r, r_s, rho_o):
                              (np.log(1.0+x) - 0.5 * np.log(1.0+x*x) - np.arctan(x) + np.pi/2.0))
 
 
-    return phi.convert_to_cgs()
-
-
+    phi.convert_to_cgs()
+    return phi

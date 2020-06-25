@@ -16,7 +16,7 @@ def get_list_of_stars(ds, data, dummy_call = False, overload_type = None):
 
     M      = data['birth_mass'].value
     Z      = data['metallicity_fraction'].value
-    t_form = data['creation_time'].convert_to_units('Myr').value
+    t_form = data['creation_time'].to('Myr').value
     id     = data['particle_index'].value
 
     if overload_type is None:
@@ -49,8 +49,8 @@ def get_list_of_stars(ds, data, dummy_call = False, overload_type = None):
                                     for m, z, t, i, ptype in zip(M, Z, t_form, id, PT)]
 
 
-    M = data['particle_mass'].convert_to_units('Msun').value
-    lifetime = data['dynamical_time'].convert_to_units('Myr').value
+    M = data['particle_mass'].to('Msun').value
+    lifetime = data['dynamical_time'].to('Myr').value
 
     for i, s in enumerate(star_list):
 
@@ -90,7 +90,7 @@ def get_model_yields(ds, data, AllStars = None, sum_only = True, overload_type =
     bt = AllStars.property_asarray('tform')
     pt = AllStars.property_asarray('star_type')
 
-    current_time = ds.current_time.convert_to_units('Myr').value
+    current_time = ds.current_time.to('Myr').value
     age          = current_time - bt
 
     # we need to adjust the wind yields for their time dependense
