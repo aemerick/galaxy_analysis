@@ -4,6 +4,314 @@ import numpy as np
 
 from galaxy_analysis.utilities import utilities
 
+
+
+
+
+def _define_particle_filter_functions():
+    """
+    Hidden function to define filtering functions for particles to be used
+    with yt data. This is a way to do yt's particle filtering (sort of)
+    a bit more manually which is nice because it DOES NOT recompute data
+    when filtering.
+    """
+
+    def all_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] >= 11
+        return filter
+
+    def all_popIII_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type,"particle_is_popiii")].astype(np.bool)
+        return filter
+
+    def all_popII_stars(dobj, filtered_type = 'all'):
+        filter = np.logical_not(dobj[(filtered_type,"particle_is_popiii")])
+
+        return filterttotooto
+
+    def main_sequence_stars(dobj, filtered_type = 'all'):
+        filter = (dobj[(filtered_type, "particle_type")] == 11) +\
+                 (dobj[(filtered_type, "particle_type")] == 15)
+
+        return filter
+
+    def main_sequence_popIII_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] == 14
+        return filter
+
+    def remnant_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] == 13
+        return filter
+
+    def low_mass_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] == 11
+        filter = filter * (dobj[(filtered_type,"birth_mass")] > 2.0) * (dobj[(filtered_type,"birth_mass")] < 8.0)
+        return filter
+
+    def low_mass_unresolved_stars(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] == 15
+        return filter
+
+    def white_dwarf(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type, "particle_type")] == 12
+        return filter
+
+
+    #
+    #
+    # End of life filteres for non-snia
+    #
+    #
+
+    def all_remnants(dobj, filtered_type = 'all'):
+        filter = dobj[(filtered_type,"particle_type")] == 13
+        return filter
+
+    def popIII_remnant(dobj, filtered_type = 'all'):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
+
+        else:
+            filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
+
+
+        return filter
+
+    def popIII_ccsne_remnant(dobj, filtered_type = 'all'):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
+                               (dobj[(filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass']))
+        else:
+            filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
+
+
+        return filter
+
+
+    def popIII_pisne_remnant(dobj, filtered_type = 'all'):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                               (dobj[(filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass']))
+        else:
+            filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
+
+
+        return filter
+
+    def popIII_direct_collapse_remnant(dobj, filtered_type = 'all'):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter *  (np.logical_not((dobj[(filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                                                  (dobj[(filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass'])) *\
+                                    np.logical_not((dobj[(filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
+                                                  (dobj[(filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass'])))
+        else:
+            filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
+
+
+        return filter
+
+    def ccsne_remnant(dobj, filtered_type = 'all'):
+
+        filter = ((dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarDirectCollapseThreshold']) *\
+                  (dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarAGBThreshold']))
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+                    filter = filter * dobj[(filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
+
+        return filter
+
+    def direct_collapse_remnant(dobj, filtered_type = 'all'):
+
+        filter = dobj[(filtered_type, "birth_mass")] > data.ds.parameters['IndividualStarDirectCollapseThreshold']
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+                    filter = filter * dobj[(filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
+
+        return filter
+
+    def snia_progenitor(dobj, filtered_type = 'all'):
+        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * ( (dobj[(filtered_type, 'snia_sch_metal_fraction')] < 0) +\
+                            (dobj[(filtered_type, 'snia_sds_metal_fraction')] < 0) +\
+                            (dobj[(filtered_type, 'snia_hers_metal_fraction')] < 0) +\
+                            (dobj[(filtered_type, 'snia_metal_fraction')] < 0) )
+        return filter
+
+    def snia_dds_progenitor(dobj, filtered_type = 'all'):
+        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                   (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (dobj[(filtered_type, 'snia_metal_fraction')] < 0)
+
+        return filter
+
+    def snia_sch_progenitor(dobj, filtered_type = 'all'):
+        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (dobj[(filtered_type, 'snia_sch_metal_fraction')] < 0)
+
+        return filter
+
+    def snia_hers_progenitor(dobj, filtered_type = 'all'):
+        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (dobj[(filtered_type, 'snia_hers_metal_fraction')] < 0)
+
+        return filter
+
+    def snia_sds_progenitor(dobj, filtered_type = 'all'):
+        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (dobj[(filtered_type, 'snia_sds_metal_fraction')] < 0)
+
+        return filter
+
+
+    function_dict = { 'all_stars' : all_stars,
+                      'all_popIII_stars' : all_popIII_stars,
+                      'all_popII_stars'  : all_popII_stars,
+                      'main_sequence_stars' : main_sequence_stars,
+                      'main_sequence_popIII_stars' : main_sequence_popIII_stars,
+                      'remnant_stars' : remnant_stars,
+                      'low_mass_stars' : low_mass_stars,
+                      'low_mass_unresolved_stars': low_mass_unresolved_stars,
+                      'white_dwarf' : white_dwarf,
+                      # ----------
+                      'all_remnants': all_remnants,
+                      'popIII_remnant': popIII_remnant,
+                      'popIII_ccsne_remnant' : popIII_ccsne_remnant,
+                      'popIII_pisne_remnant' : popIII_pisne_remnant,
+                      'popIII_direct_collapse_remnant' : popIII_direct_collapse_remnant,
+                      'ccsne_remnant' : ccsne_remnant,
+                      'direct_collapse_remnant' : direct_collapse_remnant,
+                      'snia_progenitor' : snia_progenitor,
+                      'snia_dds_progenitor' : snia_dds_progenitor,
+                      'snia_sch_progenitor' : snia_sch_progenitor,
+                      'snia_hers_progenitor' : snia_hers_progenitor,
+                      'snia_sds_progenitor' : snia_sds_progenitor}
+
+    return function_dict
+
+_particle_filter_function_dict = _define_particle_filter_functions()
+
+
+
+def particle_filter(particle_type,
+                    data = None,
+                    inherited_type = 'all',
+                    join_method = np.logical_or,
+                    return_function = False):
+    """
+    Do particle filtering using defined particle filters. This is not the ideal
+    way to be doing this, but is faster than routing through yt's particle
+    filter interface (at least for now).
+
+    Makes no safety checks for fields being defined or not.
+
+    Parameters
+    -----------
+    particle_type :  name of particle type. If "help" is supplied, returns
+                     a list of particle types this function can filter.
+
+                     Can pass a list and return the join_method of them
+
+    data          : yt data object. Almost always should be passed, but this
+                    is the data object to do the filtering on.
+                    Optional (default None)
+
+    inherited_type : Type of particle to provide a filter for, where this must
+                     be a known particle type in yt. Not quite sure why this
+                     would be useful, but godo to have. Default : 'all'
+
+    return_function : Bool. If True, will return the function that does the
+                    filtering on the data object instead of the filter itself.
+                    data must be None for this to work.
+                    Default : False
+
+    Returns
+    --------
+    filter   : array that filters the dataset for the desired particles
+    """
+
+    if particle_type == 'help':
+        return list(_particle_filter_function_dict.keys())
+
+    if return_function:
+        return lambda data_x : _particle_filter_function_dict[particle_type](data_x, filtered_type=inherited_type)
+    else:
+
+        if isinstance(particle_type,list):
+            if join_method == np.logical_or :
+                join_method = np.sum
+            elif join_method == np.logical_and:
+                join_method = np.multiply
+            else:
+                print("join method not supported")
+                raise ValueError
+
+            filter = join_method([particle_filter_function_dict[pt](data,filtered_type=inherited_type) for pt in particle_types], axis=0).astype(np.bool)
+        else:
+
+            filter = _particle_filter_function_dict[particle_type](data, filtered_type = inherited_type)
+
+        return filter
+
+
 def compute_stellar_MDFs(data,
                          particle_types = ['main_sequence_stars','main_sequence_popIII_stars'],
                          species = 'all',
