@@ -1337,7 +1337,7 @@ def load_and_define(name):
         ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
         ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
 
-    generate_particle_filters(ds)
+    #generate_particle_filters(ds)
     #generate_grackle_fields(ds)
 
     return ds
