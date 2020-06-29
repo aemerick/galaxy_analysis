@@ -1379,7 +1379,6 @@ def generate_particle_filters(ds):
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all')
     def all_stars(pfilter, data):
-        print(data.field_data)
         filter = data[(pfilter.filtered_type, "particle_type")] >= 11
 
         return filter
