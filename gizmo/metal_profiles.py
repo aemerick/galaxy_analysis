@@ -11,6 +11,7 @@ import utilities as gizmo_ut
 from utilities.basic.binning import BinClass
 
 FIREDIR = "/scratch/projects/xsede/GalaxiesOnFIRE/metal_diffusion"
+COREDIR = "/scratch/projects/xsede/GalaxiesOnFIRE/core"
 
 def compute_profile_dict(part, part0, r_min, r_max, dr, fields = None):
     if fields is None:
@@ -65,37 +66,52 @@ def compute_galaxy_stats(part, Rvir):
 
     return galprop
 
-def grab_halo_info(wdir= FIREDIR):
+def grab_halo_info(part, halo_method = 'compute', wdir= FIREDIR):
 
-    #
-    # look for halo info of 2 types:
-    #
 
-    if (os.path.exists(wdir + "/halo/ahf_all-SGK/")):
-        filename = wdir + "/halo/ahf_all-SGK/catalog/snapshot_600.z0.000.AHF_halos"
-    elif (os.path.exists(wdir + "/halo/ahf/")):
-        filename = wdir + "/halo/ahf/halo_00000.dat"
-    else:
-        print("Cannot find halo dir for ", wdir)
-        raise RuntimeError
+    if halo_method == 'compute' :
+        # compute it
 
-    if not (os.path.isfile(filename)):
-        print("Cannot find halo file: ", filename)
-        raise RuntimeError
+        halo_prop   = gizmo_ut.particle.get_halo_properties(part, 'all','200m')
+        gal_s_prop  = gizmo_ut.particle.get_galaxy_properties(part, 'star')
+        gal_g_prop  = gizmo_ut.particle.get_galaxy_properties(part, 'gas')
+        
+        halo_data = {"Mvir" : halo_prop['mass'], "Rvir" : halo_prop['radius'],
+                     "M_star" : gal_s_prop['mass'] , "M_gas" : gal_g_prop ['mass'],
+                     "R_star" : gal_s_prop['radius'], "R_gas" : gal_g_prop['radius']} 
 
-    full_halo_data = np.genfromtxt(filename,names=True)
+    elif halo_method == 'file':
+        # load from a halo finder file... kinda a dumb way to do this
 
-    print(full_halo_data.dtype.names)
+        #
+        # look for halo info of 2 types:
+        #
 
-    Mvirkey = [x for x in full_halo_data.dtype.names if 'Mvir' in x][0]
-    Rvirkey = [x for x in full_halo_data.dtype.names if 'Rvir' in x][0]
-    Mstarkey = [x for x in full_halo_data.dtype.names if 'M_star' in x][0]
-    Mgaskey = [x for x in full_halo_data.dtype.names if "M_gas" in x][0]
+        if (os.path.exists(wdir + "/halo/ahf_all-SGK/")):
+            filename = wdir + "/halo/ahf_all-SGK/catalog/snapshot_600.z0.000.AHF_halos"
+        elif (os.path.exists(wdir + "/halo/ahf/")):
+            filename = wdir + "/halo/ahf/halo_00000.dat"
+        else:
+            print("Cannot find halo dir for ", wdir)
+            raise RuntimeError
 
-    halo_data = {"Mvir" :   full_halo_data[Mvirkey][0],
-             "Rvir" :   full_halo_data[Rvirkey][0],
-             "M_gas":   full_halo_data[Mgaskey][0],
-             "M_star":  full_halo_data[Mstarkey][0]}
+        if not (os.path.isfile(filename)):
+            print("Cannot find halo file: ", filename)
+            raise RuntimeError
+
+        full_halo_data = np.genfromtxt(filename,names=True)
+
+        print(full_halo_data.dtype.names)
+
+        Mvirkey = [x for x in full_halo_data.dtype.names if 'Mvir' in x][0]
+        Rvirkey = [x for x in full_halo_data.dtype.names if 'Rvir' in x][0]
+        Mstarkey = [x for x in full_halo_data.dtype.names if 'M_star' in x][0]
+        Mgaskey = [x for x in full_halo_data.dtype.names if "M_gas" in x][0]
+
+        halo_data = {"Mvir" :   full_halo_data[Mvirkey][0],
+                 "Rvir" :   full_halo_data[Rvirkey][0],
+                 "M_gas":   full_halo_data[Mgaskey][0],
+                 "M_star":  full_halo_data[Mstarkey][0]}
 
     return halo_data
 
@@ -105,15 +121,22 @@ def compute_datasets(data_dirs, wdir = FIREDIR, outdir = "."):
     dataset = {}
 
     for galdir in data_dirs:
-        dataset["halo_data"] = grab_halo_info(wdir + "/" + galdir)
 
         sim_index = 600
 
-        part = gizmo.io.Read.read_snapshots(["star","gas"], # types of particles to load. Gas and/or stars
+        try:
+            part = gizmo.io.Read.read_snapshots(["star","dark","gas"], # types of particles to load. Gas and/or stars
                                         "index",        # what the next value describes (check docstring for more)
                                         sim_index,      # simulation output index (nth output)
                                         assign_host_principal_axes=True,    # yes! compute the disk of the galaxy
                                         simulation_directory = wdir + "/" + galdir)
+
+        except:
+            print("Something went wrong loading %s . Skipping"%(wdir + '/' + galdir))
+            continue
+
+        dataset["halo_data"] = grab_halo_info(part, wdir = wdir + "/" + galdir)
+
 
         #
         # (and for the sake of this analysis, I"m also grabbing the 1st snapshot, aka the initial conditions)
@@ -144,11 +167,28 @@ def compute_datasets(data_dirs, wdir = FIREDIR, outdir = "."):
 
 if __name__ == "__main__":
 
-    possible_data_dirs = ["m11d_res7100","m11e_res7100","m11h_res7100","m11i_res7100",
-                 "m11b_res260","m11h_res880","m11q_res880"]
+    if sys.argv[1] == "mdiff":
+#        possible_data_dirs = ["m11d_res7100","m11e_res7100","m11h_res7100","m11i_res7100",
+#                              "m11b_res260","m11h_res880","m11q_res880"]
+        wdir = FIREDIR
+        
+        galaxies = glob.glob(wdir + '/m10*') + glob.glob(wdir + '/m09*') + glob.glob(wdir + '/m11*')
+        possible_data_dirs = [x.split('/')[-1] for x in galaxies]
+        outdir = "./metaldiff"
 
+    elif sys.argv[1] == "core":
+#        possible_data_dirs = ["m10q_res250", "m10v_res250", "m10y_res250", "m10z_res250", "m11a_res2100", "m11b_res2100", "m11c_res2100", "m11q_res7100", "m11v_res7100", "m12f_res7100", "m12i_res7100","m12m_res7100"]
+ 
+        wdir = COREDIR
+        galaxies = glob.glob(wdir + '/m10*') + glob.glob(wdir + '/m09*') + glob.glob(wdir + '/m11*')
+       	possible_data_dirs = [x.split('/')[-1] for x in	galaxies]
+
+        outdir = "./core"
+    else:
+        print("need to provide run type")
+        raise ValueError
     
     data_dirs = [x for x in possible_data_dirs if (not (os.path.isfile('./'+x+"_profiles.h5")))]
 
     print("Computing for ", data_dirs)
-    compute_datasets(data_dirs, outdir = ".")
+    compute_datasets(data_dirs, wdir = wdir, outdir = outdir)
