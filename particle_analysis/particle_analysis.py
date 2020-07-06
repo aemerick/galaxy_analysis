@@ -27,7 +27,7 @@ def _define_particle_filter_functions():
     def all_popII_stars(dobj, filtered_type = 'all'):
         filter = np.logical_not(dobj[(filtered_type,"particle_is_popiii")])
 
-        return filterttotooto
+        return filter
 
     def main_sequence_stars(dobj, filtered_type = 'all'):
         filter = (dobj[(filtered_type, "particle_type")] == 11) +\
@@ -70,11 +70,11 @@ def _define_particle_filter_functions():
     def popIII_remnant(dobj, filtered_type = 'all'):
 
         if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
 
                     filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
@@ -87,18 +87,18 @@ def _define_particle_filter_functions():
 
     def popIII_ccsne_remnant(dobj, filtered_type = 'all'):
 
-        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+        if ('IndividualStarPopIIIFormation' in dobj.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
 
                     filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
 
-                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
-                               (dobj[(filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass']))
+                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= dobj.ds.parameters['TypeIILowerMass']) *\
+                               (dobj[(filtered_type,'birth_mass')] <= dobj.ds.parameters['TypeIIUpperMass']))
         else:
             filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
 
@@ -108,18 +108,18 @@ def _define_particle_filter_functions():
 
     def popIII_pisne_remnant(dobj, filtered_type = 'all'):
 
-        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+        if ('IndividualStarPopIIIFormation' in dobj.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
 
                     filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
 
-                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
-                               (dobj[(filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass']))
+                filter = filter * ((dobj[(filtered_type,'birth_mass')] >= dobj.ds.parameters['PISNLowerMass']) *\
+                               (dobj[(filtered_type,'birth_mass')] <= dobj.ds.parameters['PISNUpperMass']))
         else:
             filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
 
@@ -128,20 +128,20 @@ def _define_particle_filter_functions():
 
     def popIII_direct_collapse_remnant(dobj, filtered_type = 'all'):
 
-        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+        if ('IndividualStarPopIIIFormation' in dobj.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
 
                     filter = np.logical_not( dobj[(filtered_type,'particle_above_chiaki_threshold')] )
 
-                filter = filter *  (np.logical_not((dobj[(filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
-                                                  (dobj[(filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass'])) *\
-                                    np.logical_not((dobj[(filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
-                                                  (dobj[(filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass'])))
+                filter = filter *  (np.logical_not((dobj[(filtered_type,'birth_mass')] >= dobj.ds.parameters['PISNLowerMass']) *\
+                                                  (dobj[(filtered_type,'birth_mass')] <= dobj.ds.parameters['PISNUpperMass'])) *\
+                                    np.logical_not((dobj[(filtered_type,'birth_mass')] >= dobj.ds.parameters['TypeIILowerMass']) *\
+                                                  (dobj[(filtered_type,'birth_mass')] <= dobj.ds.parameters['TypeIIUpperMass'])))
         else:
             filter = np.logical_not(dobj[(filtered_type, "birth_mass")] == dobj[(filtered_type, "birth_mass")])
 
@@ -150,15 +150,15 @@ def _define_particle_filter_functions():
 
     def ccsne_remnant(dobj, filtered_type = 'all'):
 
-        filter = ((dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarDirectCollapseThreshold']) *\
-                  (dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarAGBThreshold']))
+        filter = ((dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarDirectCollapseThreshold']) *\
+                  (dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarAGBThreshold']))
 
-        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+        if ('IndividualStarPopIIIFormation' in dobj.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
                     filter = filter * dobj[(filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
 
@@ -166,22 +166,22 @@ def _define_particle_filter_functions():
 
     def direct_collapse_remnant(dobj, filtered_type = 'all'):
 
-        filter = dobj[(filtered_type, "birth_mass")] > data.ds.parameters['IndividualStarDirectCollapseThreshold']
+        filter = dobj[(filtered_type, "birth_mass")] > dobj.ds.parameters['IndividualStarDirectCollapseThreshold']
 
-        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
-           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
-            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+        if ('IndividualStarPopIIIFormation' in dobj.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in dobj.ds.parameters):
+            if dobj.ds.parameters['IndividualStarPopIIIFormation'] > 0:
 
-                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
-                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                if dobj.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * dobj[(filtered_type,'metallicity_fraction')] < dobj.ds.parameters['PopIIIMetalCriticalFraction']
                 else: # use the Chiaki threshold:
                     filter = filter * dobj[(filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
 
         return filter
 
     def snia_progenitor(dobj, filtered_type = 'all'):
-        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
-                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+        filter = ((dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * ( (dobj[(filtered_type, 'snia_sch_metal_fraction')] < 0) +\
                             (dobj[(filtered_type, 'snia_sds_metal_fraction')] < 0) +\
@@ -190,32 +190,32 @@ def _define_particle_filter_functions():
         return filter
 
     def snia_dds_progenitor(dobj, filtered_type = 'all'):
-        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
-                   (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+        filter = ((dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                   (dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (dobj[(filtered_type, 'snia_metal_fraction')] < 0)
 
         return filter
 
     def snia_sch_progenitor(dobj, filtered_type = 'all'):
-        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
-                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+        filter = ((dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (dobj[(filtered_type, 'snia_sch_metal_fraction')] < 0)
 
         return filter
 
     def snia_hers_progenitor(dobj, filtered_type = 'all'):
-        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
-                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+        filter = ((dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (dobj[(filtered_type, 'snia_hers_metal_fraction')] < 0)
 
         return filter
 
     def snia_sds_progenitor(dobj, filtered_type = 'all'):
-        filter = ((dobj[(filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
-                  (dobj[(filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+        filter = ((dobj[(filtered_type, "birth_mass")] >= dobj.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (dobj[(filtered_type, "birth_mass")] <= dobj.ds.parameters['IndividualStarSNIaMaximumMass']))
 
         filter = filter * (dobj[(filtered_type, 'snia_sds_metal_fraction')] < 0)
 
@@ -425,16 +425,13 @@ def compute_binned_sfr(data,
 
         sfr_data[pt + '_SFR'] = np.zeros(np.size(tbins)-1)
 
-        t0   = data[(pt,'creation_time')].to('Myr').value
+        filter = particle_filter(pt,data)
 
-        if np.size(t0) == 0:
+        if not np.any(filter):
             continue
 
-        bm = data[(pt,'birth_mass')].value
-
-        print(np.shape(bm), np.shape(t0))
-        print(pt)
-        print(np.shape(tbins))
+        t0 = data[('all','creation_time')][filter].value
+        bm = data[('all','birth_mass')][filter].value
 
         sfr_data[pt + '_SFR'] = np.histogram(t0, bins=tbins, weights = bm)[0] / (tbins[1:]-tbins[:-1])
 
@@ -515,13 +512,18 @@ def compute_end_of_life(data,
 
         eol_data[name] = np.zeros(np.size(tbins)-1)
 
-        t0         = data[(pt,'creation_time')].to('Myr')
-        lifetime   = data[(pt,'particle_model_lifetime')].to('Myr')
+        filter = particle_filter(pt,data)
+
+        if not np.any(filter):
+            continue
+
+        t0         = data[('all','creation_time')][filter].to('Myr')
+        lifetime   = data[('all','particle_model_lifetime')][filter].to('Myr')
 
         if 'snia' in pt:
             # need to ADD the actual lifetime of the particle
             # which represents the time AFTER WD formation for explosion
-            lifetime = lifetime + data[(pt,'dynamical_time')].to('Myr')
+            lifetime = lifetime + data[('all','dynamical_time')][filter].to('Myr')
 
         death_time = (t0 + lifetime).value
 

@@ -790,7 +790,7 @@ def generate_stellar_model_fields(ds):
                     lt[i] = (physics.popIII_lifetime(m[i]) * yt.units.yr).to('Myr').value
                 else:
                     lt[i] = SE_table.interpolate({'mass' : m[i], 'metallicity' : z[i]}, 'lifetime')
-                    lt[i] = (lt * yt.units.s).to('Myr').value
+                    lt[i] = (lt[i] * yt.units.s).to('Myr').value
 
 
         return lt * yt.units.Myr
