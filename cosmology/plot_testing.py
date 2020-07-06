@@ -15,7 +15,8 @@ yt.enable_parallelism()
 #    imin = int(sys.argv[1])
 #    imax = int(sys.argv[2])
 #else:
-imin = 0
+
+imin = -2
 imax = -1
 
 
@@ -23,7 +24,7 @@ dsfiles = np.sort(glob.glob("DD????/DD????"))
 
 
 fields = [('gas','number_density'),'Temperature',
-          ('gas','photo_gamma'),
+#          ('gas','photo_gamma'),
           ('gas','metallicity'),
           ('gas','C_over_N'),
           ('gas','C_over_H'),
@@ -107,7 +108,10 @@ for dsname in dsfiles[imin:imax]:
     pz = data['particle_position_z'].to('kpc').value
     pid = data['particle_index']
 
-    select = (pid == 100)
+    select = (pid == 16777372)
+
+    if np.size(pid[select]) == 0:
+        select = (pid == 16777218)
 
     pcenter = np.array([px[select][0], py[select][0], pz[select][0]]) * yt.units.kpc
 
