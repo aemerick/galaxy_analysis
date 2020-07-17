@@ -9,21 +9,22 @@ import sys
 
 yt.enable_parallelism() # must be true for rockstar
 
+@particle_filter("dark_matter", requires=["particle_type"])
 def DarkMatter(pfilter,data):
     filter = data[('all','particle_type')] == 1 # DM in Enzo
     return filter
-add_particle_filter("dark_matter",function=DarkMatter,filtered_type='all',
-                    requires=['particle_type'])
 
-
+@particle_filter("max_res_dark_matter", requires=["particle_type"])
 def MaxResDarkMatter(pfilter,dobj):
     #min_dm_mass = dobj.get_field_parameter('min_dm_mass')
     min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
-
     return dobj['particle_mass'] <= 1.01 * min_dm_mass
-add_particle_filter('max_res_dark_matter', function=MaxResDarkMatter,
-                    #validators=[ValidateParameter(['min_dm_mass'])],
-                    filtered_type='dark_matter', requires=['particle_mass'])
+
+def setup_ds(ds):
+    ds.add_particle_filter("dark_matter")
+    ds.add_particle_filter("max_res_dark_matter")
+    return
+
 
 assert(yt.communication_system.communicators[-1].size >= 3)
 
@@ -34,22 +35,24 @@ def find_halos(dsname, wdir = './', *args, **kwargs):
     """
     Find the halos in a dataset. For simplicity
     this ONLY does the halo finding. We do other computations
-    elsewhere
+    elsewhere.
+
+
     """
     ds = yt.load(wdir + dsname + '/' + dsname)
-    ds.add_particle_filter('dark_matter')
+    setup_ds(ds)
 
     data = ds.all_data()
     min_dm_mass = data.quantities.extrema(('dark_matter','particle_mass'))[0].to('Msun').value
 
     ds.parameters['min_dm_mass'] = min_dm_mass
 
-    ds.add_particle_filter('max_res_dark_matter')
+    ds.add_particle_filter('dark_matter')
 
     hc = HaloCatalog(data_ds = ds, finder_method = 'rockstar',
                      finder_kwargs = {'dm_only':True,
                                       'outbase' : ROCKSTAR_OUTPUT_PREFIX + str(ds),
-                                      'particle_type':'max_res_dark_matter'},
+                                      'particle_type':'dark_matter'},
                      output_dir = wdir + HALOCATALOG_PREFIX +str(ds))
 
     hc.create()
@@ -76,7 +79,15 @@ def compute_virial_quantities(dsname, wdir = './', *args, **kwargs):
     halos_ds = yt.load(wdir + ROCKSTAR_OUTPUT_PREFIX + dsname + '/halos_0.0.bin')
 
     hc = HaloCatalog(data_ds = data_ds, halos_ds = halos_ds)
-    hc.add_recipe("calculate_virial_quantities", ["radius", "matter_mass"])
+    hc.add_filter('quantity_value', 'particle_mass', '>', 1E4, 'Msun')
+
+    if ('enzo','Density') in data_ds.field_list:
+        mass_field = 'matter_mass'
+    else:
+        # DM only simulation
+        mass_field = 'particle_mass'
+        
+    hc.add_recipe("calculate_virial_quantities", ["radius", mass_field ])
     hc.create()
 
     return
@@ -87,4 +98,4 @@ if __name__ == '__main__':
     #dsname = 'DD0011'
     for dsname in [str(sys.argv[1])]:
         find_halos(dsname)
-        #compute_virial_quantities(dsname)
+        compute_virial_quantities(dsname)
