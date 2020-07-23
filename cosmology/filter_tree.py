@@ -16,21 +16,25 @@ def select_root_halos(a, criteria, fields):
     return roots
 
 
-def get_unique_root_halos(a, criteria, fields,
-                          selection = 'sequential'):
+def get_root_halos(a, criteria, fields,
+                      unique = True,
+                      mutually_exclusive = ''):
     """
     Loop over a list of criteria and return root halos
-    that satisfy each criteria that are unique across all criteria.
+    that satisfy each criteria. 
 
     Parameters
     -----------
-    selection : bool, optional
-        The way to apply the uniqueness selection. 'sequential' is
-        meant to be used with criteria that are (in effect) nested
+    mutually_exlcusive : bool, optional
+        Method to ensure that halos across criteria are mutually exclusive. 
+        By default this is '', and this is not used. If set to 'sequential',
+        this is meant to be used with criteria that are (in effect) nested
         such that the first is the most restrictive and the last the most
         general, such that it is likely that all roots in each subsequent
         selection are also included in the previous. Default : 'sequential'
     """
+
+    num_criteria = len(criteria)
 
     all_roots = []
     for c in criteria:
@@ -38,16 +42,44 @@ def get_unique_root_halos(a, criteria, fields,
 
     # now make sure these are unique
 
-    if selection == 'sequential':
-        for i in np.arange(1,np.size(all_roots)):
-            removed = [all_roots[i].pop(ii) for ii in np.arange(np.size(all_roos[i])) if all_roots[i][ii] in all_roots[i-1]]
-            print("From %i "%(i) + " removed ", removed)
+    final_roots = [None]*num_criteria
+    if mutually_exclusive == 'sequential':
+
+        final_roots[0] = all_roots[0] # always in this mode
+
+        for i in np.arange(1, num_criteria):
+            final_roots[i] = [all_roots[i][ii] for ii in np.arange(np.size(all_roots[i])) if (not(all_roots[i][ii] in all_roots[i-1]))]
+
+    elif mutually_exclusive == '':
+        final_roots = all_roots
     else:
-        printf("Selection type " + selection + " not yet supported")
+        print("Mutually exclusive selection type " + mutually_exclusive + " not yet supported")
         raise(ValueError)
 
-    return all_roots
+    if unique:
+        #
+        # make sure roots halos are unique within each list
+        # np.unique does not work on TreeNode objects (unfortunately)
+        # so doing this in a really dumb way
+        #
+        final_roots_ids = [None]*num_criteria
+        for i in np.arange(num_criteria):
+            final_roots_ids[i] = [x['id'] for x in final_roots[i]]
 
+        final_roots = [None]*num_criteria
+        for i in np.arange(num_criteria):
+            final_roots[i] = [ a.query(ii) for ii in np.arange(a.size) if a.query(ii)['id'] in final_roots_ids[i]]
+    
+
+    return final_roots
+
+
+def print_halo_info(a, treenodes):
+
+    for tn in treenodes:
+        print("%4i %5.5E %5.5E %.6f %.6f %.6f"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
+
+    return
 
 if __name__ == "__main__":
 
@@ -71,4 +103,8 @@ if __name__ == "__main__":
 
     a = ytree.load(str(sys.argv[1]))
 
-    print(get_unique_root_halos(a, all_criteria, fields))
+    all_halos = get_root_halos(a, all_criteria, fields, unique=True, mutually_exclusive='sequential')
+
+    for i in np.arange(len(all_criteria)):
+        print_halo_info(a,all_halos[i])
+        print("----------------------------")
