@@ -1,6 +1,7 @@
 import numpy as np
 import yt
 import ytree
+import sys
 
 
 
@@ -28,7 +29,7 @@ def get_unique_root_halos(a, criteria, fields,
         meant to be used with criteria that are (in effect) nested
         such that the first is the most restrictive and the last the most
         general, such that it is likely that all roots in each subsequent
-        selection are also included in the previous.
+        selection are also included in the previous. Default : 'sequential'
     """
 
     all_roots = []
@@ -53,10 +54,21 @@ if __name__ == "__main__":
     #
     #
     #
-    criteria = '(tree["tree", "redshift"] > 8.0) *'
-               '(tree["tree", "redshift"] < 12.5) *'
-               '(tree["tree", "mass"] > 1.0E9)'
+    all_criteria = [ '(tree["tree", "redshift"] > 8.0) *'
+                     '(tree["tree", "redshift"] < 12.5) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 7.0) *'
+                     '(tree["tree", "redshift"] < 8.1) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 6.0) *'
+                     '(tree["tree", "redshift"] < 7.1) *'
+                     '(tree["tree", "mass"] > 1.0E9)']
+
     fields = ['redshift','mass']
 
 
-    a = ytree.load(treefile)
+    a = ytree.load(str(sys.argv[1]))
+
+    print(get_unique_root_halos(a, all_criteria, fields))
