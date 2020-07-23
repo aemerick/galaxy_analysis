@@ -8,7 +8,19 @@ import sys
 
 def select_root_halos(a, criteria, fields):
     """
-    Select desired halos
+    Select desired halos given a set of criteria
+
+    Parameters
+    -----------
+    a        : ytree object
+    criteria : sequence of conditional strings that can be
+               applied to the tree nodes
+    fields   : fields used in the criteria
+
+    Returns
+    --------
+    roots    : List of root halos in tree node that satisfy the
+               criteria
     """
     selection = a.select_halos(criteria, fields = fields)
     roots = [x.find_root() for x in selection]
@@ -21,17 +33,32 @@ def get_root_halos(a, criteria, fields,
                       mutually_exclusive = ''):
     """
     Loop over a list of criteria and return root halos
-    that satisfy each criteria. 
+    that satisfy each criteria.
 
     Parameters
     -----------
+    a        : ytree object
+    criteria : sequence of conditional strings that can be
+               applied to the tree nodes
+    fields   : fields used in the criteria
+
+    unique   : bool, optional
+               ensure that the root nodes within each criteria selection
+               are unique. Default : True
+
     mutually_exlcusive : bool, optional
-        Method to ensure that halos across criteria are mutually exclusive. 
+        Method to ensure that halos across criteria are mutually exclusive.
         By default this is '', and this is not used. If set to 'sequential',
         this is meant to be used with criteria that are (in effect) nested
         such that the first is the most restrictive and the last the most
         general, such that it is likely that all roots in each subsequent
         selection are also included in the previous. Default : 'sequential'
+
+    Returns
+    ---------
+    final_roots : list
+        list of the list of root nodes that satisfy the
+        criteria
     """
 
     num_criteria = len(criteria)
@@ -69,12 +96,20 @@ def get_root_halos(a, criteria, fields,
         final_roots = [None]*num_criteria
         for i in np.arange(num_criteria):
             final_roots[i] = [ a.query(ii) for ii in np.arange(a.size) if a.query(ii)['id'] in final_roots_ids[i]]
-    
+
 
     return final_roots
 
 
 def print_halo_info(a, treenodes):
+    """
+    Print some information about the list of treenodes
+
+    Parameters
+    -----------
+    a         :   ytree object from which the nodes come from
+    treenodes : list of tree nodes
+    """
 
     for tn in treenodes:
         print("%4i %5.5E %5.5E %.6f %.6f %.6f"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
