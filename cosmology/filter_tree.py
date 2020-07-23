@@ -1,3 +1,8 @@
+import matplotlib
+matplotlib.use('agg')
+from galaxy_analysis.plot_styles import *
+import matplotlib.pyplot as plt
+
 import numpy as np
 import yt
 import ytree
@@ -101,7 +106,7 @@ def get_root_halos(a, criteria, fields,
     return final_roots
 
 
-def print_halo_info(a, treenodes):
+def print_halo_info(a, treenodes, header = None, outfile = None):
     """
     Print some information about the list of treenodes
 
@@ -111,8 +116,51 @@ def print_halo_info(a, treenodes):
     treenodes : list of tree nodes
     """
 
+    if outfile is None:
+        writefunc = lambda x : print(x, end='')
+    else:
+        f = open(outfile,'w')
+        writefunc = f.write
+
+    writefunc(header + '\n')
+
     for tn in treenodes:
-        print("%4i %5.5E %5.5E %.6f %.6f %.6f"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
+        writefunc("%4i %5.5E %5.5E %.6f %.6f %.6f\n"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
+
+
+    if not (outfile is None):
+        f.close()
+
+    return
+
+def plot_halos(a,treenodes, outfile = None):
+    """
+    For a list of tree nodes, plot their growth history
+    """
+
+    if outfile is None:
+        outfile = "halo_growth_history.png"
+
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(6,6)
+
+    for i,tn in enumerate(treenodes):
+        x = tn['tree','redshift']
+        y = tn['tree','mass']
+        color = "C%01i"%(i)
+        ax.scatter(x,y, color = color, s = 40)
+        ax.plot(x,y,color=color,lw=3,lable=tn['id'])
+
+    ax.legend(loc='best')
+    ax.set_ylim(1.0E8,8.0E9)
+    ax.set_ylabel(r"Rockstar Halo Mass (M$_{\odot}$)")
+    ax.semilogy()
+    ax.set_xlabel("z")
+    ax.set_xlim(15.0,5.0)
+    plt.minorticks_on()
+    plt.tight_layout()
+    fig.savefig(outfile, bbox_inches='tight', pad_inches=0.0)
 
     return
 
@@ -140,6 +188,8 @@ if __name__ == "__main__":
 
     all_halos = get_root_halos(a, all_criteria, fields, unique=True, mutually_exclusive='sequential')
 
+    outfiles = ['1E9_above_z8.dat','1E9_above_z7.dat', '1E9_above_z6.dat']
+    outplots = ['1E9_above_z8.png','1E9_above_z7.png', '1E9_above_z6.png']
     for i in np.arange(len(all_criteria)):
-        print_halo_info(a,all_halos[i])
-        print("----------------------------")
+        print_halo_info(a,all_halos[i], header = all_criteria[i], outfile = outfiles[i])
+        plot_halos(a,all_halos[i], outfile = outplots[i])
