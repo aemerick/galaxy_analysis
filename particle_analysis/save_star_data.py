@@ -15,7 +15,7 @@ def save_dataset_particles(data,
                            particle_type = 'all_stars',
                            derived_fields = ['particle_model_lifetime'],
                            save_abundance_ratios = True,
-                           abundance_denominators = ['H']):
+                           abundance_denominators = ['H','Mg','Fe','C','N']):
     """
     Saves as dataset ALL star particle information to make 
     analysis with the star particles A LOT easier in datasets with
@@ -53,16 +53,24 @@ def save_dataset_particles(data,
     if save_abundance_ratios:
         elements = utilities.species_from_fields( data.ds.field_list )
 
+        # do this for H first
+        for e in elements:
+            field = 'particle_' + e + '_over_H'
+            particle_data[field] = data[('all',field)][select]
+            del(data[('all',field)])
+
+        # and now we can just compute the rest without touching
+        # the DM particles
         for denom in abundance_denominators:
+            if denom == 'H':
+                continue
 
             for e in elements:
-
                 if e == denom:
                     continue
 
-                field = 'particle_' + e + '_over_' + denom
-
-                particle_data[field] = data[('all', field)][select]
+            field = 'particle_' + e + '_over_' + denom
+            particle_data[field] = particle_data['particle_' + e + '_over_H'] - particle_data['particle_' + denom + '_over_H']
 
     
     if yt.is_root():
