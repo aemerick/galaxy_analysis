@@ -19,7 +19,7 @@ def get_output_H5(outdata_path):
 
     return outH5
 
-def save_to_file(outdata_path, sp, data, fields):
+def save_to_file(outdata_path, sp, data, center):
 
     outH5 = get_output_H5(outdata_path)
 
@@ -29,10 +29,10 @@ def save_to_file(outdata_path, sp, data, fields):
         outH5[f[1]][weight_field] = sp.frb.data[f]
 
     if not 'particle_positions' in outH5.keys():
-        outH5['paritcle_positions'] = {}
+        outH5['particle_positions'] = {}
 
-    for ax in ['x','y','z']:
-        outH5['particle_positions'][ax] = data[('all_tars','particle_position_'+ax)].to('kpc')/sp.width.to('kpc')
+    for i,ax in enumerate(['x','y','z']):
+        outH5['particle_positions'][ax] = (data[('all_stars','particle_position_'+ax)].to('kpc') - center.to('kpc')[i])/sp.width[0].to('kpc')
 
     dd.io.save(outdata_path, outH5)
 
@@ -70,6 +70,8 @@ fields = [('gas','number_density'),'Temperature',
           ('gas','C_over_H'),
           ('gas','O_over_H'),
           ('gas','Fe_over_H')]
+
+fields = [('gas','number_density'),'Temperature',('gas','O_over_H'),('gas','photo_gamma')]
 
 #
 # fields = [('gas','number_density')]
@@ -165,14 +167,14 @@ for dsname in dsfiles:
 
     if yt.is_root() and save_frb:
         outdata_path = './proj/' + str(ds) + '_Proj_data.h5'
-        save_to_file(outdata_path, sp, data, fields)
+        save_to_file(outdata_path, sp, data, data.center)
 
     del(sp)
 
     #
     # now make new regions
     #
-    for factor in [2,4,8,16]:
+    for factor in [2,4]:
         region = ds.region( pcenter, pcenter - width/(factor*2.0), pcenter + width / (factor*2.0))
         sp = yt.ProjectionPlot(ds, 'z', fields, center = region.center, width=width/(1.0*factor),
                                weight_field=weight_field, data_source=region)
@@ -183,8 +185,8 @@ for dsname in dsfiles:
             sp.save("./proj/zoomx%i/"%(factor))
 
         if yt.is_root() and save_frb:
-            outdata_path = "./proj/zoom%i/"%(factor) + str(ds) + '_Proj_data_zoom%i.h5'%(factor)
-            save_to_file(outdata_path, sp, region, fields)
+            outdata_path = "./proj/zoomx%i/"%(factor) + str(ds) + '_Proj_data_zoomx%i.h5'%(factor)
+            save_to_file(outdata_path, sp, region, region.center)
 
         del(sp)
 
