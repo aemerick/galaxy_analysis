@@ -40,18 +40,21 @@ def my_calculate_virial_quantities(hc, fields,
 add_recipe("my_calculate_virial_quantities", my_calculate_virial_quantities)
 
 
-
-
-@particle_filter("dark_matter", requires=["particle_type"])
 def DarkMatter(pfilter,data):
     filter = data[('all','particle_type')] == 1 # DM in Enzo
     return filter
 
-@particle_filter("max_res_dark_matter", requires=["particle_type"])
 def MaxResDarkMatter(pfilter,dobj):
+    min_dm_mass = dobj[('dark_matter','particle_mass')]
     #min_dm_mass = dobj.get_field_parameter('min_dm_mass')
-    min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
+    #min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
     return dobj['particle_mass'] <= 1.01 * min_dm_mass
+
+add_particle_filter("dark_matter", function=DarkMatter, \
+                    filtered_type='all', requires=["particle_type"])
+
+add_particle_filter("max_res_dark_matter", function=MaxResDarkMatter, \
+                    filtered_type='dark_matter', requires=["particle_mass"])
 
 def setup_ds(ds):
     ds.add_particle_filter("dark_matter")
@@ -74,6 +77,11 @@ def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kw
     """
     es = yt.simulation(simfile, "Enzo")
     es.get_time_series(initial_redshift=30.0)
+ 
+    print(es[0].derived_field_list)
+    for ds in es:  
+        setup_ds(ds)
+    print(es[0].derived_field_list)
 
     #ds = yt.load(wdir + dsname + '/' + dsname)
     #setup_ds(ds)
@@ -93,7 +101,7 @@ def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kw
 
     rhf = RockstarHaloFinder(es, 
                              #num_readers=1, num_writers=1,
-                             particle_type='dark_matter')
+                             particle_type='max_res_dark_matter')
     rhf.run(restart=restart)
 
     #halos = yt.load('rockstar_halos/halos_0.0.bin')
