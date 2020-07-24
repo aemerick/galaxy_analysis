@@ -1,6 +1,6 @@
 import matplotlib
 matplotlib.use('agg')
-from galaxy_analysis.plot_styles import *
+from galaxy_analysis.plot.plot_styles import *
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -142,25 +142,41 @@ def plot_halos(a,treenodes, outfile = None):
         outfile = "halo_growth_history.png"
 
 
-    fig, ax = plt.subplots()
-    fig.set_size_inches(6,6)
+    fig, ax = plt.subplots(1,2)
+    fig.set_size_inches(12,6)
 
     for i,tn in enumerate(treenodes):
-        x = tn['tree','redshift']
-        y = tn['tree','mass']
+        x = tn['prog','redshift']
+        y = tn['prog','mass']
         color = "C%01i"%(i)
-        ax.scatter(x,y, color = color, s = 40)
-        ax.plot(x,y,color=color,lw=3,lable=tn['id'])
 
-    ax.legend(loc='best')
-    ax.set_ylim(1.0E8,8.0E9)
-    ax.set_ylabel(r"Rockstar Halo Mass (M$_{\odot}$)")
-    ax.semilogy()
-    ax.set_xlabel("z")
-    ax.set_xlim(15.0,5.0)
+        ax[0].scatter(x,y, color = color, s = 40)
+        ax[0].plot(x,y,color=color,lw=3,label=tn['id'])
+
+        y = tn['prog','virial_radius']
+        ax[1].scatter(x,y,color=color,s=40)
+        ax[1].plot(x,y,color=color,lw=3,label=tn['id'])
+
+    ax[0].legend(loc='best')
+    ax[0].set_ylim(1.0E8,8.0E9)
+    ax[0].set_ylabel(r"Rockstar Halo Mass (M$_{\odot}$)")
+    ax[0].semilogy()
+
+    ax[1].set_ylim(1, 100)
+    ax[1].set_ylabel(r"Rockstar Virial Radius (kpccm)")
+    ax[1].semilogy()
+
+
+
+    for axes in ax:
+        axes.set_xlabel("z")
+        axes.set_xlim(15.0,4.5)
+
+    ax[0].plot(ax[0].get_xlim(), [1.0E9,1.0E9], lw = 2, ls = '--' ,color = 'black')
+
     plt.minorticks_on()
     plt.tight_layout()
-    fig.savefig(outfile, bbox_inches='tight', pad_inches=0.0)
+    fig.savefig(outfile) #, bbox_inches='tight', pad_inches=0.0)
 
     return
 
