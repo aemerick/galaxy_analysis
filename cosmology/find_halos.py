@@ -64,7 +64,7 @@ def setup_ds(ds):
 ROCKSTAR_OUTPUT_PREFIX = 'rockstar_halos/halos_'
 HALOCATALOG_PREFIX     = 'halo_catalogs/catalog_'
 
-def find_halos(dsname, simfile = None, wdir = './', *args, **kwargs):
+def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kwargs):
     """
     Find the halos in a dataset. For simplicity
     this ONLY does the halo finding. We do other computations
@@ -73,7 +73,7 @@ def find_halos(dsname, simfile = None, wdir = './', *args, **kwargs):
 
     """
     es = yt.simulation(simfile, "Enzo")
-    es.get_time_series(initial_redshift=15.0)
+    es.get_time_series(initial_redshift=30.0)
 
     #ds = yt.load(wdir + dsname + '/' + dsname)
     #setup_ds(ds)
@@ -94,7 +94,7 @@ def find_halos(dsname, simfile = None, wdir = './', *args, **kwargs):
     rhf = RockstarHaloFinder(es, 
                              #num_readers=1, num_writers=1,
                              particle_type='dark_matter')
-    rhf.run()
+    rhf.run(restart=restart)
 
     #halos = yt.load('rockstar_halos/halos_0.0.bin')
     #hc = HaloCatalog(halos_ds=halos, output_dir = widr + 'halo_catalogs/catalog_'+str(ds)))
@@ -135,13 +135,17 @@ def compute_virial_quantities(dsname, wdir = './', *args, **kwargs):
 if __name__ == '__main__':
     simfile = None
 
-    if len(sys.argv) > 2:
-        dsnames = ["RD%0004i"%(i) for i in np.arange(int(sys.argv[1]),int(sys.argv[2])+1,1)]
-    elif str(sys.argv[1]) == 'all':
+#    if len(sys.argv) > :
+#        dsnames = ["RD%0004i"%(i) for i in np.arange(int(sys.argv[1]),int(sys.argv[2])+1,1)]
+    if str(sys.argv[1]) == 'all':
         dsnames = np.sort(glob.glob('RD????'))
     elif "." in str(sys.argv[1]):
         dsnames = None
         simfile = str(sys.argv[1])
+        restart = False
+        if len(sys.argv) > 2:
+            restart = bool( sys.argv[2] )
+       
     else:
         dsnames = [str(x) for x in sys.argv[1:]]
 
@@ -150,5 +154,5 @@ if __name__ == '__main__':
     else:
 
         for dsname in dsnames:
-            find_halos(dsname)
+            find_halos(dsname, restart=restart)
 #        compute_virial_quantities(dsname)
