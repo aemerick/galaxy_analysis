@@ -157,7 +157,10 @@ def plot_halos(a,treenodes, outfile = None):
         ax[1].scatter(x,y,color=color,s=40)
         ax[1].plot(x,y,color=color,lw=3,label=tn['id'])
 
-    ax[0].legend(loc='best')
+    if len(treenodes) > 9:
+        ax[1].legend(loc='best',ncol=2)
+    else:
+        ax[0].legend(loc='best')
     ax[0].set_ylim(1.0E8,8.0E9)
     ax[0].set_ylabel(r"Rockstar Halo Mass (M$_{\odot}$)")
     ax[0].semilogy()
@@ -180,32 +183,58 @@ def plot_halos(a,treenodes, outfile = None):
 
     return
 
-if __name__ == "__main__":
 
-    #
-    #
-    #
-    all_criteria = [ '(tree["tree", "redshift"] > 8.0) *'
-                     '(tree["tree", "redshift"] < 12.5) *'
+def my_halo_filter(tree_file):
+
+    all_criteria = [ '(tree["tree", "redshift"] > 12.0) *'
+                     '(tree["tree", "redshift"] < 13.0) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 11.0) *'
+                     '(tree["tree", "redshift"] < 12.0) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 10.0) *'
+                     '(tree["tree", "redshift"] < 11.0) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 9.0) *'
+                     '(tree["tree", "redshift"] < 10.0) *'
+                     '(tree["tree", "mass"] > 1.0E9)',
+
+                     '(tree["tree", "redshift"] > 8.0) *'
+                     '(tree["tree", "redshift"] < 9.0) *'
                      '(tree["tree", "mass"] > 1.0E9)',
 
                      '(tree["tree", "redshift"] > 7.0) *'
-                     '(tree["tree", "redshift"] < 8.1) *'
+                     '(tree["tree", "redshift"] < 8.0) *'
                      '(tree["tree", "mass"] > 1.0E9)',
 
                      '(tree["tree", "redshift"] > 6.0) *'
-                     '(tree["tree", "redshift"] < 7.1) *'
+                     '(tree["tree", "redshift"] < 7.0) *'
                      '(tree["tree", "mass"] > 1.0E9)']
 
     fields = ['redshift','mass']
 
 
-    a = ytree.load(str(sys.argv[1]))
+    a = ytree.load(tree_file)
 
     all_halos = get_root_halos(a, all_criteria, fields, unique=True, mutually_exclusive='sequential')
 
-    outfiles = ['1E9_above_z8.dat','1E9_above_z7.dat', '1E9_above_z6.dat']
-    outplots = ['1E9_above_z8.png','1E9_above_z7.png', '1E9_above_z6.png']
+    outfiles, outplots = [], []
+    for z in np.arange(12,5.5,-1):
+        outfiles.append("1E9_above_z%i.dat"%(z))
+        outplots.append("1E9_above_z%i.png"%(z))
+
+    #outfiles = ['1E9_above_z8.dat','1E9_above_z7.dat', '1E9_above_z6.dat']
+    #outplots = ['1E9_above_z8.png','1E9_above_z7.png', '1E9_above_z6.png']
     for i in np.arange(len(all_criteria)):
         print_halo_info(a,all_halos[i], header = all_criteria[i], outfile = outfiles[i])
         plot_halos(a,all_halos[i], outfile = outplots[i])
+
+    return 
+
+if __name__ == "__main__":
+
+
+    my_halo_filter(str(sys.argv[1]))
