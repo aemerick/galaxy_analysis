@@ -1224,7 +1224,7 @@ def _additional_helper_fields(fields):
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields or ('enzo','Grav_Potential'):
+    if (('enzo','PotentialField') in fields) or (('enzo', 'GravPotential') in fields) or (('enzo','Grav_Potential') in fields):
         yt.add_field(('gas','pos_gravitational_potential'), sampling_type = 'cell',function=_grav_pot, units = 'erg/g')
         yt.add_field(('gas','gas_gravitational_potential'), sampling_type = 'cell',function=_gas_grav_pot, units = 'erg/g')
         yt.add_field(('gas','total_gravitational_potential'),sampling_type = 'cell', function=_tot_grav_pot, units = 'erg/g')
@@ -1362,9 +1362,13 @@ def generate_gradient_fields(ds):
     something sensible
     """
 
-    ds.add_gradient_fields(("gas","gas_gravitational_potential"))
+    if ("gas","gas_gravitational_potential") in ds.derived_field_list:
+        ds.add_gradient_fields(("gas","gas_gravitational_potential"))
+        gradient_available = True
+    else:
+        gradient_available = False
 
-    return True
+    return gradient_available
 
 def generate_particle_filters(ds):
     """
@@ -1659,11 +1663,12 @@ def generate_particle_filters(ds):
     # And select those that have actually exploded by
     # which ones have zero mass
     #
-    ds.add_particle_filter("snia_progenitor")
-    ds.add_particle_filter("snia_dds_progenitor")
-    ds.add_particle_filter("snia_hers_progenitor")
-    ds.add_particle_filter("snia_sds_progenitor")
-    ds.add_particle_filter("snia_sch_progenitor")
+    if ('all','snia_sch_metal_fraction') in ds.field_list:
+        ds.add_particle_filter("snia_progenitor")
+        ds.add_particle_filter("snia_dds_progenitor")
+        ds.add_particle_filter("snia_hers_progenitor")
+        ds.add_particle_filter("snia_sds_progenitor")
+        ds.add_particle_filter("snia_sch_progenitor")
 
 
 
