@@ -1,0 +1,147 @@
+#;-*-C-*-
+StopCycle           = 100000
+StopCPUTime         = 420000
+
+ParallelRootGridIO = 1
+UnigridTranspose = 2
+HierarchyFileOutputFormat = 1
+CorrectParentBoundaryFlux = 1
+
+#PartitionNestedGrids = 1
+#ParticleTypeInFile = 1
+
+# AMR PROBLEM DEFINITION FILE: Cosmology Simulation (amr version)
+#
+#  define problem
+#
+ProblemType                = 30      // cosmology simulation
+TopGridRank                = 3
+TopGridDimensions          = 256 256 256
+PotentialIterations        = 10
+SelfGravity                = 1       // gravity on
+TopGridGravityBoundary     = 0       // Periodic BC for gravity
+LeftFaceBoundaryCondition  = 3 3 3   // same for fluid
+RightFaceBoundaryCondition = 3 3 3
+#
+#  problem parameters
+#
+CosmologySimulationOmegaBaryonNow       = 0.0449
+CosmologySimulationOmegaCDMNow          = 0.266
+#CosmologySimulationInitialTemperature   = 300
+CosmologySimulationDensityName          = GridDensity
+CosmologySimulationVelocity1Name        = GridVelocities_x
+CosmologySimulationVelocity2Name        = GridVelocities_y
+CosmologySimulationVelocity3Name        = GridVelocities_z
+CosmologySimulationParticleVelocity1Name = ParticleVelocities_x
+CosmologySimulationParticleVelocity2Name = ParticleVelocities_y
+CosmologySimulationParticleVelocity3Name = ParticleVelocities_z
+CosmologySimulationParticleDisplacement1Name = ParticleDisplacements_x
+CosmologySimulationParticleDisplacement2Name = ParticleDisplacements_y
+CosmologySimulationParticleDisplacement3Name = ParticleDisplacements_z
+CosmologySimulationCalculatePositions   = 1
+CosmologySimulationNumberOfInitialGrids = 1
+
+#
+#  define cosmology parameters (WMAP-7)
+#
+ComovingCoordinates        = 1       // Expansion ON
+CosmologyOmegaMatterNow    = 0.266
+CosmologyOmegaLambdaNow    = 0.734
+CosmologyHubbleConstantNow = 0.71    // in km/s/Mpc
+CosmologyComovingBoxSize   = 0.71     // in Mpc/h = 100 Mpc comoving
+CosmologyMaxExpansionRate  = 0.015   // maximum allowed delta(a)/a
+CosmologyInitialRedshift 	 = 129.4
+CosmologyFinalRedshift 	 = 6.000000
+GravitationalConstant      = 1       // this must be true for cosmology
+#
+#  set I/O and stop/start parameters
+#
+#StopCycle              = 3          // stop after this many cycles
+#CycleSkipDataDump      = 10
+DataDumpName            = output_
+dtDataDump 	 = 0.2611326
+#
+#  set hydro parameters
+#
+Gamma                  = 1.6667
+PPMDiffusionParameter  = 0       // diffusion off
+DualEnergyFormalism    = 1       // use total & internal energy
+InterpolationMethod    = 1     // SecondOrderA
+FluxCorrection         = 1
+ConservativeInterpolation = 0
+CourantSafetyNumber    = 0.3
+ParticleCourantSafetyNumber = 0.8
+RadiativeCooling            = 1
+MultiSpecies                = 2
+MetalCooling                = 3
+CloudyCoolingGridFile       = solar_2009_4D_metals.h5
+UseMinimumPressureSupport   = 0
+RefineByJeansLengthSafetyFactor  = 4.0
+
+#
+#  set grid refinement parameters
+#
+StaticHierarchy           = 0    // dynamic hierarchy
+MaximumRefinementLevel 	 = 12
+MaximumGravityRefinementLevel 	 = 12
+MaximumParticleRefinementLevel 	 = 12
+RefineBy                  = 2    // refinement factor
+CellFlaggingMethod        = 2 4   // use baryon mass for refinement 
+#CellFlaggingMethod        = 4    // use DM mass for refinement 
+MinimumEfficiency         = 0.3  // fraction efficiency
+MinimumOverDensityForRefinement = 3.0 3.0 // times the initial density refers to top grid: divide by 8 for each additional level
+MinimumMassForRefinementLevelExponent = -0.2 -0.2
+MinimumEnergyRatioForRefinement = 0.4 // min Egas/Etot for shock refinement
+#
+#  set some global parameters
+#
+GreensFunctionMaxNumber   = 30   // # of greens function at any one time
+
+InlineHaloFinder = 0
+HaloFinderCycleSkip = 0
+#
+# Star formation and feedback
+#
+StarParticleCreation   = 40   // star particle creation turned on, using model #5 and #3
+StarParticleFeedback   = 40   // stellar feedback turned on, using model #5 #3 ray tracing
+ 
+RadiativeTransfer = 1
+RadiativeTransferRaysPerCell            = 5.1
+RadiativeTransferInitialHEALPixLevel    = 1
+RadiativeTransferHydrogenOnly           = 0
+RadiativeTransferOpticallyThinH2        = 1
+RadiativeTransferPeriodicBoundary       = 1
+RadiativeTransferAdaptiveTimestep       = 1
+RadiativeTransferRadiationPressure      = 1
+RadiativeTransferHubbleTimeFraction     = 1
+#RadiativeTransferPhotonMergeRadius      = 2.5 #2.5 is the default
+
+RadiationFieldType = 14
+RadiationShield = 2 
+ 
+#InlineHaloFinder = 1
+#HaloFinderCycleSkip = 0
+ 
+#
+#PopIII/II parameters
+#
+ 
+PopIIIOverDensityThreshold            = -1e6  # negative means units in cm^-3
+PopIIIMetalCriticalFraction           = 6.45e-8 #default 1e-4
+PopIIIH2CriticalFraction              = 1e-3
+PopIIISupernovaRadius                 = 10
+PopIIISupernovaUseColour              = 1
+PopIIIHeliumIonization                = 1
+
+PopIIIStarMass                        = 20
+PopIIIInitialMassFunction             = 1
+PopIIIInitialMassFunctionSeed         = 1823
+PopIIIMassRange                       = 1.000000 300.000000 
+
+StarClusterUseMetalField              = 1
+StarClusterMinDynamicalTime           = 3e+06 
+StarClusterIonizingLuminosity         = 1.12e+46
+StarClusterSNEnergy                   = 1e49
+StarClusterSNRadius                   = 10
+StarClusterFormEfficiency             = 0.07
+StarClusterMinimumMass                = 1000

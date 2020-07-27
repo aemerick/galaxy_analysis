@@ -44,7 +44,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
         for k in ['x','y','z','vx','vy','vz','pt','M']:
             orbit_data['particles'][p][k] = np.ones(np.size(dnames))* (-999)
 
-        orbit_data['particles'][p]['t_o'] = data['creation_time'][data['particle_index'] == p].convert_to_units('Myr').value
+        orbit_data['particles'][p]['t_o'] = data['creation_time'][data['particle_index'] == p].to('Myr').value
         orbit_data['particles'][p]['M_o'] = data['birth_mass'][data['particle_index'] == p].value
 
     # if file already existed, go through old PID and append slots if needed
@@ -66,7 +66,7 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
         print(data_files[i])
         ds  = yt.load( data_files[i] )
         data = ds.all_data()
-        t   = ds.current_time.convert_to_units("Myr").value
+        t   = ds.current_time.to("Myr").value
 
         if all_times[i] == t:
             continue
@@ -77,11 +77,11 @@ def generate_dataset(wdir = '.', overwrite = False, filename = 'orbit.h5'):
             for di,p in enumerate(data['particle_index'].value):
                 j = 0
                 for coord in ['x','y','z']:
-                    orbit_data['particles'][p][coord][i] = 1.0*(data['particle_position_' + coord][di] - ds.domain_center[j]).convert_to_units('pc').value
-                    orbit_data['particles'][p]['v' + coord][i] = 1.0*(data['particle_velocity_'+coord][di].convert_to_units('km/s').value)
+                    orbit_data['particles'][p][coord][i] = 1.0*(data['particle_position_' + coord][di] - ds.domain_center[j]).to('pc').value
+                    orbit_data['particles'][p]['v' + coord][i] = 1.0*(data['particle_velocity_'+coord][di].to('km/s').value)
                     j = j + 1
 
-                orbit_data['particles'][p]['M'][i]   = 1.0*data['particle_mass'][di].convert_to_units('Msun').value
+                orbit_data['particles'][p]['M'][i]   = 1.0*data['particle_mass'][di].to('Msun').value
                 orbit_data['particles'][p]['pt'][i]  = 1.0*data['particle_type'][di].value
 
     orbit_data['times'] = all_times

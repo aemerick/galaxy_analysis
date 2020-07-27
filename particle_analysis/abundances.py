@@ -101,7 +101,7 @@ def compute_aratio(ds, data, ratios, particle_type = 11):
 def plot_acf(h5file = 'star_abundances.h5', dir = './abundances/', ds_list = None):
     """
     Plots the time evolution of all abundance ratios [X/Fe]. Optionally
-    can include bands giving the standard deviation and 1st and 3rd 
+    can include bands giving the standard deviation and 1st and 3rd
     quartile of the distributions.
     """
 
@@ -172,7 +172,7 @@ def plot_time_evolution(h5file = 'star_abundances.h5', dir = './abundances/',
                         show_std = True, show_quartile = True):
     """
     Plots the time evolution of all abundance ratios [X/Fe]. Optionally
-    can include bands giving the standard deviation and 1st and 3rd 
+    can include bands giving the standard deviation and 1st and 3rd
     quartile of the distributions.
     """
 
@@ -394,7 +394,7 @@ def plot_MDF(h5file = 'star_abundances.h5', dir = './abundances/', plot_type = '
              ds_list = None, show_average = False, norm = 'peak'):
     """
     Plot the MDF of each element (for now, hard coded as all over Fe and [Fe/H]). Choose
-    normalization as: 
+    normalization as:
         1) 'fraction' : (N / N_total)
         2) 'peak'     : (N / N_max)  - normalizes peak to 1.0
         3) 'PDF'      : (dN / dx)    - independent of bin sizing
@@ -532,7 +532,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
 
         if ('io','particle_type') in ds.field_list:
             g = hf.create_group(groupname)
-            g.create_dataset('Time'  , data = ds.current_time.convert_to_units('Myr').value)
+            g.create_dataset('Time'  , data = ds.current_time.to('Myr').value)
 
 #        if ('io', 'particle_type') in ds.field_list:
 
@@ -546,8 +546,8 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
 
             Nstars = np.size(data['particle_mass'][MS])
             g.create_dataset('Nstars', data = Nstars)
-            g.create_dataset('Mstars', data = np.sum( data['particle_mass'][ MS].convert_to_units('Msun').value))
-            g.create_dataset('creation_time', data = data['creation_time'][MS].convert_to_units('Myr').value)
+            g.create_dataset('Mstars', data = np.sum( data['particle_mass'][ MS].to('Msun').value))
+            g.create_dataset('creation_time', data = data['creation_time'][MS].to('Myr').value)
             g.create_dataset('birth_mass', data = data['birth_mass'][MS].value)
             g.create_dataset('metallicity', data = data['metallicity_fraction'][MS].value)
             spatial = g.create_group('kinematics')
@@ -555,8 +555,8 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             r  = np.zeros(Nstars)
             vr = np.zeros(Nstars)
             for i, xname in enumerate(['x','y','z']):
-                x  = (data['particle_position_' + xname][MS] - ds.domain_center[i]).convert_to_units('pc').value
-                vx = (data['particle_velocity_' + xname][MS]).convert_to_units('km/s').value
+                x  = (data['particle_position_' + xname][MS] - ds.domain_center[i]).to('pc').value
+                vx = (data['particle_velocity_' + xname][MS]).to('km/s').value
                 r  += x**2
                 vr += vx**2
                 spatial.create_dataset( xname, data = x)
@@ -601,7 +601,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                 g     = tracers.create_group(abundance)
 
                 if COMPUTE_ACF: # hide this for now - not working
-                    t    = data['creation_time'].convert_to_units('Myr').value
+                    t    = data['creation_time'].to('Myr').value
                     t_n  = t - np.min(t)
                     dt   = 1.0
 
@@ -628,14 +628,14 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
 #
 
             g = mf_statgroup.create_group("cumulative")
-            t = ds.current_time.convert_to_units('Myr').value
+            t = ds.current_time.to('Myr').value
             tmax = np.ceil(t)
             tbins = np.arange(0.0, tmax + 0.1, 0.5)
-            hist,bins = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+            hist,bins = np.histogram(data['creation_time'].to('Myr').value, bins = tbins)
             g.create_dataset('bins', data = tbins)
             g.create_dataset('hist', data = np.array(hist))
-            t_form = data['creation_time'].convert_to_units('Myr').value
-            lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
+            t_form = data['creation_time'].to('Myr').value
+            lifetime = data[('io','particle_model_lifetime')].to('Myr').value
             age = t - t_form
 
             mf_stats_array_dict = {}
@@ -667,14 +667,14 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
 
             for dt in [0.1, 1, 10]:
                 g = mf_statgroup.create_group('%iMyr'%(dt))
-                t  = ds.current_time.convert_to_units('Myr').value
+                t  = ds.current_time.to('Myr').value
                 tmax = np.around(t, decimals = -len(str(dt)) + 1)
                 if tmax < t:
                     tmax = tmax + dt
                 tbins = np.arange(0.0, tmax + 0.5*dt, dt)
 
-                index = np.digitize(data['creation_time'].convert_to_units('Myr').value, tbins)
-                hist, bins  = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+                index = np.digitize(data['creation_time'].to('Myr').value, tbins)
+                hist, bins  = np.histogram(data['creation_time'].to('Myr').value, bins = tbins)
                 g.create_dataset('bins', data = tbins)
                 g.create_dataset('hist', data = np.array(hist))
 
@@ -725,18 +725,18 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             #  MDF at each point in time (using all stars) and compute median and spread, etc.
             #  next we will do the instantaneous (binned) version of this
             g = statgroup.create_group("cumulative")
-            t = ds.current_time.convert_to_units('Myr').value
+            t = ds.current_time.to('Myr').value
             tmax = np.ceil(t)
             tbins = np.arange(0.0, tmax + 0.1, 0.5) # can go arbitrarily small here
-            hist, bins = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+            hist, bins = np.histogram(data['creation_time'].to('Myr').value, bins = tbins)
             g.create_dataset('bins', data = tbins)
             g.create_dataset('hist', data = np.array(hist))
 
-            t_form   = data['creation_time'].convert_to_units('Myr').value
+            t_form   = data['creation_time'].to('Myr').value
             # unfortunately we can't use dynamical_time because we are doing this for a single data output
             # and want to get WD and SN remnant stars binned appropriately, but their dynamical_time values change
             # when they form...
-            lifetime = data[('io','particle_model_lifetime')].convert_to_units('Myr').value
+            lifetime = data[('io','particle_model_lifetime')].to('Myr').value
             age      = t - t_form
 
             stats_array_dict = {}
@@ -771,14 +771,14 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
             # given point in time (i.e. this is the stellar analog to the gas version of these plots)
             for dt in [0.1, 1, 10]:
                 g = statgroup.create_group('%iMyr'%(dt))
-                t  = ds.current_time.convert_to_units('Myr').value
+                t  = ds.current_time.to('Myr').value
                 tmax = np.around(t, decimals = -len(str(dt)) + 1)
                 if tmax < t:
                     tmax = tmax + dt
                 tbins = np.arange(0.0, tmax + 0.5*dt, dt)
 
-                index = np.digitize(data['creation_time'].convert_to_units('Myr').value, tbins)
-                hist, bins  = np.histogram(data['creation_time'].convert_to_units('Myr').value, bins = tbins)
+                index = np.digitize(data['creation_time'].to('Myr').value, tbins)
+                hist, bins  = np.histogram(data['creation_time'].to('Myr').value, bins = tbins)
                 g.create_dataset('bins', data = tbins)
                 g.create_dataset('hist', data = np.array(hist))
 
@@ -820,7 +820,7 @@ def generate_abundances(ds_list = None, outfile = 'star_abundances.h5', dir = '.
                     for k in stats_array_dict[abundance].keys():
                         g.create_dataset(k, data = stats_array_dict[abundance][k])
 
-            # ------------ can do a correlation across time bins here too --------- 
+            # ------------ can do a correlation across time bins here too ---------
             # Pick some time t_o, for the ith bin past t_o, do correlation between
             # those two populations of stars
             # x  = np.array([stars in t_o bin] + [stars in t_i bin])
@@ -860,4 +860,3 @@ if __name__=='__main__':
 
 
 #    plot_acf() - computeation of ACF currently broken (see global shutoff parameter)
-

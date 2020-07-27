@@ -58,13 +58,19 @@ _all_fields = ['density', 'temperature', 'cell_mass']
 __all__ = ['Galaxy']
 
 
+def load(dsname):
+    """
+    Wrapper
+    """
+
+
 class Galaxy(object):
 
     def __init__(self, dsname, wdir = './'):
         """
         Galaxy object to run full analysis on individual data dumps
         in yt. Defines uniform set of galaxy disk an halo regions, species
-        and abundance fields given field list, and functions for running 
+        and abundance fields given field list, and functions for running
         a variety of analysis.
         """
 
@@ -97,7 +103,7 @@ class Galaxy(object):
 
         # load data set and data
         self.ds     = fg.load_and_define(self.wdir + '/' + self.dsname + '/' + self.dsname)
-        self.current_time = self.ds.current_time.convert_to_units(UNITS['Time'].units).value
+        self.current_time = self.ds.current_time.to(UNITS['Time'].units).value
         self.df     = self.ds.all_data()
 
         # check for particles
@@ -112,7 +118,7 @@ class Galaxy(object):
         self._set_data_region_properties()
         self.species_list = util.species_from_fields(self.ds.field_list)
 
-        # define some fields that will be used for automatic 
+        # define some fields that will be used for automatic
         # computation of profiles when no user supplied field is given
         self._set_accumulation_fields()
         self._set_projection_fields()
@@ -152,7 +158,7 @@ class Galaxy(object):
         and radius from input parameters. Burkert profile only
         """
         r_s = self.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc
-        r_s = r_s.convert_to_units('kpc')
+        r_s = r_s.to('kpc')
 
         rho_o = self.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3
 
@@ -193,7 +199,7 @@ class Galaxy(object):
             self.hdf5_filename = filename
 
         self._map_class_to_output()
- 
+
         dd.io.save(filename, self._output_data_dict)
 
         return
@@ -271,7 +277,7 @@ class Galaxy(object):
             fields = self._accumulation_fields
 
         for field in fields:
-            self.total_quantities[field] = np.sum(self.df[field].convert_to_units(FIELD_UNITS[field].units))
+            self.total_quantities[field] = np.sum(self.df[field].to(FIELD_UNITS[field].units))
 
         self._total_quantities_calculated = True
 
@@ -305,14 +311,14 @@ class Galaxy(object):
             # loop over velocity bins
             hist = np.zeros(np.size(vbins) - 1)
             for i in np.arange(np.size(vbins) -1):
-                v       = data['velocity_spherical_radius'].convert_to_units('km/s')
-                hist[i] = np.sum( data['cell_mass'][(v < vbins[i+1]) * (v >= vbins[i])].convert_to_units('Msun') )
+                v       = data['velocity_spherical_radius'].to('km/s')
+                hist[i] = np.sum( data['cell_mass'][(v < vbins[i+1]) * (v >= vbins[i])].to('Msun') )
 
             self.gas_profiles['velocity']['halo'][k] = hist
 
         # compute mass weighted statistics about both the inflow and outflow
-        v = not_disk['velocity_spherical_radius'].convert_to_units('km/s')
-        m = not_disk['cell_mass'].convert_to_units('Msun').value
+        v = not_disk['velocity_spherical_radius'].to('km/s')
+        m = not_disk['cell_mass'].to('Msun').value
         v_out = v[v>0] ; m_out = m[v>0]
         v_in  = v[v<0] ; m_in  = m[v<0]
         if np.size(v_out) <= 3:
@@ -338,12 +344,12 @@ class Galaxy(object):
                     ('gas','Pe_heating_rate_masked'), ('gas','Q0_flux'), ('gas','Q1_flux')]
 
         midplane = self.ds.disk(self.disk.center, self.disk.field_parameters['normal'], self.disk.radius,
-                                 2.5 * np.min(self.disk['dx'].convert_to_units('pc')))
+                                 2.5 * np.min(self.disk['dx'].to('pc')))
 
-        n_bins = np.ceil( self.disk.radius.convert_to_units('pc').value / 5.0) # 5 pc bins
+        n_bins = np.ceil( self.disk.radius.to('pc').value / 5.0) # 5 pc bins
         profiles = yt.create_profile(midplane, 'radius', fields, n_bins = n_bins,
                                         weight_field = 'cell_volume', logs = {'radius':False})
-        self.gas_profiles['radiation'][mode]['xbins'] = profiles.x_bins.convert_to_units('pc').value
+        self.gas_profiles['radiation'][mode]['xbins'] = profiles.x_bins.to('pc').value
 
         for f in fields:
             self.gas_profiles['radiation'][mode][f[1]] = profiles[f]
@@ -357,7 +363,7 @@ class Galaxy(object):
         to compute mass loading factor by dividing by the current SFR.
 
         outflow == True (default) computes outflow rate (requiring that v > 0.0). False
-        computes inflow rate (requiring that v < 0.0). If using a disk, v is v_z, but 
+        computes inflow rate (requiring that v < 0.0). If using a disk, v is v_z, but
         if using a sphere, v is v_r
 
         if no fields are provided, computes total mass flow rate and rate for
@@ -370,20 +376,20 @@ class Galaxy(object):
         # set up bin values and data region
         xbins, xdata, data = self._get_bins_and_data(mode = mode)
 
-        # 
+        #
 
         # get velocity corresponding to outflow / inflow
         if mode == 'sphere' or mode == 'halo_sphere':
             velname = 'velocity_spherical_radius'
         else:
             velname = 'velocity_cylindrical_z'
-        vel = data[velname].convert_to_units(UNITS['Velocity'].units)
+        vel = data[velname].to(UNITS['Velocity'].units)
 
         profile = {}
         profile['mass_profile'] = {} # Bin up the total mass in outflowing material
 
         #
-        # Following typical definitions, construct bins to be centered at 
+        # Following typical definitions, construct bins to be centered at
         # 0.25, 0.5, 0.75, 1.0, and 1.25 R_vir, with a width of 0.1 R_vir
         #
 
@@ -396,10 +402,10 @@ class Galaxy(object):
             profile['mass_profile'][field] = np.zeros(np.size(center))
 
         # convert from r_vir to kpc
-        center = (center * self.R_vir).convert_to_units('kpc')
-        dL     = (dL     * self.R_vir).convert_to_units('kpc')
+        center = (center * self.R_vir).to('kpc')
+        dL     = (dL     * self.R_vir).to('kpc')
 
-#        dx = n_cell * np.min(data['dx'].convert_to_units(xdata.units))
+#        dx = n_cell * np.min(data['dx'].to(xdata.units))
 
         if outflow: # compute outflow
             v_filter = vel > 0.0
@@ -418,9 +424,9 @@ class Galaxy(object):
             # filter out the data
             filter = x_filter * v_filter * phase_filter
             for field in fields:
-                M        = data[field].convert_to_units(UNITS['Mass'].units)
+                M        = data[field].to(UNITS['Mass'].units)
                 Mdot     = np.sum( M[filter] * vel[filter] ) / dL
-                Mdot     = Mdot.convert_to_units('Msun/yr')
+                Mdot     = Mdot.to('Msun/yr')
 
                 profile[field][i] = Mdot
                 profile['mass_profile'][field][i] = np.sum(M[filter])
@@ -447,9 +453,9 @@ class Galaxy(object):
 
             self.gas_profiles[prof_type][mode].update( profile )
             self.gas_profiles[prof_type][mode]['centers'] = center
-            self.gas_profiles[prof_type][mode]['centers_rvir'] = (center.convert_to_units('kpc') / self.R_vir.convert_to_units('kpc')).value
+            self.gas_profiles[prof_type][mode]['centers_rvir'] = (center.to('kpc') / self.R_vir.to('kpc')).value
             self.gas_profiles[prof_type][mode]['dL']      = dL
-            self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.convert_to_units('kpc')/self.R_vir.convert_to_units('kpc')).value
+            self.gas_profiles[prof_type][mode]['dL_rvir'] = (dL.to('kpc')/self.R_vir.to('kpc')).value
 
         return xbins, center, profile
 
@@ -457,28 +463,28 @@ class Galaxy(object):
 
         if mode == 'sphere' or mode == 'halo_sphere':
             xbins  =  self.rbins_halo_sphere
-            xdata  =  self.halo_sphere['spherical_radius'].convert_to_units(UNITS["Length"].units)
+            xdata  =  self.halo_sphere['spherical_radius'].to(UNITS["Length"].units)
             data   =  self.halo_sphere
 
         elif mode == 'disk':
             if axis == 'z':
                 xbins  =  self.zbins_disk
-                xdata  =  (self.disk['z'] - self.disk.center[2]).convert_to_units(UNITS["Length"].units)
+                xdata  =  (self.disk['z'] - self.disk.center[2]).to(UNITS["Length"].units)
 
 
             elif axis == 'r':
                 xbins = self.rbins_disk
-                xdata = self.disk['cylindrical_r'].convert_to_units(UNITS["Length"].units)
+                xdata = self.disk['cylindrical_r'].to(UNITS["Length"].units)
 
             data  = self.disk
 
         elif mode == 'large_disk':
             if axis == 'z':
                 xbins = self.zbins_large_disk
-                xdata = (self.large_disk['z'] - self.large_disk.center[2]).convert_to_units(UNITS["Length"].units)
+                xdata = (self.large_disk['z'] - self.large_disk.center[2]).to(UNITS["Length"].units)
             elif axis == 'r':
                 xbins = self.rbins_large_disk
-                xdata = self.large_disk['cylindrical_r'].convert_to_units(UNITS["Length"].units)
+                xdata = self.large_disk['cylindrical_r'].to(UNITS["Length"].units)
 
             data  = self.large_disk
 
@@ -495,7 +501,7 @@ class Galaxy(object):
 
         #
         # check if profiles exist already and don't recalculate unless ordered to
-        # 
+        #
         if fields is None:
             fields = self._accumulation_fields
 
@@ -533,7 +539,7 @@ class Galaxy(object):
 
             for field in fields:
                 profiles[field][i] = np.sum(\
-                      data[field][x_filter].convert_to_units(FIELD_UNITS[field].units))
+                      data[field][x_filter].to(FIELD_UNITS[field].units))
 
         centers = 0.5 * (xbins[1:] + xbins[:-1])
 
@@ -546,7 +552,7 @@ class Galaxy(object):
 
         if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
-        
+
         self.gas_profiles[prof_type][mode].update( profiles )
         self.gas_profiles[prof_type][mode]['xbins'] = xbins
 
@@ -575,31 +581,31 @@ class Galaxy(object):
             for k in keys:
                 self.observables[k] = 0.0
         else:
-            r_sf = np.max(r_sf.convert_to_units('pc').value) * yt.units.pc
+            r_sf = np.max(r_sf.to('pc').value) * yt.units.pc
             if r_sf < 100.0 * yt.units.pc:
                 r_sf = 100*yt.units.pc
 
             sf_disk = self.ds.disk([0.5,0.5,0.5],[0,0,1], r_sf, self.disk_region['height'])
-            A       = (np.pi * r_sf * r_sf).convert_to_units("pc**2")
-            A_disk  = (np.pi * self.disk.radius * self.disk.radius).convert_to_units('pc**2')
+            A       = (np.pi * r_sf * r_sf).to("pc**2")
+            A_disk  = (np.pi * self.disk.radius * self.disk.radius).to('pc**2')
 
             self.observables['r_sf']   = r_sf * 1.0
             self.observables['A_sf']   = A * 1.0
             self.observables['A']      = A_disk * 1.0
-            self.observables['SD_HI_sf' ] = np.sum( sf_disk['H_p0_mass'].convert_to_units('Msun') ) / A
-            self.observables['SD_gas_sf'] = np.sum( sf_disk['cell_mass'].convert_to_units('Msun') ) / A
+            self.observables['SD_HI_sf' ] = np.sum( sf_disk['H_p0_mass'].to('Msun') ) / A
+            self.observables['SD_gas_sf'] = np.sum( sf_disk['cell_mass'].to('Msun') ) / A
             self.observables['SD_gas_sf_obs'] = self.observables['SD_HI_sf'] * 1.34
-            self.observables['SD_HI'] = np.sum(self.disk['H_p0_mass'].convert_to_units('Msun')) / A_disk
-            self.observables['SD_gas'] = np.sum(self.disk['cell_mass'].convert_to_units('Msun')) / A_disk
+            self.observables['SD_HI'] = np.sum(self.disk['H_p0_mass'].to('Msun')) / A_disk
+            self.observables['SD_gas'] = np.sum(self.disk['cell_mass'].to('Msun')) / A_disk
             self.observables['SD_gas_obs'] = self.observables['SD_HI'] * 1.34
-            self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).convert_to_units('Msun'))/A
-            self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).convert_to_units('Msun'))/A_disk
+            self.observables['SD_H2_sf'] = np.sum( (sf_disk['H2_p0_mass'] + sf_disk['H2_p1_mass']).to('Msun'))/A
+            self.observables['SD_H2']    = np.sum( (self.disk['H2_p0_mass'] + self.disk['H2_p1_mass']).to('Msun'))/A_disk
 
-            self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.convert_to_units("kpc**2")
-            self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.convert_to_units("kpc**2")
+            self.observables['SD_SFR']    = self.meta_data['SFR'] / A_disk.to("kpc**2")
+            self.observables['SD_SFR_sf'] = self.meta_data['SFR'] / A.to("kpc**2")
 
-            self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.convert_to_units('kpc**2')
-            self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.convert_to_units('kpc**2')
+            self.observables['SD_stellar'] = self.meta_data['M_star'] / A_disk.to('kpc**2')
+            self.observables['SD_stellar_sf'] = self.meta_data['M_star'] / A.to('kpc**2')
 
 
         return self.observables
@@ -626,8 +632,8 @@ class Galaxy(object):
         # project the fields
         proj = self.ds.proj(fields, 'z', data_source = data_source, **kwargs)
 
-        r    = np.sqrt(( (proj['px']-data_source.center[0])**2 + (data_source.center[1] -proj['py'])**2)).convert_to_units('pc')
-        A    = (proj['pdx']*proj['pdy']).convert_to_units('pc**2')
+        r    = np.sqrt(( (proj['px']-data_source.center[0])**2 + (data_source.center[1] -proj['py'])**2)).to('pc')
+        A    = (proj['pdx']*proj['pdy']).to('pc**2')
 
         profiles = {}
 
@@ -644,7 +650,7 @@ class Galaxy(object):
 
                 for field in fields:
 
-                    projection = np.array(proj[field][radial_filter].convert_to_units('Msun/pc**2'))
+                    projection = np.array(proj[field][radial_filter].to('Msun/pc**2'))
 
                     profiles[field][i] =\
                        (np.sum(projection * np.array(A[radial_filter]))\
@@ -662,7 +668,7 @@ class Galaxy(object):
 
         if not mode in self.gas_profiles[prof_type].keys():
             self.gas_profiles[prof_type][mode] = {}
-        
+
         self.gas_profiles[prof_type][mode].update( profiles )
         self.gas_profiles[prof_type][mode]['xbins'] = rbins
 
@@ -670,7 +676,7 @@ class Galaxy(object):
         return rbins, centers, profiles
 
 #    def compute_radiation_profiles(self, fields = None, mode = 'disk', axis = 'r'):
-#        
+#
 #        if fields is None:
 #            fields = self._radiation_fields()
 #
@@ -711,16 +717,16 @@ class Galaxy(object):
         SNIa     = pt.snIa(self.ds, self.df)
 
         particle_mass = (self.df['birth_mass'].value *
-                         yt.units.Msun).convert_to_units(UNITS['Mass'].units)
-        m = (self.df['particle_mass'].convert_to_units(UNITS['Mass'].units))
+                         yt.units.Msun).to(UNITS['Mass'].units)
+        m = (self.df['particle_mass'].to(UNITS['Mass'].units))
 
-        self.particle_meta_data['t_first_star'] = np.min( self.df['creation_time'].convert_to_units(UNITS['Time'].units))
+        self.particle_meta_data['t_first_star'] = np.min( self.df['creation_time'].to(UNITS['Time'].units))
 
         if 'GalaxySimulationInitialStellarDist' in self.ds.parameters:
             if self.ds.parameters['GalaxySimulationInitialStellarDist'] > 0:
-                ct = self.df['creation_time'].convert_to_units('Myr')
+                ct = self.df['creation_time'].to('Myr')
                 if np.size(ct[ct>1.0]) > 0:
-                    self.particle_meta_data['t_first_star'] = np.min( ct[ct > 1.0].convert_to_units(UNITS['Time'].units))
+                    self.particle_meta_data['t_first_star'] = np.min( ct[ct > 1.0].to(UNITS['Time'].units))
 
 
         self.particle_meta_data['total_mass'] = np.sum(m)
@@ -762,7 +768,7 @@ class Galaxy(object):
         # save individual specise masses from non-equillibrium chemistry
         for e in ['HI','HII','HeI','HeII','HeIII','H2I','H2II','HM']:
             self.meta_data['M_' + e]  = np.sum(self.disk[e + '_Density'] *\
-                                        self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units)
+                                        self.disk['cell_volume']).to(UNITS['Mass'].units)
 
         # total masses for species where ionization statest are tracked
         self.meta_data['M_H_total'] = self.meta_data['M_HI'] + self.meta_data['M_HII'] + self.meta_data['M_H2I'] +\
@@ -770,9 +776,9 @@ class Galaxy(object):
         self.meta_data['M_He_total'] = self.meta_data['M_HeI'] + self.meta_data['M_HeII'] + self.meta_data['M_HeIII']
         self.meta_data['M_H2_total'] = self.meta_data['M_H2I'] + self.meta_data['M_H2II']
 
-        self.meta_data['M_gas'] = np.sum((self.disk['cell_mass']).convert_to_units(UNITS['Mass'].units))
+        self.meta_data['M_gas'] = np.sum((self.disk['cell_mass']).to(UNITS['Mass'].units))
         self.meta_data['Z_avg'] = np.sum( (self.disk[('gas','Metal_Density')]*\
-                                           self.disk['cell_volume']).convert_to_units(UNITS['Mass'].units))/\
+                                           self.disk['cell_volume']).to(UNITS['Mass'].units))/\
                                                   self.meta_data['M_gas']
 
         #
@@ -780,7 +786,7 @@ class Galaxy(object):
         #
         for e in self.species_list:
             fname = e + '_Mass'
-            self.meta_data['M_' + e] = np.sum(self.disk[fname]).convert_to_units(UNITS["Mass"].units)
+            self.meta_data['M_' + e] = np.sum(self.disk[fname]).to(UNITS["Mass"].units)
 
 
         #
@@ -790,9 +796,9 @@ class Galaxy(object):
         self.gas_meta_data['volume_fractions'] = {}
         self.gas_meta_data['mass_fractions']   = {}
 
-        total_volume = np.sum(self.disk['cell_volume'].convert_to_units('cm**(3)'))
+        total_volume = np.sum(self.disk['cell_volume'].to('cm**(3)'))
         for crtype in cut_region_names:
-            v = self.disk.cut_region(ISM[crtype])['cell_volume'].convert_to_units('cm**(3)')
+            v = self.disk.cut_region(ISM[crtype])['cell_volume'].to('cm**(3)')
             self.gas_meta_data['volume_fractions'][crtype] = np.sum(v) / total_volume
 
             self.gas_meta_data['mass_fractions'][crtype] = self.gas_meta_data['masses'][crtype]['Total']/\
@@ -819,7 +825,7 @@ class Galaxy(object):
 
     def compute_gas_sequestering(self):
         """
-        Computes the sequestering of gas into various categ ories (geometric and phase) for 
+        Computes the sequestering of gas into various categ ories (geometric and phase) for
         all species as well as the total gas mass. Returns a dictionary of dictionaries
         containing all of this information
         """
@@ -837,18 +843,18 @@ class Galaxy(object):
         for crtype in cut_region_names:
             mdict[crtype] = {}
             for s in fields:
-                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[fields[s]]).convert_to_units('Msun')
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[fields[s]]).to('Msun')
 
             for s in self.species_list:
-                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).convert_to_units('Msun')
+                mdict[crtype][s] = np.sum(self.disk.cut_region( ISM[crtype])[('gas',s + '_Mass')]).to('Msun')
             mdict[crtype]['Total Tracked Metals'] = _sum_tracked_metals(mdict[crtype])
 
         # now do this for the whole disk
         mdict['Disk'] = {}
         for s in fields:
-            mdict['Disk'][s] = np.sum(self.disk[fields[s]]).convert_to_units('Msun')
+            mdict['Disk'][s] = np.sum(self.disk[fields[s]]).to('Msun')
         for s in self.species_list:
-            mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).convert_to_units('Msun')
+            mdict['Disk'][s] = np.sum(self.disk[('gas',s + '_Mass')]).to('Msun')
         mdict['Disk']['Total Tracked Metals'] = _sum_tracked_metals(mdict['Disk'])
 
         # now do this for the halo
@@ -857,17 +863,17 @@ class Galaxy(object):
             #print s
             #print fields[s]
             #print self.halo_sphere[fields[s]]
-            mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).convert_to_units('Msun')
+            mdict['Halo'][s] = np.sum(self.halo_sphere[fields[s]]).to('Msun')
         for s in self.species_list:
-            mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).convert_to_units('Msun')
+            mdict['Halo'][s] = np.sum(self.halo_sphere[('gas',s + '_Mass')]).to('Msun')
         mdict['Halo']['Total Tracked Metals'] = _sum_tracked_metals(mdict['Halo'])
 
         # now do this for full box
         mdict['FullBox'] = {}
         for s in fields:
-            mdict['FullBox'][s] = np.sum(self.df[fields[s]]).convert_to_units('Msun')
+            mdict['FullBox'][s] = np.sum(self.df[fields[s]]).to('Msun')
         for s in self.species_list:
-            mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).convert_to_units('Msun')
+            mdict['FullBox'][s] = np.sum(self.df[('gas', s + '_Mass')]).to('Msun')
         mdict['FullBox']['Total Tracked Metals'] = _sum_tracked_metals(mdict['FullBox'])
 
         # now we need to do some subtraction of the fields
@@ -880,9 +886,9 @@ class Galaxy(object):
         if 'PotentialField' in self.ds.field_list or ('enzo','GravPotential') in self.ds.field_list:
             mdict['GravBound'] = {}
             for s in fields:
-                mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).convert_to_units('Msun')
+                mdict['GravBound'][s] = np.sum( self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0" )[fields[s]]).to('Msun')
             for s in self.species_list:
-                mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).convert_to_units('Msun')
+                mdict['GravBound'][s] = np.sum(self.ds.cut_region(self.df, "obj[('gas','gravitationally_bound')] > 0")[('gas', s + '_Mass')]).to('Msun')
             mdict['GravBound']['Total Tracked Metals'] = _sum_tracked_metals(mdict['GravBound'])
 
         # and finally add up the mass in stars
@@ -899,7 +905,7 @@ class Galaxy(object):
 #        if self._has_boundary_mass_file:
 #            index = np.argmin( np.abs(self.current_time - self.boundary_mass_flux['Time']) )
 #            diff = np.abs(self.boundary_mass_flux['Time'][index] - self.current_time)
-#            if diff > 1.0: 
+#            if diff > 1.0:
 #                print "WARNING: Nearest boundary mass flux data point is > 1 Myr from current simulation time"
 #                print "T_now = %5.5E T_file = %5.5E diff = %5.5E"%(self.current_time, self.boundary_mass_flux['Time'][index], diff)
 #
@@ -949,8 +955,8 @@ class Galaxy(object):
         dictionary. Really should just be looking into parameter file
         """
 
-        self.meta_data['Time']  = self.ds.current_time.convert_to_units(UNITS['Time'].units)
-        self.meta_data['dx']    = np.min(self.df['dx'].convert_to_units(UNITS['Length'].units))
+        self.meta_data['Time']  = self.ds.current_time.to(UNITS['Time'].units)
+        self.meta_data['dx']    = np.min(self.df['dx'].to(UNITS['Length'].units))
 
         return
 
@@ -1017,7 +1023,7 @@ class Galaxy(object):
         else:
             self.compute_time_evolution()
 
-        return np.interp(self.ds.current_time.convert_to_units(UNITS['Time'].units),
+        return np.interp(self.ds.current_time.to(UNITS['Time'].units),
                          0.5*(self.time_data['time'][:-1]+self.time_data['time'][1:]), self.time_data['SFR']) * yt.units.Msun / self.time_data['time'].unit_quantity
 
     def compute_everything(self):
@@ -1027,7 +1033,7 @@ class Galaxy(object):
           - Meta quantities:
             1) Total masses of all species
             2) Total stellar mass
-            3) 
+            3)
 
             1) Mass profiles of all species
             2)
@@ -1095,7 +1101,7 @@ class Galaxy(object):
     def compute_all_particle_profiles(self):
         """
         Computes all particle profiles we want, including abundance profiles
-        for the particles. 
+        for the particles.
         """
 
         junk = self.compute_particle_profile( [('io','particle_mass'),], mode = 'disk', pt = 11)
@@ -1137,16 +1143,16 @@ class Galaxy(object):
 
         if mode == 'sphere':
             xbins = self.rbins_sphere
-            x     = self.sphere[('io','particle_position_spherical_radius')].convert_to_units(xbins.units)
+            x     = self.sphere[('io','particle_position_spherical_radius')].to(xbins.units)
             data  = self.sphere
 
         elif mode == 'disk':
             if xtype == 'radial':
                 xbins = self.rbins_stellar_disk
-                x     = self.stellar_disk[('io','particle_position_cylindrical_radius')].convert_to_units(xbins.units)
+                x     = self.stellar_disk[('io','particle_position_cylindrical_radius')].to(xbins.units)
             else:
                 xbins = self.zbins_stellar_disk
-                x     = np.abs(self.stellar_disk[('io','particle_position_cylindrical_z')]).convert_to_units(xbins.units)
+                x     = np.abs(self.stellar_disk[('io','particle_position_cylindrical_z')]).to(xbins.units)
 
             data = self.stellar_disk
 
@@ -1167,7 +1173,7 @@ class Galaxy(object):
                 field_data = data[field][filter]
 
                 if field in UNITS:
-                    field_data = field_data.convert_to_units(FIELD_UNITS[field].units)
+                    field_data = field_data.to(FIELD_UNITS[field].units)
 
                 if accumulate:
                     profiles[field][i] = np.sum( field_data )
@@ -1205,7 +1211,7 @@ class Galaxy(object):
     def construct_regions(self, disk_kwargs = None, large_disk_kwargs = None, stellar_disk_kwargs = None,
                                 sphere_kwargs = None, halo_sphere_kwargs = None):
         """
-        Defines the pre-defined (or user modified) geometric regions to 
+        Defines the pre-defined (or user modified) geometric regions to
         perform analysis on. These are the galaxy disk, a sphere around the
         galaxy, and a halo sphere (out to virial radius).
         """
@@ -1296,7 +1302,7 @@ class Galaxy(object):
                                  'radius' : 2.0 * yt.units.kpc,
                                  'dr'     : 50.0 * yt.units.pc   }
 
-        # 
+        #
         # need to not hard code virial radius
         #
 
@@ -1375,7 +1381,7 @@ class Galaxy(object):
 
         conv = 1.0
         if APPLY_CORRECTION_TO_BOUNDARY_MASS_FLUX_VALUES: # obnoxius on purpose, see note at top
-            conv = np.max( self.df['dx'].convert_to_units('code_length').value )
+            conv = np.max( self.df['dx'].to('code_length').value )
             conv = 1.0 / (conv**2) # correct by dividing by dx^2
 
         for i in np.arange(num_flux):
@@ -1414,8 +1420,8 @@ class Galaxy(object):
         center = np.array([0.1, 0.2, 0.25, 0.5, 0.75, 1.0, 1.25]) # in units of R_Vir
         dL     = 0.1                                              # in units of R_vir
 
-        center = (center * self.R_vir).convert_to_units('kpc')
-        dL     = (dL * self.R_vir).convert_to_units('kpc')
+        center = (center * self.R_vir).to('kpc')
+        dL     = (dL * self.R_vir).to('kpc')
 
         rvir_ranges = [None] * len(center)
         for i in np.arange(np.size(center)):
@@ -1430,8 +1436,8 @@ class Galaxy(object):
         all_cr['z_rvir_info'] = {'centers' : center, 'dL' : dL}
 
         # cut region string for outside the disk region
-        disk_r =       self.disk.radius.convert_to_units('pc').value
-        disk_z = 0.5 * self.disk.height.convert_to_units('pc').value
+        disk_r =       self.disk.radius.to('pc').value
+        disk_z = 0.5 * self.disk.height.to('pc').value
 
         # add this cut region as an attribute of the galaxy
         not_disk = ["(obj['cylindrical_r'].in_units('pc') > %.4E)"%(disk_r), "&", # outside certain radius
@@ -1445,7 +1451,7 @@ class Galaxy(object):
         rmin = 0.0
         rmax = self.stellar_disk.radius
         dr   = self.stellar_disk_region['dr']
-        rmax = rmax.convert_to_units(dr.units)
+        rmax = rmax.to(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
 
@@ -1454,7 +1460,7 @@ class Galaxy(object):
         zmin = 0.0
         zmax = self.stellar_disk.height
         dz   = self.stellar_disk_region['dz']
-        zmax = zmax.convert_to_units(dz.units)
+        zmax = zmax.to(dz.units)
 
         return np.arange(zmin, zmax + dz, dz ) * dz.unit_quantity
 
@@ -1465,7 +1471,7 @@ class Galaxy(object):
         rmin = 0.0
         rmax = self.sphere.radius
         dr   = self.spherical_region['dr']
-        rmax = rmax.convert_to_units(dr.units)
+        rmax = rmax.to(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
 
@@ -1474,7 +1480,7 @@ class Galaxy(object):
         rmin = 0.0
         rmax = self.halo_sphere.radius
         dr   = self.halo_spherical_region['dr']
-        rmax = rmax.convert_to_units(dr.units)
+        rmax = rmax.to(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
 
@@ -1483,7 +1489,7 @@ class Galaxy(object):
         zmin = 0.0
         zmax = self.disk.height
         dz   = self.disk_region['dz']
-        zmax = zmax.convert_to_units(dz.units)
+        zmax = zmax.to(dz.units)
 
         return np.arange(zmin, zmax + dz, dz) * dz.unit_quantity
 
@@ -1493,7 +1499,7 @@ class Galaxy(object):
         rmin = 0.0
         rmax = self.disk.radius
         dr   = self.disk_region['dr']
-        rmax = rmax.convert_to_units(dr.units)
+        rmax = rmax.to(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
 
@@ -1502,7 +1508,7 @@ class Galaxy(object):
         zmin = 0.0
         zmax = self.large_disk.height
         dz   = self.large_disk_region['dz']
-        zmax = zmax.convert_to_units(dz.units)
+        zmax = zmax.to(dz.units)
 
         return np.arange(zmin, zmax + dz, dz) * dz.unit_quantity
 
@@ -1512,8 +1518,6 @@ class Galaxy(object):
         rmin = 0.0
         rmax = self.large_disk.radius
         dr   = self.large_disk_region['dr']
-        rmax = rmax.convert_to_units(dr.units)
+        rmax = rmax.to(dr.units)
 
         return np.arange(rmin, rmax + dr, dr) * dr.unit_quantity
-
-

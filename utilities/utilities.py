@@ -45,6 +45,112 @@ def bin_edges(x):
     xnew[-1] = x[-1] + 0.5*dx[-1]
     return xnew
 
+
+def window_average(x, y, dx, where = 'pre', edge_case = 'trim',
+                   sample_points = None, window=None,
+                   method = 'average'):
+    """
+    Given input x and y values (x and y must be the same size),
+    computes the window average using a width of dx at each x value.
+    
+    Parameters:
+    -------
+    x : np.ndarray
+        Array of x values
+      
+    y : np.ndarray
+        Array of y values
+        
+    dx : int,float
+        Width (in x) to sample and average over
+        
+    where : string, optional
+        Where to place the window. Default: 'pre':
+        
+            'pre'  : average over [x-dx,x)
+            'mid'  : average over [x-dx/2, x+dx/2)
+            'post' : average over [x,x+dx)
+            
+    edge_case : string, optional
+           How to handle when the window is near the min / max
+       of the x values. Default : trim
+       
+           'trim'   : reduce window size appropriately at edges.
+                      Example, if 'pre' is used, for all x where
+                      x - dx < xmin, the window is 
+                      [xmin, x).
+           'fix'    : fix window size. This will flatten result
+                      at edges. Example if 'pre' is used, for all
+                      x where x - dx < xmin, the window
+                      [xmin, xmin + dx) is used. 
+                       
+    sample_points : np.ndarray, optional
+        Use custom sample points to do the averaging. Defaults to
+        the input x array.
+         
+    window : string, optional
+        Not yet implemented. Option to choose different window
+        types.
+        
+        
+    method : string, optional
+        What to do with the points in the window. Default : average.
+        Options include, average, sum, median, min, and max
+    """
+    
+    if np.size(x) != np.size(y):
+        print("x and y must be the same length: ",np.size(x),np.size(y))
+        
+        if np.size(x) == (np.size(y)+1):
+            print("But it looks like x is just greater by one. Assuming bins and using centers")
+            xvals = 0.5 * (x[1:] + x[-1])
+        else:
+            raise(ValueError)
+    else:
+        xvals = 1.0*x
+        
+    if sample_points is None:
+        sample_points = 1.0*x
+        
+    output = np.zeros(np.size(sample_points))
+    
+    if edge_case == 'fix':
+        print("fix edge case is not yet implemented... sorrry")
+        raise(RuntimeError)
+    
+    if where == 'pre':
+        
+        select_function = lambda array, z : (array >= z-dx) * (array < z)
+        
+    elif where == 'mid':
+        
+        select_function = lambda array, z : (array >= z-dx*0.5) * (array < z+dx*0.5)
+
+    elif where == 'post':
+        
+        select_function = lambda array, z : (array >= z) * (array < z+dx)
+    
+    
+    if method == 'average':
+        yfunction = lambda z : np.average(z)
+    elif method == 'sum':
+        yfunction = lambda z : np.sum(z)
+    elif method == 'median':
+        yfunction = lambda z : np.median(z)
+    elif method == 'max':
+        yfunction = lambda z : np.max(z)
+    elif method == 'min':
+        yfunction = lambda z : np.min(z)
+        
+    for i in np.arange(np.size(output)):
+        
+        select    = select_function(xvals, sample_points[i])
+        output[i] = yfunction(y[select])
+        
+        
+    return output
+    
+
 def simple_rebin(bins, y, new_bins, method = "sum", force=False):
     """
     Re-bin data (y) placed in evenly spaced bins (bins)
@@ -477,9 +583,10 @@ def compute_weighted_stats(x, w, return_dict = True):
         _w = w.value
 
     d = {}
-    d['mean']     = np.average(                _x, weights=_w)
-    d['variance'] = np.average( (_x-d['mean'])**2, weights=_w)
-    d['std']      = np.sqrt(d['variance'])
+    d['w-avg_mean'] = np.average(                _x, weights=_w) # not necessarily the actual mean we might be interested in
+    d['mean']       = 1.0*d['w-avg_mean'] # for backwards compatability (but this is bad)
+    d['variance']   = np.average( (_x-d['mean'])**2, weights=_w)
+    d['std']        = np.sqrt(d['variance'])
 
     # no weighted quantiles in numpy - need to use defined function
     q             = weighted_quantile(_x, [0.1, 0.25, 0.5, 0.75, 0.9], weight=_w)

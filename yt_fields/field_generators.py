@@ -17,6 +17,7 @@ from galaxy_analysis.utilities import convert_abundances
 from galaxy_analysis.utilities import utilities
 from galaxy_analysis import star_analysis
 from galaxy_analysis.misc import dm_halo
+from galaxy_analysis import physics
 
 from galaxy_analysis.yt_fields import ionization
 
@@ -45,12 +46,13 @@ def _density_function_generator(asym):
         def _density(field, data):
             dens = data[('enzo', a + '_Density')].value
             dens = dens * data.ds.mass_unit / data.ds.length_unit**3
-            return dens.convert_to_units('g/cm**3')
+            return dens.to('g/cm**3')
 
         return _density
 
     for a in asym:
-        yt.add_field(('gas', a + "_Density"), function = return_function(a), units = 'g/cm**3')
+        yt.add_field(('gas', a + "_Density"), sampling_type = 'cell',
+                     function = return_function(a), units = 'g/cm**3')
 
     return
 
@@ -61,7 +63,7 @@ def _abundance_function_generator(asym):
 
     def return_function(a):
         def _abundance(field,data):
-            mass = data[('gas', a + '_Mass')].convert_to_units('g').value
+            mass = data[('gas', a + '_Mass')].to('g').value
             abund = convert_abundances.elemental_abundance( a, mass)
             return abund
 
@@ -71,13 +73,14 @@ def _abundance_function_generator(asym):
         asym = asym + ['H']
 
     for a in asym:
-        yt.add_field(('gas',a + '_Abundance'), function = return_function(a), units = "")
+        yt.add_field(('gas',a + '_Abundance'), sampling_type = 'cell',
+                      function = return_function(a), units = "")
 
     if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
         def _alpha_abundance(field, data):
             alpha = data[('gas','O_Abundance')] + data[('gas','Mg_Abundance')] + data[('gas','Si_Abundance')]
             return alpha / 3.0
-        yt.add_field(('gas','alpha_Abundance'), function=_alpha_abundance, units="")
+        yt.add_field(('gas','alpha_Abundance'), sampling_type = 'cell', function=_alpha_abundance, units="")
 
     return
 
@@ -91,9 +94,9 @@ def _mass_function_generator(asym):
         def _mass(field,data):
             ele_dens = data[('enzo', a + '_Density')].value
             ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-            ele_dens = ele_dens.convert_to_cgs()
+            ele_dens.convert_to_cgs()
 
-            mass = (ele_dens * data['cell_volume']).convert_to_units('g')
+            mass = (ele_dens * data['cell_volume']).to('g')
 
             return mass
 
@@ -102,7 +105,7 @@ def _mass_function_generator(asym):
     nfields = 0
     for a in asym:
 
-        yt.add_field(('gas', a + '_Mass'), function = return_function(a), units='g')
+        yt.add_field(('gas', a + '_Mass'), sampling_type = 'cell', function = return_function(a), units='g')
         nfields = nfields + 1
 
     if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
@@ -110,7 +113,7 @@ def _mass_function_generator(asym):
             alpha = data[('gas','O_Mass')] + data[('gas','Mg_Mass')] + data[('gas','Si_Mass')]
             return alpha
 
-        yt.add_field(('gas','alpha_Mass'), function = _alpha_mass, units = "g") # mass of alpha elements
+        yt.add_field(('gas','alpha_Mass'), sampling_type = 'cell', function = _alpha_mass, units = "g") # mass of alpha elements
 
         nfields = nfields + 1
 
@@ -130,9 +133,9 @@ def _mass_fraction_function_generator(ds, asym):
         def _mass_fraction(field,data):
             ele_dens = data[('enzo', a + '_Density')].value
             ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-            ele_dens = ele_dens.convert_to_cgs()
+            ele_dens.convert_to_cgs()
 
-            dens = data[('enzo','Density')].convert_to_cgs()
+            dens = data[('enzo','Density')].to('g/cm**3')
             mass_fraction = ele_dens / dens
             return mass_fraction
 
@@ -141,7 +144,7 @@ def _mass_fraction_function_generator(ds, asym):
     nfields = 0
     for a in asym:
 
-        yt.add_field(('gas', a + '_Fraction'), function = return_function(a), units="")
+        yt.add_field(('gas', a + '_Fraction'),  sampling_type = 'cell', function = return_function(a), units="")
 
         nfields = nfields + 1
 
@@ -169,48 +172,48 @@ def _mass_fraction_function_generator(ds, asym):
             def _AGB_mass_fraction(field,data):
                 ele_dens = data[('enzo', 'AGB_Metal_Density')].value
                 ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-                ele_dens = ele_dens.convert_to_cgs()
+                ele_dens.convert_to_cgs()
 
-                dens = data[('enzo','Density')].convert_to_cgs()
+                dens = data[('enzo','Density')].to('g/cm**3')
                 mass_fraction = ele_dens / dens
                 return mass_fraction
 
-            yt.add_field(('gas', 'AGB_Mass_Fraction'), function = _AGB_mass_fraction, units="")
+            yt.add_field(('gas', 'AGB_Mass_Fraction'), sampling_type = 'cell', function = _AGB_mass_fraction, units="")
 
         if ds.parameters['IndividualStarTrackSNMetalDensity']:
             def _SNII_mass_fraction(field,data):
                 ele_dens = data[('enzo', 'SNII_Metal_Density')].value
                 ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-                ele_dens = ele_dens.convert_to_cgs()
+                ele_dens.convert_to_cgs()
 
-                dens = data[('enzo','Density')].convert_to_cgs()
+                dens = data[('enzo','Density')].to('g/cm**3')
                 mass_fraction = ele_dens / dens
                 return mass_fraction
 
-            yt.add_field(('gas', 'SNII_Mass_Fraction'), function = _SNII_mass_fraction, units="")
+            yt.add_field(('gas', 'SNII_Mass_Fraction'), sampling_type = 'cell', function = _SNII_mass_fraction, units="")
 
             def _SNIa_mass_fraction(field,data):
                 ele_dens = data[('enzo', 'SNIa_Metal_Density')].value
                 ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-                ele_dens = ele_dens.convert_to_cgs()
+                ele_dens.convert_to_cgs()
 
-                dens = data[('enzo','Density')].convert_to_cgs()
+                dens = data[('enzo','Density')].to('g/cm**3')
                 mass_fraction = ele_dens / dens
                 return mass_fraction
 
-            yt.add_field(('gas', 'SNIa_Mass_Fraction'), function = _SNIa_mass_fraction, units="")
+            yt.add_field(('gas', 'SNIa_Mass_Fraction'), sampling_type = 'cell', function = _SNIa_mass_fraction, units="")
 
             if ds.parameters['IndividualStarPopIIIFormation']:
                 def _PopIII_mass_fraction(field,data):
                     ele_dens = data[('enzo', 'PopIII_Metal_Density')].value
                     ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-                    ele_dens = ele_dens.convert_to_cgs()
+                    ele_dens.convert_to_cgs()
 
-                    dens = data[('enzo','Density')].convert_to_cgs()
+                    dens = data[('enzo','Density')].to('g/cm**3')
                     mass_fraction = ele_dens / dens
                     return mass_fraction
 
-                yt.add_field(('gas', 'PopIII_Mass_Fraction'), function = _PopIII_mass_fraction, units="")  
+                yt.add_field(('gas', 'PopIII_Mass_Fraction'), sampling_type = 'cell', function = _PopIII_mass_fraction, units="")
 
     return nfields
 
@@ -228,28 +231,30 @@ def _number_density_function_generator(asym):
         def _number_density(field,data):
             ele_dens = data[('enzo', a + '_Density')].value
             ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
-            ele_dens = ele_dens.convert_to_cgs()
+            ele_dens.convert_to_cgs()
             n = ele_dens / (MOLECULAR_WEIGHT[a] * AMU * yt.units.g)
 
-            return n.convert_to_cgs()
+            n.convert_to_cgs()
+            return n
 
         return _number_density
 
     nfields = 0
     for a in asym:
 
-        yt.add_field(('gas', a + '_Number_Density'),
+        yt.add_field(('gas', a + '_Number_Density'), sampling_type = 'cell',
                      function = return_function(a), units='cm**(-3)')
         nfields = nfields + 1
 
     # make a metal number density field - make an assumption about the metal molecular weight
     def _metal_number_density(field,data):
-        ele_dens = data[('enzo','Metal_Density')].convert_to_units('g/cm**3')
+        ele_dens = data[('enzo','Metal_Density')].to('g/cm**3')
         n = ele_dens / (MOLECULAR_WEIGHT['metal'] * AMU * yt.units.g)
 
-        return n.convert_to_cgs()
+        n.convert_to_cgs()
+        return n
 
-    yt.add_field(('gas', 'Metal_Number_Density'),
+    yt.add_field(('gas', 'Metal_Number_Density'),sampling_type = 'cell',
                  function = _metal_number_density, units = 'cm**(-3)')
 
     def _H_total_number_density(field,data):
@@ -262,9 +267,9 @@ def _number_density_function_generator(asym):
         except:
             n_H += np.zeros(np.shape(n_H))
 
-        return n_H.convert_to_units('cm**(-3)')
+        return n_H.to('cm**(-3)')
 
-    yt.add_field(('gas','H_total_number_density'),
+    yt.add_field(('gas','H_total_number_density'), sampling_type = 'cell',
                  function = _H_total_number_density, units = 'cm**(-3)')
 
     return nfields
@@ -295,7 +300,7 @@ def _ionization_state_generator(metals):
     nfields = 0
     for ion in all_ions:
 
-        yt.add_field(('gas', ion + '_Number_Density'),
+        yt.add_field(('gas', ion + '_Number_Density'), sampling_type = 'cell',
                      function = return_function(ion), units='cm**(-3)')
         nfields = nfields + 1
 
@@ -306,10 +311,10 @@ def _generate_rates(ds):
     Generate reaction rate equations
     """
 
-    kunit = 1.0 # 
+    kunit = 1.0 #
 
     def k8(T):
-        T = T.convert_to_units('K').value
+        T = T.to('K').value
         k8 = 1.35E-9 * (T**(9.8493E-2) + 3.2852E-1 *\
                           T**(5.561E-1) + 2.881E-7 * T**2.1826) /\
             (1.0 + 6.191E-3 * T**1.0461 + 8.9712E-11*T**3.0424 +\
@@ -322,18 +327,18 @@ def _generate_rates(ds):
         return k10
 
     def k19(T):
-        T = T.convert_to_units('K').value
+        T = T.to('K').value
         k19 = 5.0E-7 * np.sqrt(100.0 / T)
         return k19
 
     def k22(T):
-        T = T.convert_to_units('K').value
+        T = T.to('K').value
         # for GLover 2008 three body rate ONLY
         k22 = 7.7E-31 / T**0.464
         return k22
 
     def k13(T):
-        T = T.convert_to_units('K').value
+        T = T.to('K').value
         k13 = 10.0**(-178.4239 - 68.42243 * np.log10(T)
                         + 43.20243 * np.log10(T)**2
                         - 4.633167 * np.log10(T)**3
@@ -342,7 +347,7 @@ def _generate_rates(ds):
         ###############
 #        above  is for use with Glover 2008 three body rate
 #
-#        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+#        T_eV = (T / yt.physical_constants.k_b).to('eV').value
 #        T_lim = 0.3
 #
 #        k13 = np.ones(np.shape(T)) * 1.0E-20
@@ -353,11 +358,11 @@ def _generate_rates(ds):
         return k13
 
     def k11(T):
-        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+        T_eV = (T / yt.physical_constants.k_b).to('eV').value
         T_lim = 0.3
         k11 = np.ones(np.shape(T)) * 1.0E-20
 
-        log_T = np.log(T.convert_to_units('K').value)
+        log_T = np.log(T.to('K').value)
 
         k11[ T_eV > T_lim] = (np.exp(-21237.15/T) *\
                 (- 3.3232183E-7
@@ -372,7 +377,7 @@ def _generate_rates(ds):
         return k11
 
     def k12(T):
-        T_eV = (T / yt.physical_constants.k_b).convert_to_units('eV').value
+        T_eV = (T / yt.physical_constants.k_b).to('eV').value
         T_lim = 0.3
         k12  = np.ones(np.shape(T)) * 1.0E-20
 
@@ -387,35 +392,35 @@ def _generate_rates(ds):
     reaction_units = 1.0 / yt.units.cm**3 / yt.units.s
     ru_label = '1/s/cm**3'
     def _k8_reaction_rate(field, data):
-        rr = k8(data['Temperature'].convert_to_units('K'))
-        rr = 2.0 * rr * data[('gas','H_m1_number_density')].convert_to_cgs().value *\
-                        data[('gas','H_p0_number_density')].convert_to_cgs().value
+        rr = k8(data['Temperature'].to('K'))
+        rr = 2.0 * rr * data[('gas','H_m1_number_density')].to('cm**(-3)').value *\
+                        data[('gas','H_p0_number_density')].to('cm**(-3)').value
         return rr * reaction_units
 
     def _k10_reaction_rate(field,data):
-        rr = k10(data['Temperature'].convert_to_units('K'))
-        rr = rr * data[('gas','H2_p1_number_density')].convert_to_cgs().value *\
-                  data[('gas','H_p0_number_density')].convert_to_cgs().value
+        rr = k10(data['Temperature'].to('K'))
+        rr = rr * data[('gas','H2_p1_number_density')].to('cm**(-3)').value *\
+                  data[('gas','H_p0_number_density')].to('cm**(-3)').value
         return rr * reaction_units
 
     def _k19_reaction_rate(field,data):
-        rr = k19(data['Temperature'].convert_to_units('K'))
-        rr = rr * data[('gas','H2_p1_number_density')].convert_to_cgs().value *\
-                  data[('gas','H_m1_number_density')].convert_to_cgs().value
+        rr = k19(data['Temperature'].to('K'))
+        rr = rr * data[('gas','H2_p1_number_density')].to('cm**(-3)').value *\
+                  data[('gas','H_m1_number_density')].to('cm**(-3)').value
         return rr * reaction_units
 
     def _k22_reaction_rate(field, data):
-        rr = k22(data['Temperature'].convert_to_units('K'))
-        rr = rr * (data[('gas','H_p0_number_density')].convert_to_cgs().value)**3
+        rr = k22(data['Temperature'].to('K'))
+        rr = rr * (data[('gas','H_p0_number_density')].to('cm**(-3)').value)**3
         return rr * reaction_units
 
-    yt.add_field(('gas','k8_rr'),
+    yt.add_field(('gas','k8_rr'), sampling_type = 'cell',
                  function = _k8_reaction_rate, units = ru_label)
-    yt.add_field(('gas','k10_rr'),
+    yt.add_field(('gas','k10_rr'), sampling_type = 'cell',
                  function = _k10_reaction_rate, units = ru_label)
-    yt.add_field(('gas','k19_rr'),
+    yt.add_field(('gas','k19_rr'), sampling_type = 'cell',
                  function = _k19_reaction_rate, units = ru_label)
-    yt.add_field(('gas','k22_rr'),
+    yt.add_field(('gas','k22_rr'), sampling_type = 'cell',
                  function = _k22_reaction_rate, units = ru_label)
 
 
@@ -456,46 +461,64 @@ def _particle_abundance_function_generator(asym, ds = None):
 
     def return_function(element, fraction_field):
         def _abundance(field, data):
-            mass = data[fraction_field].value * (data['birth_mass'].value *yt.units.Msun).convert_to_units('g').value
+            mass = data[fraction_field].value * (data['birth_mass'].value *yt.units.Msun).to('g').value
             abund = convert_abundances.elemental_abundance(element, mass)
             return abund
         return _abundance
 
     for a in asym:
-        fraction_field = ('io','particle_' + a + '_fraction')
-        yt.add_field(('io','particle_' + a + '_abundance'),
+        fraction_field = ('all','particle_' + a + '_fraction')
+        yt.add_field(('all','particle_' + a + '_abundance'),
                       return_function(a, fraction_field), units = "", particle_type = True)
 
     if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
         def _alpha_fraction(field, data):
-            alpha = data[('io','particle_O_fraction')] +\
-                    data[('io','particle_Mg_fraction')] +\
-                    data[('io','particle_Si_fraction')]
+            alpha = data[('all','particle_O_fraction')] +\
+                    data[('all','particle_Mg_fraction')] +\
+                    data[('all','particle_Si_fraction')]
             return alpha / 3.0
 
         def _alpha_abundance(field, data):
-            alpha = data[('io','particle_O_abundance')] +\
-                    data[('io','particle_Mg_abundance')] +\
-                    data[('io','particle_Si_abundance')]
+            alpha = data[('all','particle_O_abundance')] +\
+                    data[('all','particle_Mg_abundance')] +\
+                    data[('all','particle_Si_abundance')]
 
             return alpha / 3.0
 
-#        yt.add_field(('io','particle_alpha_fraction'), function=_alpha_fraction, units = "", particle_type = True)
-        yt.add_field(('io','particle_alpha_abundance'), function=_alpha_abundance, units="", particle_type=True)
+#        yt.add_field(('all','particle_alpha_fraction'), function=_alpha_fraction, units = "", particle_type = True)
+        yt.add_field(('all','particle_alpha_abundance'), function=_alpha_abundance, units="", particle_type=True)
 
         if ('S' in asym) and ('Ca' in asym):
             def _alpha_5_fraction(field,data):
-                alpha = (data[('io','particle_alpha_fraction')]*3.0 + data[('io','particle_S_fraction')] +\
-                                        data[('io','particle_Ca_fraction')]) / 5.0
+                alpha = (data[('all','particle_alpha_fraction')]*3.0 + data[('all','particle_S_fraction')] +\
+                                        data[('all','particle_Ca_fraction')]) / 5.0
                 return alpha
 
             def _alpha_5(field,data):
-                alpha = data[('io','particle_alpha_abundance')]*3.0 + data[('io','particle_S_abundance')]+\
-                                        data[('io','particle_Ca_abundance')]
+                alpha = data[('all','particle_alpha_abundance')]*3.0 + data[('all','particle_S_abundance')]+\
+                                        data[('all','particle_Ca_abundance')]
                 return alpha / 5.0
 
-#            yt.add_field( ('io','particle_alpha_5_fraction'), function = _alpha_5_fraction, units = "", particle_type =True)
-            yt.add_field( ('io','particle_alpha_5_abundance'), function = _alpha_5, units = "", particle_type = True)
+#            yt.add_field( ('all','particle_alpha_5_fraction'), function = _alpha_5_fraction, units = "", particle_type =True)
+            yt.add_field( ('all','particle_alpha_5_abundance'), function = _alpha_5, units = "", particle_type = True)
+
+
+    def _particle_above_chiaki_threshold(field,data):
+        C_f  = data[('all','particle_C_fraction')].value
+        Fe_f = data[('all','particle_Fe_fraction')].value
+        H_f  = data[('all','particle_H_fraction')].value
+
+        return physics.chiaki_threshold(C_f, Fe_f, H_f, return_value=False).astype(np.float64)
+
+    def _particle_chiaki_value(field,data):
+        C_f  = data[('all','particle_C_fraction')].value
+        Fe_f = data[('all','particle_Fe_fraction')].value
+        H_f  = data[('all','particle_H_fraction')].value
+
+        return physics.chiaki_threshold(C_f, Fe_f, H_f, return_value=True)
+
+    yt.add_field( ('all','particle_above_chiaki_threshold'), function = _particle_above_chiaki_threshold, units = "", particle_type = True)
+    yt.add_field( ('all','particle_chiaki_value'), function = _particle_chiaki_value, units = "", particle_type = True)
 
     return
 
@@ -511,10 +534,10 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
     def return_function(ele1, ele2, field1, field2):
         def _abundance_ratio(field, data):
             mass1 = data[field1].value
-            mass1 = ((mass1 * data['birth_mass'].value) * yt.units.Msun).convert_to_units('g')
+            mass1 = ((mass1 * data['birth_mass'].value) * yt.units.Msun).to('g')
 
             mass2 = data[field2].value
-            mass2 = ((mass2 * data['birth_mass'].value) * yt.units.Msun).convert_to_units('g')
+            mass2 = ((mass2 * data['birth_mass'].value) * yt.units.Msun).to('g')
             ratio = convert_abundances.abundance_ratio( (ele1, mass1.value), (ele2, mass2.value), 'mass')
 
             return ratio * yt.units.g / yt.units.g
@@ -525,19 +548,19 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
     for r in ratios:
         ele1, ele2 = r.rsplit('/')
 
-        field1 = ('io','particle_' + ele1 + '_fraction')
-        field2 = ('io','particle_' + ele2 + '_fraction')
+        field1 = ('all','particle_' + ele1 + '_fraction')
+        field2 = ('all','particle_' + ele2 + '_fraction')
 
         fieldname = 'particle_' + ele1 + '_over_' + ele2
 
-        yt.add_field(('io', fieldname), function = return_function(ele1,ele2,field1,field2),
+        yt.add_field(('all', fieldname), function = return_function(ele1,ele2,field1,field2),
                               units = "", particle_type = True)
         nfields = nfields + 1
 
     def _alpha_return_function(base):
         def _alpha_over_x(field,data):
-            alpha = data[('io','particle_alpha_abundance')]
-            x     = data[('io','particle_' + base + '_abundance')]
+            alpha = data[('all','particle_alpha_abundance')]
+            x     = data[('all','particle_' + base + '_abundance')]
 
             return convert_abundances.abundance_ratio(('alpha',alpha),(base,x), 'abundances')
 
@@ -545,8 +568,8 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     def _alpha_5_return_function(base):
         def _alpha_5_over_x(field,data):
-            alpha = data[('io','particle_alpha_5_abundance')]
-            x     = data[('io','particle_' + base + '_abundance')]
+            alpha = data[('all','particle_alpha_5_abundance')]
+            x     = data[('all','particle_' + base + '_abundance')]
 
             return convert_abundances.abundance_ratio(('alpha_5',alpha),(base,x), 'abundances')
 
@@ -554,26 +577,26 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 
     denoms = [x.split('/')[1] for x in ratios]
     denoms = np.unique(denoms)
-    if ('io','particle_alpha_abundance') in ds.derived_field_list:
+    if ('all','particle_alpha_abundance') in ds.derived_field_list:
         for x in denoms:
-            yt.add_field(('io','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
-            yt.add_field(('io','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
+            yt.add_field(('all','particle_alpha_over_' + x), function = _alpha_return_function(x), units = "", particle_type = True)
+            yt.add_field(('all','particle_alpha_5_over_' + x), function = _alpha_5_return_function(x), units = "", particle_type = True)
 
 
 #    def _alpha_over_Fe(field,data):
-#        alpha = data[('io','particle_alpha_abundance')]
-#        Fe    = data[('io','particle_Fe_abundance')]
+#        alpha = data[('all','particle_alpha_abundance')]
+#        Fe    = data[('all','particle_Fe_abundance')]
 #        return convert_abundances.abundance_ratio( ('alpha', alpha), ('Fe', Fe), 'abundances')
 
-#    yt.add_field(('io','particle_alpha_over_Fe'), function = _alpha_over_Fe, units = "", particle_type = True)
+#    yt.add_field(('all','particle_alpha_over_Fe'), function = _alpha_over_Fe, units = "", particle_type = True)
 
 
 #    def _alpha_5_over_Fe(field,data):
-#        alpha = data[('io','particle_alpha_5_abundance')]
-#        Fe    = data[('io','particle_Fe_abundance')]
+#        alpha = data[('all','particle_alpha_5_abundance')]
+#        Fe    = data[('all','particle_Fe_abundance')]
 #        return convert_abundances.abundance_ratio( ('alpha_5', alpha), ('Fe', Fe), 'abundances')
 
- #   yt.add_field(('io','particle_alpha_5_over_Fe'), function = _alpha_5_over_Fe, units = "", particle_type = True)
+ #   yt.add_field(('all','particle_alpha_5_over_Fe'), function = _alpha_5_over_Fe, units = "", particle_type = True)
 
 
     return nfields
@@ -582,7 +605,7 @@ def _particle_abundance_ratio_function_generator(ratios, ds = None):
 # Construct arbitrary abundance ratio fields in yt
 # using a function generator
 #
-def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
+def _abundance_ratio_function_generator(ratios, metals, H_mode = 'total'):
 
     if not isinstance(ratios, Iterable):
         ratios = [ratios]
@@ -591,7 +614,7 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
         if mode == 'total':
             mass = data[('enzo','HI_Density')] + data[('enzo','HII_Density')]
-            
+
             if ('enzo','H2I_Density') in data.ds.field_list:
                 mass += data[('enzo','HM_Density')] + data[('enzo','H2I_Density')] +\
                         data[('enzo','H2II_Density')]
@@ -613,7 +636,7 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
             if ele1 != 'H' and ele1 != 'He':
                 mass1 = mass1.value * data.ds.mass_unit / data.ds.length_unit**3
-            mass1 = (mass1 * data['cell_volume']).convert_to_units('g')
+            mass1 = (mass1 * data['cell_volume']).to('g')
 
             if ele2 == 'H':
                 mass2 = _H_mass(data, H_mode)
@@ -622,7 +645,7 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
 
             if ele2 != 'H' and  ele2 != 'He':
                 mass2 = mass2.value * data.ds.mass_unit / data.ds.length_unit**3
-            mass2 = (mass2 * data['cell_volume']).convert_to_units('g')
+            mass2 = (mass2 * data['cell_volume']).to('g')
 
             ratio = convert_abundances.abundance_ratio( (ele1, mass1.value), (ele2, mass2.value), 'mass')
 
@@ -648,21 +671,25 @@ def _abundance_ratio_function_generator(ratios, H_mode = 'total'):
         fieldname = ele1 + '_over_' + ele2
 
         yt.add_field(('gas', fieldname), function = return_function(ele1,ele2,field1,field2),
-                              units = "")
+                              units = "", sampling_type = 'cell')
         nfields = nfields + 1
 
-    def _return_alpha_over_x(element_name):
-        def _alpha_over_x(field, data):
-            alpha = data[('gas','alpha_Abundance')]
-            x     = data[('gas',element_name + '_Abundance')]
-            return convert_abundances.abundance_ratio(('alpha',alpha),(element_name,x),'abundances')
 
-        return _alpha_over_x
+    if ('O' in metals) and ('Mg' in metals) and ('Si' in metals):
+        def _return_alpha_over_x(element_name):
+            def _alpha_over_x(field, data):
+                alpha = data[('gas','alpha_Abundance')]
+                x     = data[('gas',element_name + '_Abundance')]
+                return convert_abundances.abundance_ratio(('alpha',alpha),(element_name,x),'abundances')
 
-    denoms = [x.split('/')[1] for x in ratios]
-    denoms = np.unique(denoms)
-    for x in denoms:
-        yt.add_field(('gas','alpha_over_' + x), function = _return_alpha_over_x(x), units = "")
+            return _alpha_over_x
+
+        denoms = [x.split('/')[1] for x in ratios]
+        denoms = np.unique(denoms)
+        for x in denoms:
+            yt.add_field(('gas','alpha_over_' + x), sampling_type = 'cell', function = _return_alpha_over_x(x), units = "")
+
+
 
     return nfields
 
@@ -701,7 +728,7 @@ def generate_stellar_model_fields(ds):
 
     def _function_generator(field_name):
         def _function(field, data):
-            if np.size(data['particle_mass']) == 1:
+            if np.size(data[(field.name[0],'particle_mass')]) == 1:
                 # this is ugly, but a way to bypass yt's validation step
                 # because throwing junk values into the routine below will cause problems
                 with utilities.nostdout():
@@ -715,64 +742,91 @@ def generate_stellar_model_fields(ds):
             return p
 
         return _function
- 
+
     def _model_L0(field, data):
-        Q0 = data[('io','particle_model_Q0')]
-        E0 = data[('io','particle_model_E0')]
-        return (E0 * Q0).convert_to_units('erg/s')
+        Q0 = data[(field.name[0],'particle_model_Q0')]
+        E0 = data[(field.name[0],'particle_model_E0')]
+        return (E0 * Q0).to('erg/s')
 
     def _model_L1(field, data):
-        Q1 = data[('io','particle_model_Q1')]
-        E1 = data[('io','particle_model_E1')]
-        return (E1 * Q1).convert_to_units('erg/s')
+        Q1 = data[(field.name[0],'particle_model_Q1')]
+        E1 = data[(field.name[0],'particle_model_E1')]
+        return (E1 * Q1).to('erg/s')
 
     def _age(field, data):
-        p = data[('io','creation_time')]
+        p = data[(field.name[0],'creation_time')]
         t = data.ds.current_time
-        return (t - p).convert_to_units('Myr')
+        return (t - p).to('Myr')
 
     def _model_L_1_3eV(field, data):
-        Teff = data[('io','particle_model_Teff')].value
+        Teff = data[(field.name[0],'particle_model_Teff')].value
         flux = np.array([radiation.BB_flux(1.0, 3.0, T) for T in Teff])
 
         flux = flux * yt.units.erg / yt.units.s / yt.units.cm**2
 
-        SA = 4.0 * np.pi * data[('io','particle_model_R')]**2
+        SA = 4.0 * np.pi * data[(field.name[0],'particle_model_R')]**2
 
         return flux * SA
 
     for field in field_names:
-        yt.add_field(('io', 'particle_model_' + field),
+        yt.add_field(('all', 'particle_model_' + field),
                      function = _function_generator(field), units=unit_label[field],
                 	     particle_type = True)
 
     def _lifetime(field, data):
-        m = data['birth_mass'].value
-        z = data['metallicity_fraction'].value
+        ptname = field.name[0]
+        m = data[(ptname,'birth_mass')].value
+        z = data[(ptname,'metallicity_fraction')].value
+        ispopiii = data[(ptname,'particle_is_popiii')]
 
         if np.size(m) == 1:  # get around yt's checking
-            lt = np.shape(m) * yt.units.Myr
+            lt = np.shape(m)
         else:
             lt = np.zeros(np.size(m))
             for i in np.arange(np.size(m)):
-                lt[i] = SE_table.interpolate({'mass' : m[i], 'metallicity' : z[i]}, 'lifetime')
-            lt = (lt * yt.units.s).convert_to_units('Myr')
+                if m[i] < 0 and z[i] < 0:
+                    lt[i] = 0.0
+                elif ispopiii[i]:
+                    lt[i] = (physics.popIII_lifetime(m[i]) * yt.units.yr).to('Myr').value
+                else:
+                    lt[i] = SE_table.interpolate({'mass' : m[i], 'metallicity' : z[i]}, 'lifetime')
+                    lt[i] = (lt[i] * yt.units.s).to('Myr').value
 
-        return lt
 
-    yt.add_field(('io','particle_model_lifetime'), function = _lifetime, units = 'Myr',
+        return lt * yt.units.Myr
+
+
+    def _is_popIII(field,data):
+
+        pt = data[(field.name[0],'particle_type')]
+
+        am_i_popiii = ((pt == 14)).astype(np.float64)
+
+        if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+            if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                am_i_popiii = am_i_popiii + (data[(field.name[0],'metallicity_fraction')] > data.ds.parameters['PopIIIMetalCriticalFraction']).astype(np.float64)
+            else:
+                am_i_popiii = am_i_popiii + np.logical_not(data[(field.name[0],'particle_above_chiaki_threshold')])
+
+
+        return am_i_popiii.astype(np.float64)
+
+    yt.add_field(('all','particle_is_popiii'), function = _is_popIII, units ='', particle_type=True)
+
+    yt.add_field(('all','particle_model_lifetime'), function = _lifetime, units = 'Myr',
                  particle_type = True)
 
-    yt.add_field(('io', 'particle_age'), function = _age, units = 'Myr',
+    yt.add_field(('all', 'particle_age'), function = _age, units = 'Myr',
                  particle_type = True)
 
-    yt.add_field(('io','particle_model_L0'), function = _model_L0, units = 'erg/s',
+    yt.add_field(('all','particle_model_L0'), function = _model_L0, units = 'erg/s',
                  particle_type = True)
 
-    yt.add_field(('io','particle_model_L1'), function = _model_L1, units = 'erg/s',
+    yt.add_field(('all','particle_model_L1'), function = _model_L1, units = 'erg/s',
                  particle_type = True)
 
-    yt.add_field(('io','particle_model_L_1_3eV'), function = _model_L_1_3eV, units = 'erg/s',
+    yt.add_field(('all','particle_model_L_1_3eV'), function = _model_L_1_3eV, units = 'erg/s',
                  particle_type = True)
 
     return
@@ -810,14 +864,14 @@ def _grackle_fields(ds):
     cdata.initialize()
 
     def _H2_self_shielding_length(field, data):
-        return data['dx'].convert_to_units('cm')
+        return data['dx'].to('cm')
     ds.add_field(('gas','H2_self_shielding_length'), function = _H2_self_shielding_length, units='cm')
 
     def _cooling_time(field, data):
 
         #
         # This checks if yt is doing its fake-data error checking and
-        # gives dummy result... a bit of a hack.... 
+        # gives dummy result... a bit of a hack....
         #
         # compute field in grackle grid-by-grid
         field_list      = data.ds.derived_field_list + data.ds.field_list
@@ -888,10 +942,10 @@ def _additional_helper_fields(fields):
         energy_unit = data.ds.mass_unit * data.ds.velocity_unit**2
         pe = pe * energy_unit / data.ds.length_unit**3 / data.ds.time_unit
 
-        return pe.convert_to_units('erg/s/cm**3')
+        return pe.to('erg/s/cm**3')
 
     def _pe_heating_rate_masked(field, data):
-        pe = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3')
+        pe = data[('gas','Pe_heating_rate')].to('erg/s/cm**3')
 
         x = 1.0 * pe
 
@@ -905,13 +959,13 @@ def _additional_helper_fields(fields):
         else:
             lw = np.zeros(np.shape(data['Density'])) / data.ds.time_unit
 
-        return lw.convert_to_units('1/s')
+        return lw.to('1/s')
 
     def _G_o(field,data):
-        pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
+        pe  = data[('gas','Pe_heating_rate')].to('erg/s/cm**3').value
         Z   = (data['Metal_Density'] / data['Density']).value
         n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
-                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
+                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).to('cm**(-3)').value
 
         logZ   = np.log10(Z / 0.014)
         g_to_d = np.zeros(np.shape(logZ))
@@ -920,15 +974,15 @@ def _additional_helper_fields(fields):
         d_to_g = 1.0 / (10.0**(g_to_d))
         D = d_to_g / 6.616595E-3
         epsilon = 0.01488637246 * (n_H)**(0.235269059)
-        atten = np.exp( - 1.33E-21 * D * data['dx'].convert_to_units('cm').value * n_H)
+        atten = np.exp( - 1.33E-21 * D * data['dx'].to('cm').value * n_H)
         G_o = pe / (1.3E-24 * n_H * epsilon * D * atten)
         return G_o * (data['Density'] / data['Density'])
 
     def _G_eff(field,data):
-        pe  = data[('gas','Pe_heating_rate')].convert_to_units('erg/s/cm**3').value
+        pe  = data[('gas','Pe_heating_rate')].to('erg/s/cm**3').value
         Z   = (data['Metal_Density'] / data['Density']).value
         n_H = (data['H_p0_number_density'] + data['H_p1_number_density'] + data['H_m1_number_density'] +\
-                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).convert_to_units('cm**(-3)').value
+                0.5*(data['H2_p0_number_density'] + data['H2_p1_number_density'])).to('cm**(-3)').value
 
         logZ   = np.log10(Z / 0.014)
         g_to_d = np.zeros(np.shape(logZ))
@@ -939,7 +993,7 @@ def _additional_helper_fields(fields):
 
         epsilon = 0.01488637246 * (n_H)**(0.235269059)
 
-        # atten = np.exp( - 1.33E-21 * D * data['dx'].convert_to_units('cm').value * n_H)
+        # atten = np.exp( - 1.33E-21 * D * data['dx'].to('cm').value * n_H)
 
         G_eff = pe / (1.3E-24 * n_H * epsilon * D)
 
@@ -957,21 +1011,25 @@ def _additional_helper_fields(fields):
         H2Isigma  = 3.71E-18 * yt.units.cm**(2)
 
         if ('enzo','OTLW_kdissH2I') in data.ds.field_list:
-            kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).convert_to_units('1/s')
+            kdissH2I = (data[('enzo','OTLW_kdissH2I')].value / data.ds.time_unit).to('1/s')
         else:
             kdissH2I = (np.zeros(np.shape(data['Density'])) / data.ds.time_unit).to('1/s')
 
         LW_flux = kdissH2I / H2Isigma * LW_energy
 
-        return LW_flux.convert_to_units('erg/cm**2/s')
+        return LW_flux.to('erg/cm**2/s')
 
     def _Q0_flux(field, data):
         E_HI = 13.6 * yt.units.eV
-        kph = data[('enzo','HI_kph')].convert_to_cgs()
-        n   = data[('gas','H_p0_number_density')].convert_to_cgs()
+        kph = data[('enzo','HI_kph')]
+        kph.convert_to_cgs()
+        n   = data[('gas','H_p0_number_density')]
+        n.convert_to_cgs()
         dt  = data.ds.parameters['dtPhoton']
-        V   = data['cell_volume'].convert_to_cgs()
-        dx  = data['dx'].convert_to_cgs()
+        V   = data['cell_volume']
+        V.convert_to_cgs()
+        dx  = data['dx']
+        dx.convert_to_cgs()
         s   = 6.34629E-18 * yt.units.cm**(2) # cross section of HI at 13.6 eV
 
         tau   = s * n * dx
@@ -981,15 +1039,19 @@ def _additional_helper_fields(fields):
 
         flux = Q * E_HI / dx**2
 
-        return flux.convert_to_units('erg/cm**2/s')
+        return flux.to('erg/cm**2/s')
 
     def _Q1_flux(ds,data):
         E_HeI = 24.6 * yt.units.eV
-        kph = data[('enzo','HeI_kph')].convert_to_cgs()
-        n   = data[('gas','H_p0_number_density')].convert_to_cgs()
+        kph = data[('enzo','HeI_kph')]
+        kph.convert_to_cgs()
+        n   = data[('gas','H_p0_number_density')]
+        n.convert_to_cgs()
         dt  = data.ds.parameters['dtPhoton']
-        V   = data['cell_volume'].convert_to_cgs()
-        dx  = data['dx'].convert_to_cgs()
+        V   = data['cell_volume']
+        V.convert_to_cgs()
+        dx  = data['dx']
+        dx.convert_to_cgs()
         s   = 7.4300459E-18 * yt.units.cm**(2) # cross section of HeI at 24.6 eV
 
         tau   = s * n * dx
@@ -999,20 +1061,25 @@ def _additional_helper_fields(fields):
 
         flux = Q * E_HeI / dx**2
 
-        return flux.convert_to_units('erg/cm**2/s')
+        return flux.to('erg/cm**2/s')
 
 
     def _metal_total_mass(field, data):
         mass = data['Metal_Density'] * data['cell_volume']
 
-        return mass.convert_to_units('g')
+        return mass.to('g')
 
     def _grav_pot(field,data):
         try:
-            x = (data['PotentialField'] * -1.0).convert_to_units('erg/g')
+            x = (data['PotentialField'] * -1.0).to('erg/g')
         except:
-            x = ( (data['GravPotential'].value * data.ds.velocity_unit**2)
-                   * -1.0).convert_to_units('erg/g')
+            try:
+                x = ( (data['GravPotential'].value * data.ds.velocity_unit**2)
+                   * -1.0).to('erg/g')
+            except:
+                x = ( (data['Grav_Potential'].value * data.ds.velocity_unit**2)
+                   * -1.0).to('erg/g')
+
 
         return x
 
@@ -1020,19 +1087,25 @@ def _additional_helper_fields(fields):
         try:
             x = data['PotentialField']
         except:
-            x = data['GravPotential'].value * data.ds.velocity_unit**2
+            try:
+                x = data['GravPotential'].value * data.ds.velocity_unit**2
+            except:
+                x = data['Grav_Potential'].value * data.ds.velocity_unit**2
 
         x = x + data[('index','DM_background_potential')]
 
-        return x.convert_to_units('erg/g')
+        return x.to('erg/g')
 
     def _gas_grav_pot(field,data):
         try:
             x = data['PotentialField']
         except:
-            x = data['GravPotential'].value * data.ds.velocity_unit**2
+            try:
+                x = data['GravPotential'].value * data.ds.velocity_unit**2
+            except:
+                x = data['Grav_Potential'].value * data.ds.velocity_unit**2
 
-        return x.convert_to_units('erg/g')
+        return x.to('erg/g')
 
 
     def _pos_tot_grav_pot(field, data):
@@ -1043,12 +1116,12 @@ def _additional_helper_fields(fields):
 
         x = data[('gas','total_gravitational_potential')] * data['cell_mass']
 
-        return x.convert_to_units('erg')
+        return x.to('erg')
 
     def _grav_bound(field, data):
-        PE = data[('gas','potential_energy')].convert_to_units('erg')
-        TE = ( data[('gas','thermal_energy')] * data['cell_mass'].convert_to_units('g')).convert_to_units('erg')
-        KE = ( data[('gas','kinetic_energy')] * data['cell_volume']).convert_to_units('erg')
+        PE = data[('gas','potential_energy')].to('erg')
+        TE = ( data[('gas','thermal_energy')] * data['cell_mass'].to('g')).to('erg')
+        KE = ( data[('gas','kinetic_energy')] * data['cell_volume']).to('erg')
 
         result = 1 * ((TE + KE) + PE < 0.0)
 
@@ -1056,34 +1129,36 @@ def _additional_helper_fields(fields):
 
 
     def _mag_cyl_r(field,data):
-        return np.abs( data[('index','cylindrical_radius')].convert_to_units('cm'))
+        return np.abs( data[('index','cylindrical_radius')].to('cm'))
 
     def _mag_cyl_z(field,data):
-        return np.abs( data[('index','cylindrical_z')].convert_to_units('cm') )
+        return np.abs( data[('index','cylindrical_z')].to('cm') )
 
     def _dm_density(field, data):
-        r     = data[('index','spherical_r')].convert_to_units('cm')
-        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).convert_to_units('cm')
+        r     = data[('index','spherical_r')].to('cm')
+        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).to('cm')
         rho_o = (data.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3)
 
         rho = dm_halo.burkert_density(r, r_s, rho_o)
 
-        return rho.convert_to_cgs()
+        rho.convert_to_cgs()
+        return rho
 
     def _dm_potential(field, data):
-        r     = data[('index','spherical_r')].convert_to_units('cm')
-        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).convert_to_units('cm')
+        r     = data[('index','spherical_r')].to('cm')
+        r_s   = (data.ds.parameters['DiskGravityDarkMatterR'] * yt.units.Mpc).to('cm')
         rho_o = (data.ds.parameters['DiskGravityDarkMatterDensity'] * yt.units.g / yt.units.cm**3)
 
         pot = dm_halo.burkert_potential(r, r_s, rho_o)
 
-        return pot.convert_to_cgs()
+        pot.convert_to_cgs()
+        return pot
 
     def _rad_accel(field, data):
-        return np.sqrt(data['RadAccel1']**2 + data['RadAccel2']**2 + data['RadAccel3']**2).convert_to_units('cm/s**2')
+        return np.sqrt(data['RadAccel1']**2 + data['RadAccel2']**2 + data['RadAccel3']**2).to('cm/s**2')
 
     def _is_star_forming(field, data):
-        n      = data[('gas','number_density')].convert_to_units('cm**(-3)')
+        n      = data[('gas','number_density')].to('cm**(-3)')
         T      = data['Temperature']
         divv   = data[('gas','velocity_divergence')]
         l      = data['grid_level']
@@ -1095,47 +1170,67 @@ def _additional_helper_fields(fields):
 
         return answer
 
-    yt.add_field(('gas','is_star_forming'), function = _is_star_forming,
-                         units = "")
+    def _above_chiaki_threshold(field,data):
+        C_f  = data[('gas','C_Fraction')].value
+        Fe_f = data[('gas','Fe_Fraction')].value
+        H_f  = data[('gas','H_fraction')].value
 
-    yt.add_field(("gas","a_rad"), function=_rad_accel, units="cm/s**2")
+        return physics.chiaki_threshold(C_f, Fe_f, H_f, return_value=False).astype(np.float64)
 
-    yt.add_field(('index','DM_background_density'), function = _dm_density, units = 'g/cm**3')
-    yt.add_field(('index','DM_background_potential'), function = _dm_potential, units = 'erg/g')
+    def _chiaki_value(field,data):
+        C_f  = data[('gas','C_Fraction')].value
+        Fe_f = data[('gas','Fe_Fraction')].value
+        H_f  = data[('gas','H_fraction')].value
 
-    yt.add_field(('index','magnitude_cylindrical_radius'), function = _mag_cyl_r, units = 'cm')
+        return physics.chiaki_threshold(C_f, Fe_f, H_f, return_value=True)
 
-    yt.add_field(('index','magnitude_cylindrical_z'), function = _mag_cyl_z, units = 'cm')
+
+    yt.add_field(("gas","a_rad"), sampling_type = 'cell',function=_rad_accel, units="cm/s**2")
+
+    yt.add_field(('index','DM_background_density'), sampling_type = 'cell',function = _dm_density, units = 'g/cm**3')
+    yt.add_field(('index','DM_background_potential'), sampling_type = 'cell',function = _dm_potential, units = 'erg/g')
+
+    yt.add_field(('index','magnitude_cylindrical_radius'), sampling_type = 'cell',function = _mag_cyl_r, units = 'cm')
+
+    yt.add_field(('index','magnitude_cylindrical_z'),sampling_type = 'cell', function = _mag_cyl_z, units = 'cm')
 #    def _H2_total_mass(field, data):
 #        mass = data[('gas',
 
-    yt.add_field(('gas','Pe_heating_rate'), function = _pe_heating_cgs, units = 'erg/s/cm**3')
-    yt.add_field(('gas','H_total_mass'), function = _H_total_mass, units ='g')
-    yt.add_field(('gas','H_Mass'), function = _H_total_mass, units = 'g') # define as same
-    yt.add_field(('gas','He_total_mass'), function = _He_total_mass, units = 'g')
-    yt.add_field(('gas','metal_mass'), function = _metal_total_mass, units = 'g')
+    yt.add_field(('gas','Pe_heating_rate'),sampling_type = 'cell', function = _pe_heating_cgs, units = 'erg/s/cm**3')
+    yt.add_field(('gas','H_total_mass'), sampling_type = 'cell',function = _H_total_mass, units ='g')
+    yt.add_field(('gas','H_Mass'),sampling_type = 'cell', function = _H_total_mass, units = 'g') # define as same
+    yt.add_field(('gas','He_total_mass'), sampling_type = 'cell',function = _He_total_mass, units = 'g')
+    yt.add_field(('gas','metal_mass'), sampling_type = 'cell',function = _metal_total_mass, units = 'g')
 
-    yt.add_field(('gas','OTLW_kdissH2I'), function = _otlwcgs, units = '1/s',
+    yt.add_field(('gas','OTLW_kdissH2I'), sampling_type = 'cell',function = _otlwcgs, units = '1/s',
                  validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
-    yt.add_field(('gas','LW_flux'), function = _LW_flux, units = "erg/s/cm**2",
+    yt.add_field(('gas','LW_flux'), sampling_type = 'cell',function = _LW_flux, units = "erg/s/cm**2",
                  validators=ValidateDataField(('enzo','OTLW_kdissH2I')))
 
-    yt.add_field(('gas','Pe_heating_rate_masked'), function = _pe_heating_rate_masked, units='erg/s/cm**3')
-    yt.add_field(('gas','G_o'), function = _G_o, units = "")
-    yt.add_field(('gas','G_eff'), function = _G_eff, units = "")
-    yt.add_field(('gas','FUV_flux'), function = _FUV_flux, units = "erg/s/cm**2")
-    yt.add_field(('gas','Q0_flux'), function = _Q0_flux, units = "erg/s/cm**2")
-    yt.add_field(('gas','Q1_flux'), function = _Q1_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','above_chiaki_threshold'), sampling_type = 'cell',function = _above_chiaki_threshold,
+                 units="")
+    yt.add_field(('gas','chiaki_value'),sampling_type = 'cell', function = _chiaki_value,
+                 units="")
+
+    yt.add_field(('gas','is_star_forming'),sampling_type = 'cell', function = _is_star_forming,
+                         units = "")
+
+    yt.add_field(('gas','Pe_heating_rate_masked'),sampling_type = 'cell', function = _pe_heating_rate_masked, units='erg/s/cm**3')
+    yt.add_field(('gas','G_o'), sampling_type = 'cell',function = _G_o, units = "")
+    yt.add_field(('gas','G_eff'), sampling_type = 'cell',function = _G_eff, units = "")
+    yt.add_field(('gas','FUV_flux'), sampling_type = 'cell',function = _FUV_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','Q0_flux'),sampling_type = 'cell', function = _Q0_flux, units = "erg/s/cm**2")
+    yt.add_field(('gas','Q1_flux'),sampling_type = 'cell', function = _Q1_flux, units = "erg/s/cm**2")
 #    yt.add_field(('gas','H2_total_mass'), function = _H2_total_mass, units = 'g')
 #    yt.add_field(('gas','All_H_total_mass'), function = _all_H_total_mass, units = 'g')
 
-    if ('enzo','PotentialField') in fields or ('enzo', 'GravPotential') in fields:
-        yt.add_field(('gas','pos_gravitational_potential'), function=_grav_pot, units = 'erg/g')
-        yt.add_field(('gas','gas_gravitational_potential'), function=_gas_grav_pot, units = 'erg/g')
-        yt.add_field(('gas','total_gravitational_potential'), function=_tot_grav_pot, units = 'erg/g')
-        yt.add_field(('gas','pos_total_gravitational_potential'), function=_pos_tot_grav_pot, units = 'erg/g')
-        yt.add_field(('gas','potential_energy'), function=_potential_energy, units = 'erg')
-        yt.add_field(('gas','gravitationally_bound'), function=_grav_bound, units = "")
+    if (('enzo','PotentialField') in fields) or (('enzo', 'GravPotential') in fields) or (('enzo','Grav_Potential') in fields):
+        yt.add_field(('gas','pos_gravitational_potential'), sampling_type = 'cell',function=_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','gas_gravitational_potential'), sampling_type = 'cell',function=_gas_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','total_gravitational_potential'),sampling_type = 'cell', function=_tot_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','pos_total_gravitational_potential'), sampling_type = 'cell',function=_pos_tot_grav_pot, units = 'erg/g')
+        yt.add_field(('gas','potential_energy'),sampling_type = 'cell', function=_potential_energy, units = 'erg')
+        yt.add_field(('gas','gravitationally_bound'), sampling_type = 'cell',function=_grav_bound, units = "")
 
     nfields = 5
 
@@ -1161,7 +1256,7 @@ def generate_derived_fields(ds):
     # lets figure out the metal tracers present
     metals = utilities.species_from_fields(fields)
     ratios = utilities.ratios_list(metals)
-
+    print("defining for the following metals ", metals)
     # make new functions to do correct units for species fields
     _density_function_generator(metals + ['Metal'])
 
@@ -1177,12 +1272,12 @@ def generate_derived_fields(ds):
         nfields = _ionization_state_generator(metals)
         print(nfields, "ionization state fields defined")
 
-    nfields = _abundance_ratio_function_generator(ratios, H_mode = 'total')
+    nfields = _abundance_ratio_function_generator(ratios, metals, H_mode = 'total')
     print(nfields, "abundance ratio fields defined")
     nfields = _abundance_function_generator(metals)
 
     if ds.parameters['NumberOfParticles'] > 0:
-        if ('io','particle_' + metals[0] + '_fraction') in ds.field_list:
+        if ('all','particle_' + metals[0] + '_fraction') in ds.field_list:
 
             nfields =  _particle_abundance_ratio_function_generator(ratios, ds)
             print(nfields, "particle abundance ratio fields defined")
@@ -1201,43 +1296,55 @@ def generate_derived_fields(ds):
     return
 
 
+
 def load_and_define(name):
     """
     Wrapper around yt to load a data set and define gradient
-    fields and particle filters which must be defined for each 
+    fields and particle filters which must be defined for each
     simulation file separately (unlike the above)
     """
 
+
     ds = yt.load(name)
 
-    generate_gradient_fields(ds)
+    if not FIELDS_DEFINED:
+        generate_derived_fields(ds)
+        ds = yt.load(name)
+        generate_derived_fields(ds)
 
-    def _grav_accel_x(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_x')].convert_to_units('cm/s**2')
-    def _grav_accel_y(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_y')].convert_to_units('cm/s**2')
-    def _grav_accel_z(field,data):
-        return data[('gas','gas_gravitational_potential_gradient_z')].convert_to_units('cm/s**2')
-    def _grav_accel(field,data):
-        return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
+    gradient_available = generate_gradient_fields(ds)
 
-    def _a_rad_a_grav(field,data):
-        a = data[('gas','a_rad')] / data[('gas','a_grav')]
-    
-        a[data[('gas','a_grav')] == 0.0] = 0.0
+    if gradient_available:
+        def _grav_accel_x(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_x')].to('cm/s**2')
+        def _grav_accel_y(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_y')].to('cm/s**2')
+        def _grav_accel_z(field,data):
+            return data[('gas','gas_gravitational_potential_gradient_z')].to('cm/s**2')
+        def _grav_accel(field,data):
+            return np.sqrt(data[('gas','a_grav_x')]**2 + data[('gas','a_grav_y')]**2 + data[('gas','a_grav_z')]**2)
 
-        return a
+        def _a_rad_a_grav(field,data):
+            a = data[('gas','a_rad')] / data[('gas','a_grav')]
 
-    ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
-    ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
+            a[data[('gas','a_grav')] == 0.0] = 0.0
 
-    generate_particle_filters(ds)
+            return a
+
+        ds.add_field(('gas','a_grav_x'), function = _grav_accel_x, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav_y'), function = _grav_accel_y, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav_z'), function = _grav_accel_z, units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_grav'),   function = _grav_accel,   units = 'cm/s**2', sampling_type='cell')
+        ds.add_field(('gas','a_rad_over_a_grav'), function = _a_rad_a_grav, units = '', sampling_type = 'cell')
+
+    #generate_particle_filters(ds)
     #generate_grackle_fields(ds)
 
     return ds
+
+
+def load(name):
+    return load_and_define(name)
 
 def generate_grackle_fields(ds):
 
@@ -1255,9 +1362,13 @@ def generate_gradient_fields(ds):
     something sensible
     """
 
-    ds.add_gradient_fields(("gas","gas_gravitational_potential"))
+    if ("gas","gas_gravitational_potential") in ds.derived_field_list:
+        ds.add_gradient_fields(("gas","gas_gravitational_potential"))
+        gradient_available = True
+    else:
+        gradient_available = False
 
-    return
+    return gradient_available
 
 def generate_particle_filters(ds):
     """
@@ -1267,40 +1378,298 @@ def generate_particle_filters(ds):
         SNIa remnant  :
         SNII remnant  :
         AGB phase (likely very few or none since short lived) :
-    """ 
+    """
+
 
     @yt.particle_filter(requires=["particle_type"], filtered_type='all')
-    def main_sequence_stars(pfilter, data):
-        filter = data[(pfilter.filtered_type, "particle_type")] == 11
+    def all_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] >= 11
+
         return filter
 
-    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
+    def all_popIII_stars(pfilter, data):
+        filter = data[(pfilter.filtered_type,"particle_is_popiii")].astype(np.bool)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
+    def all_popII_stars(pfilter, data):
+        filter = np.logical_not(data[(pfilter.filtered_type,"particle_is_popiii")])
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
+    def main_sequence_stars(pfilter, data):
+        filter = (data[(pfilter.filtered_type, "particle_type")] == 11) +\
+                 (data[(pfilter.filtered_type, "particle_type")] == 15)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
     def main_sequence_popIII_stars(pfilter, data):
         filter = data[(pfilter.filtered_type, "particle_type")] == 14
         return filter
 
-    @yt.particle_filter(requires=["particle_type"], filtered_type='all')
+    @yt.particle_filter(requires=["particle_type"], filtered_type='all_stars')
     def remnant_stars(pfilter, data):
         filter = data[(pfilter.filtered_type, "particle_type")] == 13
         return filter
 
-    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_stars')
     def low_mass_stars(pfilter, data):
         filter = data[(pfilter.filtered_type, "particle_type")] == 11
-        filter = filter * (data[(pfilter.filtered_type,"birth_mass")] > 2.0) * (data[(pfilter.filtered_type,"birth_mass")] <8.0)
+        filter = filter * (data[(pfilter.filtered_type,"birth_mass")] > 2.0) * (data[(pfilter.filtered_type,"birth_mass")] < 8.0)
         return filter
 
-    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all')
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_stars')
     def low_mass_unresolved_stars(pfilter, data):
         filter = data[(pfilter.filtered_type, "particle_type")] == 15
         return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_stars')
+    def white_dwarf(pfilter, data):
+        filter = data[(pfilter.filtered_type, "particle_type")] == 12
+        return filter
+
 
 
     ds.add_particle_filter('main_sequence_stars')
     ds.add_particle_filter('remnant_stars')
     ds.add_particle_filter('low_mass_stars')
     ds.add_particle_filter('low_mass_unresolved_stars')
+    ds.add_particle_filter("white_dwarf")
     ds.add_particle_filter('main_sequence_popIII_stars')
+
+    ds.add_particle_filter("all_popII_stars")
+    ds.add_particle_filter("all_popIII_stars")
+    ds.add_particle_filter("all_stars")
+
+    #
+    #
+    # End of life filteres for non-snia
+    #
+    #
+
+    @yt.particle_filter(requires=['particle_type','birth_mass'], filtered_type='all_stars')
+    def all_remnants(pfilter, data):
+        filter = data[(pfilter.filtered_type,"particle_type")] == 13
+        return filter
+
+    @yt.particle_filter(requires=['particle_type','birth_mass'], filtered_type='all_remnants')
+    def popIII_remnant(pfilter, data):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
+
+        else:
+            filter = np.logical_not(data[(pfilter.filtered_type, "birth_mass")] == data[(pfilter.filtered_type, "birth_mass")])
+
+
+        return filter
+
+    @yt.particle_filter(requires=['particle_type','birth_mass'], filtered_type='all_remnants')
+    def popIII_ccsne_remnant(pfilter, data):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter * ((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
+                               (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass']))
+        else:
+            filter = np.logical_not(data[(pfilter.filtered_type, "birth_mass")] == data[(pfilter.filtered_type, "birth_mass")])
+
+
+        return filter
+
+
+    @yt.particle_filter(requires=['particle_type','birth_mass'], filtered_type='all_remnants')
+    def popIII_pisne_remnant(pfilter, data):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter * ((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                               (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass']))
+        else:
+            filter = np.logical_not(data[(pfilter.filtered_type, "birth_mass")] == data[(pfilter.filtered_type, "birth_mass")])
+
+
+        return filter
+
+    @yt.particle_filter(requires=['particle_type','birth_mass'], filtered_type='all_remnants')
+    def popIII_direct_collapse_remnant(pfilter, data):
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+
+                    filter = np.logical_not( data[(pfilter.filtered_type,'particle_above_chiaki_threshold')] )
+
+                filter = filter *  (np.logical_not((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['PISNLowerMass']) *\
+                                                  (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['PISNUpperMass'])) *\
+                                    np.logical_not((data[(pfilter.filtered_type,'birth_mass')] >= ds.parameters['TypeIILowerMass']) *\
+                                                  (data[(pfilter.filtered_type,'birth_mass')] <= ds.parameters['TypeIIUpperMass'])))
+        else:
+            filter = np.logical_not(data[(pfilter.filtered_type, "birth_mass")] == data[(pfilter.filtered_type, "birth_mass")])
+
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_remnants')
+    def ccsne_remnant(pfilter, data):
+
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarDirectCollapseThreshold']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarAGBThreshold']))
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_remnants')
+    def direct_collapse_remnant(pfilter, data):
+
+        filter = data[(pfilter.filtered_type, "birth_mass")] > data.ds.parameters['IndividualStarDirectCollapseThreshold']
+
+        if ('IndividualStarPopIIIFormation' in data.ds.parameters) and\
+           ('PopIIIMetalCriticalFraction' in data.ds.parameters):
+            if data.ds.parameters['IndividualStarPopIIIFormation'] > 0:
+
+                if data.ds.parameters['PopIIIMetalCriticalFraction'] > 0:
+                    filter = filter * data[(pfilter.filtered_type,'metallicity_fraction')] < data.ds.parameters['PopIIIMetalCriticalFraction']
+                else: # use the Chiaki threshold:
+                    filter = filter * data[(pfilter.filtered_type,'particle_above_chiaki_threshold')].astype(np.bool)
+
+        return filter
+
+
+    ds.add_particle_filter('all_remnants')
+    ds.add_particle_filter('popIII_ccsne_remnant')
+    ds.add_particle_filter('popIII_pisne_remnant')
+    ds.add_particle_filter('ccsne_remnant')
+    ds.add_particle_filter('direct_collapse_remnant')
+    ds.add_particle_filter('popIII_direct_collapse_remnant')
+
+
+    #
+    # this is the same as selecting for WD's
+    #
+    #@yt.particle_filter(requires=["particle_type",'birth_mass'], filtered_type='all_stars')
+    #def agb_remnant(pfilter, data):
+    #    filter = data[(pfilter.filtered_type, "particle_type")] == 12
+    #
+    #    filter = filter * ( (data[(pfilter.filtered_type,'birth_mass')] >= data.ds.parameters['IndividualStarWDMinimumMass']) *
+    #                        (data[(pfilter.filtered_type,'birth_mass')] <= data.ds.parameters['IndividualStarWDMaximumMass']))
+    #    return filter
+    #ds.add_particle_filter("agb_remnant")
+
+
+    #
+    #
+    # SNIa particle filters
+    #
+    #
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass','snia_sch_metal_fraction','snia_sds_metal_fraction',
+                                  'snia_hers_metal_fraction',
+                                  'snia_metal_fraction'], filtered_type='all_stars')
+    def snia_progenitor(pfilter,data):
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * ( (data[(pfilter.filtered_type, 'snia_sch_metal_fraction')] < 0) +\
+                            (data[(pfilter.filtered_type, 'snia_sds_metal_fraction')] < 0) +\
+                            (data[(pfilter.filtered_type, 'snia_hers_metal_fraction')] < 0) +\
+                            (data[(pfilter.filtered_type, 'snia_metal_fraction')] < 0) )
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass','snia_sch_metal_fraction','snia_sds_metal_fraction',
+                                  'snia_hers_metal_fraction',
+                                  'snia_metal_fraction'], filtered_type='all_stars')
+    def snia_dds_progenitor(pfilter,data):
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                   (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (data[(pfilter.filtered_type, 'snia_metal_fraction')] < 0)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass','snia_sch_metal_fraction','snia_sds_metal_fraction',
+                                  'snia_hers_metal_fraction',
+                                  'snia_metal_fraction'], filtered_type='all_stars')
+    def snia_sch_progenitor(pfilter,data):
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (data[(pfilter.filtered_type, 'snia_sch_metal_fraction')] < 0)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass','snia_sch_metal_fraction','snia_sds_metal_fraction',
+                                  'snia_hers_metal_fraction',
+                                  'snia_metal_fraction'], filtered_type='all_stars')
+    def snia_hers_progenitor(pfilter,data):
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (data[(pfilter.filtered_type, 'snia_hers_metal_fraction')] < 0)
+
+        return filter
+
+    @yt.particle_filter(requires=["particle_type",'birth_mass','snia_sch_metal_fraction','snia_sds_metal_fraction',
+                                  'snia_hers_metal_fraction',
+                                  'snia_metal_fraction'], filtered_type='all_stars')
+    def snia_sds_progenitor(pfilter,data):
+        filter = ((data[(pfilter.filtered_type, "birth_mass")] >= data.ds.parameters['IndividualStarSNIaMinimumMass']) *\
+                  (data[(pfilter.filtered_type, "birth_mass")] <= data.ds.parameters['IndividualStarSNIaMaximumMass']))
+
+        filter = filter * (data[(pfilter.filtered_type, 'snia_sds_metal_fraction')] < 0)
+
+        return filter
+
+    #
+    # And select those that have actually exploded by
+    # which ones have zero mass
+    #
+    if ('all','snia_sch_metal_fraction') in ds.field_list:
+        ds.add_particle_filter("snia_progenitor")
+        ds.add_particle_filter("snia_dds_progenitor")
+        ds.add_particle_filter("snia_hers_progenitor")
+        ds.add_particle_filter("snia_sds_progenitor")
+        ds.add_particle_filter("snia_sch_progenitor")
+
 
 
     return

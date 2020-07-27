@@ -69,3 +69,6 @@ testing/
 # others
 *.png
 *.*~
+*.npy
+*.h5
+

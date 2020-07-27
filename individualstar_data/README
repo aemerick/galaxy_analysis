@@ -1,0 +1,42 @@
+Datasets needed to run the individual star routines in Enzo
+
+This *should* all be combined into a single or small number
+of hdf5 files, but for now they are all ascii files
+
+
+parsec_zams.in:
+    PARSEC zero age main sequence (ZAMS) data set containing
+    columns of:
+      stellar mass (Msun)
+      metallicity (fraction)
+      log(luminosity) (solar units)
+      log(T_eff)      (solar units)
+      log(Radius)     (solar units)
+      lifetime        (s)
+      agb-phase       (S)
+
+    agb-phase is the start time of the AGB phase of the star's
+    lifetime (if there is one). If there is no AGB phase, this
+    is equal to the lifetime.
+
+qx_photon_rates.in:
+
+    Ionizing photon rates for HI (q0), HeI (q1), and HeII (q2)
+    ionizing photon as tabulated from the OSTAR2002 model 
+    of stellar atmosphere grid. Columns are:
+
+       T_eff    (K)
+       log(g)   (cgs)
+
+       col 3 - 12 photon_flux (1/s/cm^2) for each
+                  metallicity bin
+
+LW_energy_rates.in, IR_energy_rates.in, FUV_energy_rates.in:
+
+    Energy fluxes in certain bands from the OSTAR2002 model.
+    Same columns as the ionizing photon rate files, but 
+    units are erg/s/cm^2.
+
+    LW band  : 11.2 - 13.6 eV
+    FUV band :  5.6 - 11.2 eV
+    IR band  : 0.76 - 5.6  eV

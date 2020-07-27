@@ -19,8 +19,8 @@ def sfhFromParticles(ds, data, selection = None, times = None):
         selection = np.array([True]*nstars)
 
     particle_mass = data['birth_mass'][selection].value * yt.units.Msun
-    creation_time = data['creation_time'][selection].convert_to_units('Myr')
-    currentTime   = ds.current_time.convert_to_units('Myr')
+    creation_time = data['creation_time'][selection].to('Myr')
+    currentTime   = ds.current_time.to('Myr')
 
     if times is None:
         bin_spacing = 2.0 * yt.units.Myr
@@ -31,11 +31,12 @@ def sfhFromParticles(ds, data, selection = None, times = None):
             bin_spacing = bin_spacing * yt.units.Myr
 
         times = np.linspace(np.min(creation_time), currentTime, bin_spacing)
-        times = times *yt.units.Myr
+        if not hasattr(times, 'value'):
+            times = times *yt.units.Myr
 
     mass  = np.zeros(np.shape(times))
 
-    times = times.convert_to_units('yr')
+    times = times.to('yr')
     for i,t in enumerate(times):
         mass[i] = np.sum( particle_mass[creation_time <= t] )
 
@@ -45,11 +46,11 @@ if __name__=='__main__':
 
     ds_list = np.sort( glob.glob('./DD????/DD????'))
 
-    
+
     ds   = yt.load(ds_list[-1])
     data = ds.all_data()
 
-    times = np.arange(0.0*yt.units.Myr, ds.current_time.convert_to_units('Myr'), 5.0*yt.units.Myr)
+    times = np.arange(0.0*yt.units.Myr, ds.current_time.to('Myr'), 5.0*yt.units.Myr)
     times = times*yt.units.Myr
 
     times, mass = sfhFromParticles(ds, data, times = times)
