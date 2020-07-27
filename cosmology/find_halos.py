@@ -10,7 +10,7 @@ from yt.fields.api import ValidateParameter
 
 from yt.extensions.astro_analysis.halo_analysis.halo_recipes import add_recipe
 
-import sys, glob
+import os, sys, glob
 
 def my_calculate_virial_quantities(hc, fields,
                                 weight_field=None, accumulation=True,
@@ -67,7 +67,7 @@ def setup_ds(ds):
 ROCKSTAR_OUTPUT_PREFIX = 'rockstar_halos/halos_'
 HALOCATALOG_PREFIX     = 'halo_catalogs/catalog_'
 
-def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kwargs):
+def find_halos(dsname, simfile = None, wdir = './', restart = True, *args, **kwargs):
     """
     Find the halos in a dataset. For simplicity
     this ONLY does the halo finding. We do other computations
@@ -75,6 +75,10 @@ def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kw
 
 
     """
+    if (os.path.isfile(wdir + 'rockstar_halos/ROCKSTARDONE')):
+       	print("ROCKSTARDONE file exists. Exiting")
+       	return
+
     es = yt.simulation(simfile, "Enzo")
     es.get_time_series(initial_redshift=30.0)
  
@@ -103,6 +107,10 @@ def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kw
                              #num_readers=1, num_writers=1,
                              particle_type='max_res_dark_matter')
     rhf.run(restart=restart)
+
+    f = open("ROCKSTARDONE",'w')
+    f.write("Completed running rockstar from find_halos.py")
+    f.close()
 
     #halos = yt.load('rockstar_halos/halos_0.0.bin')
     #hc = HaloCatalog(halos_ds=halos, output_dir = widr + 'halo_catalogs/catalog_'+str(ds)))
@@ -158,7 +166,7 @@ if __name__ == '__main__':
         dsnames = [str(x) for x in sys.argv[1:]]
 
     if dsnames is None:
-        find_halos(None, simfile = simfile)
+        find_halos(None, simfile = simfile, restart = restart)
     else:
 
         for dsname in dsnames:
