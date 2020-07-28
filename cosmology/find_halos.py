@@ -43,23 +43,46 @@ add_recipe("my_calculate_virial_quantities", my_calculate_virial_quantities)
 def DarkMatter(pfilter,data):
     filter = data[('all','particle_type')] == 1 # DM in Enzo
     return filter
-
-def MaxResDarkMatter(pfilter,dobj):
-    min_dm_mass = dobj[('dark_matter','particle_mass')]
-    #min_dm_mass = dobj.get_field_parameter('min_dm_mass')
-    #min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
-    return dobj['particle_mass'] <= 1.01 * min_dm_mass
-
 add_particle_filter("dark_matter", function=DarkMatter, \
                     filtered_type='all', requires=["particle_type"])
+
+
+
+dsfiles = np.sort(glob.glob("?D????/?D????"))
+ds = yt.load(dsfiles[0])
+data = ds.all_data()
+ds.add_particle_filter('dark_matter')
+min_dm_mass = np.min(data[('dark_matter','particle_mass')].to('Msun'))
+
+
+def MaxResDarkMatter(pfilter,dobj):
+    return dobj['particle_mass'] <= 1.01 * min_dm_mass
 
 add_particle_filter("max_res_dark_matter", function=MaxResDarkMatter, \
                     filtered_type='dark_matter', requires=["particle_mass"])
 
 def setup_ds(ds):
+    data = ds.all_data()
     ds.add_particle_filter("dark_matter")
+    min_dm_mass = data.quantities.extrema(('dark_matter','particle_mass'))[0].to('Msun').value
+    ds.parameters['min_dm_mass'] = min_dm_mass
+
+
+#    def GenerateMaxResDarkMatter(minmass):
+#        def _MaxResDarkMatter(pfilter,dobj):
+#            # min_dm_mass = dobj.get_field_parameter('min_dm_mass')
+#            #min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
+#            return dobj['particle_mass'] <= 1.01 * minmass#
+#
+#        return _MaxResDarkMatter
+#
+#    add_particle_filter("max_res_dark_matter", function=GenerateMaxResDarkMatter(min_dm_mass), \
+#                        filtered_type='dark_matter', requires=["particle_mass"])
+
+
     ds.add_particle_filter("max_res_dark_matter")
     return
+
 
 
 #assert(yt.communication_system.communicators[-1].size >= 3)
@@ -80,12 +103,10 @@ def find_halos(dsname, simfile = None, wdir = './', restart = True, *args, **kwa
        	return
 
     es = yt.simulation(simfile, "Enzo")
-    es.get_time_series(initial_redshift=30.0)
+    es.get_time_series(initial_redshift=20.0)
  
-    print(es[0].derived_field_list)
     for ds in es:  
         setup_ds(ds)
-    print(es[0].derived_field_list)
 
     #ds = yt.load(wdir + dsname + '/' + dsname)
     #setup_ds(ds)
