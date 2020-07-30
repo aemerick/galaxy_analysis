@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def vectorized_nn(X=None, x=None, y=None, z=None, 
+def nn_search(X=None, x=None, y=None, z=None, 
                   n=1,
                   return_distances=False):
     """
