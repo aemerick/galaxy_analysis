@@ -2,8 +2,8 @@ import numpy as np
 
 
 def nn_search(X=None, x=None, y=None, z=None, 
-                  n=1,
-                  return_distances=False):
+              n=1,
+              return_distances=False):
     """
     Vectorized nearest neighbor search accepting either
     an (N,D) matrix (first kwarg) or three (N,) vectors
@@ -62,19 +62,19 @@ def nn_search(X=None, x=None, y=None, z=None,
 
         X = np.array(l).T
 
-    # now do the sort
+    # now do the sorting
     XXT = np.dot(X, X.T)
     Xii = XXT.diagonal()
     D   = Xii - 2 * XXT + Xii[:, np.newaxis]
 
-    print(np.shape(D))
     #
-    #
+    # generate array that sorts the distances
+    # to get indexes of nearest nth neighbor
+    # for each point
     #
     nn_sort = np.argsort(D, axis=1)[:,n]
 
     if return_distances:
-        distances = D[nn_sort]
-        return nn_sort, D[np.arange(len(nn_sort)), nn_sort]
+        return nn_sort, np.sqrt(D[np.arange(len(nn_sort)), nn_sort])
     else:
         return nn_sort
