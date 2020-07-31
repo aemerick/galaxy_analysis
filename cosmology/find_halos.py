@@ -179,7 +179,7 @@ if __name__ == '__main__':
     elif "." in str(sys.argv[1]):
         dsnames = None
         simfile = str(sys.argv[1])
-        restart = False
+        restart = True
         if len(sys.argv) > 2:
             restart = bool( sys.argv[2] )
        
