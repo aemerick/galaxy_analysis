@@ -8,6 +8,7 @@ import yt
 import ytree
 import sys
 
+from galaxy_analysis.cosmology.nearest import nn_search
 
 
 
@@ -32,6 +33,49 @@ def select_root_halos(a, criteria, fields):
 
     return roots
 
+
+def get_neighbors(a, all_halos, n = 1, selection = None):
+    """
+    Get the properties of the nearest neighbor to all of the halos.
+    """
+
+    all_neighbors = []
+
+    if selection is None:
+        selection = a['id']==a['id']
+
+    all_ids = a['id'][selection]
+    x = a['x'][selection].to('kpc')
+    y = a['y'][selection].to('kpc')
+    z = a['z'][selection].to('kpc')
+
+    nn_sorted, nn_distances = nn_search(x=x,y=y,z=z,
+                                        return_distances=True, n = n)
+    print(np.min(nn_distances), np.max(nn_distances))
+
+    for halos in all_halos:
+
+        nhalos = len(halos)
+        nn_dict = {}
+        fields = ['mass','virial_radius','id','x','y','z']
+        for field in ['distance'] + fields:
+            nn_dict[field] = np.zeros(nhalos)
+
+        for i,h in enumerate(halos):
+            host_index = np.argwhere(a['id'] == h['id'])[0]
+            nn_index   = nn_sorted[host_index]
+
+            for field in ['mass','virial_radius','id']:
+                nn_dict[field][i] = a[field][nn_index]
+
+            for field in ['x','y','z']:
+                nn_dict[field][i] = a[field][nn_index].to('kpc').value / a.box_size.to('kpc').value
+
+            nn_dict['distance'][i] = nn_distances[host_index] # in kpc
+
+        all_neighbors.append(nn_dict)
+
+    return all_neighbors
 
 def get_root_halos(a, criteria, fields,
                       unique = True,
@@ -106,7 +150,7 @@ def get_root_halos(a, criteria, fields,
     return final_roots
 
 
-def print_halo_info(a, treenodes, header = None, outfile = None):
+def print_halo_info(a, treenodes, neighbors = None, header = None, outfile = None):
     """
     Print some information about the list of treenodes
 
@@ -114,6 +158,7 @@ def print_halo_info(a, treenodes, header = None, outfile = None):
     -----------
     a         :   ytree object from which the nodes come from
     treenodes : list of tree nodes
+    neighbors : output from get_neighbors
     """
 
     if outfile is None:
@@ -124,8 +169,20 @@ def print_halo_info(a, treenodes, header = None, outfile = None):
 
     writefunc(header + '\n')
 
-    for tn in treenodes:
-        writefunc("%4i %5.5E %5.5E %.6f %.6f %.6f\n"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
+    if neighbors is None:
+        for tn in treenodes:
+            writefunc("%4i %5.5E %5.5E %.6f %.6f %.6f\n"%(tn['id'],tn['mass'],tn['virial_radius'],tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size))
+    else:
+        for i,tn in enumerate(treenodes):
+
+            flag = "iso"
+            if neighbors['distance'][i] < 1.5*tn['virial_radius']:
+                flag = "near"
+
+            writefunc("%4i %5.5E %5.5E %.6f %.6f %.6f %5.5E %4s %5.5E %5.5E %4i %.6f %.6f %.6f\n"%(tn['id'],tn['mass'],tn['virial_radius'],
+                                                          tn['x']/a.box_size,tn['y']/a.box_size,tn['z']/a.box_size,
+                                                          neighbors['distance'][i], flag, neighbors['mass'][i], neighbors['virial_radius'][i],
+                                                          neighbors['id'][i],neighbors['x'][i],neighbors['y'][i],neighbors['z'][i]))
 
 
     if not (outfile is None):
@@ -185,51 +242,56 @@ def plot_halos(a,treenodes, outfile = None):
 
 
 def my_halo_filter(tree_file):
+    mass_string = "1E9"
 
     all_criteria = [ '(tree["tree", "redshift"] > 12.0) *'
-                     '(tree["tree", "redshift"] < 13.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "redshift"] < 20.0) *'
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 11.0) *'
                      '(tree["tree", "redshift"] < 12.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 10.0) *'
                      '(tree["tree", "redshift"] < 11.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 9.0) *'
                      '(tree["tree", "redshift"] < 10.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 8.0) *'
                      '(tree["tree", "redshift"] < 9.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 7.0) *'
                      '(tree["tree", "redshift"] < 8.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)',
+                     '(tree["tree", "mass"] > ' + mass_string + ')',
 
                      '(tree["tree", "redshift"] > 6.0) *'
                      '(tree["tree", "redshift"] < 7.0) *'
-                     '(tree["tree", "mass"] > 1.0E9)']
+                     '(tree["tree", "mass"] > ' + mass_string + ')', 
+
+                     '(tree["tree", "redshift"] > 5.0) *'
+                     '(tree["tree", "redshift"] < 6.0) *'
+                     '(tree["tree", "mass"] > ' + mass_string + ')']
 
     fields = ['redshift','mass']
 
 
     a = ytree.load(tree_file)
 
-    all_halos = get_root_halos(a, all_criteria, fields, unique=True, mutually_exclusive='sequential')
+    all_halos      = get_root_halos(a, all_criteria, fields, unique=True, mutually_exclusive='sequential')
+    selection      = a['mass'] > 1.0E8
+    all_neighbors  = get_neighbors(a, all_halos, n = 1, selection=selection)
 
     outfiles, outplots = [], []
-    for z in np.arange(12,5.5,-1):
-        outfiles.append("1E9_above_z%i.dat"%(z))
-        outplots.append("1E9_above_z%i.png"%(z))
+    for z in np.arange(12,4.5,-1):
+        outfiles.append(mass_string+"_above_z%i.dat"%(z))
+        outplots.append(mass_string+"_above_z%i.png"%(z))
 
-    #outfiles = ['1E9_above_z8.dat','1E9_above_z7.dat', '1E9_above_z6.dat']
-    #outplots = ['1E9_above_z8.png','1E9_above_z7.png', '1E9_above_z6.png']
     for i in np.arange(len(all_criteria)):
-        print_halo_info(a,all_halos[i], header = all_criteria[i], outfile = outfiles[i])
+        print_halo_info(a, all_halos[i], header = all_criteria[i], neighbors=all_neighbors[i],outfile = outfiles[i])
         plot_halos(a,all_halos[i], outfile = outplots[i])
 
     return 

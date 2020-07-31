@@ -102,27 +102,15 @@ def find_halos(dsname, simfile = None, wdir = './', restart = True, *args, **kwa
        	print("ROCKSTARDONE file exists. Exiting")
        	return
 
-    es = yt.simulation(simfile, "Enzo")
-    es.get_time_series(initial_redshift=20.0)
+    if not (simfile is None):
+        es = yt.simulation(simfile, "Enzo")
+        es.get_time_series(initial_redshift=20.0)
  
-    for ds in es:  
-        setup_ds(ds)
-
-    #ds = yt.load(wdir + dsname + '/' + dsname)
-    #setup_ds(ds)
-
-    #data = ds.all_data()
-    #min_dm_mass = data.quantities.extrema(('dark_matter','particle_mass'))[0].to('Msun').value
-
-    #ds.parameters['min_dm_mass'] = min_dm_mass
-
-    #hc = HaloCatalog(data_ds = ds, finder_method = 'rockstar',
-    #                 finder_kwargs = {'dm_only':True,
-    #                                  'outbase' : ROCKSTAR_OUTPUT_PREFIX + str(ds),
-    #                                  'particle_type':'dark_matter'},
-    #                 output_dir = wdir + HALOCATALOG_PREFIX +str(ds))
-
-    #hc.create()
+        for ds in es:  
+            setup_ds(ds)
+    else:
+        es = yt.load(dsname + '/' + dsname)
+        setup_ds(es)
 
     rhf = RockstarHaloFinder(es, 
                              #num_readers=1, num_writers=1,
@@ -185,6 +173,7 @@ if __name__ == '__main__':
        
     else:
         dsnames = [str(x) for x in sys.argv[1:]]
+        restart = False
 
     if dsnames is None:
         find_halos(None, simfile = simfile, restart = restart)
