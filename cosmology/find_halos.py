@@ -10,7 +10,7 @@ from yt.fields.api import ValidateParameter
 
 from yt.extensions.astro_analysis.halo_analysis.halo_recipes import add_recipe
 
-import sys, glob
+import os, sys, glob
 
 def my_calculate_virial_quantities(hc, fields,
                                 weight_field=None, accumulation=True,
@@ -40,23 +40,49 @@ def my_calculate_virial_quantities(hc, fields,
 add_recipe("my_calculate_virial_quantities", my_calculate_virial_quantities)
 
 
-
-
-@particle_filter("dark_matter", requires=["particle_type"])
 def DarkMatter(pfilter,data):
     filter = data[('all','particle_type')] == 1 # DM in Enzo
     return filter
+add_particle_filter("dark_matter", function=DarkMatter, \
+                    filtered_type='all', requires=["particle_type"])
 
-@particle_filter("max_res_dark_matter", requires=["particle_type"])
+
+
+dsfiles = np.sort(glob.glob("?D????/?D????"))
+ds = yt.load(dsfiles[0])
+data = ds.all_data()
+ds.add_particle_filter('dark_matter')
+min_dm_mass = np.min(data[('dark_matter','particle_mass')].to('Msun'))
+
+
 def MaxResDarkMatter(pfilter,dobj):
-    #min_dm_mass = dobj.get_field_parameter('min_dm_mass')
-    min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
     return dobj['particle_mass'] <= 1.01 * min_dm_mass
 
+add_particle_filter("max_res_dark_matter", function=MaxResDarkMatter, \
+                    filtered_type='dark_matter', requires=["particle_mass"])
+
 def setup_ds(ds):
+    data = ds.all_data()
     ds.add_particle_filter("dark_matter")
+    min_dm_mass = data.quantities.extrema(('dark_matter','particle_mass'))[0].to('Msun').value
+    ds.parameters['min_dm_mass'] = min_dm_mass
+
+
+#    def GenerateMaxResDarkMatter(minmass):
+#        def _MaxResDarkMatter(pfilter,dobj):
+#            # min_dm_mass = dobj.get_field_parameter('min_dm_mass')
+#            #min_dm_mass = dobj.ds.parameters['min_dm_mass'] * yt.units.Msun
+#            return dobj['particle_mass'] <= 1.01 * minmass#
+#
+#        return _MaxResDarkMatter
+#
+#    add_particle_filter("max_res_dark_matter", function=GenerateMaxResDarkMatter(min_dm_mass), \
+#                        filtered_type='dark_matter', requires=["particle_mass"])
+
+
     ds.add_particle_filter("max_res_dark_matter")
     return
+
 
 
 #assert(yt.communication_system.communicators[-1].size >= 3)
@@ -64,7 +90,7 @@ def setup_ds(ds):
 ROCKSTAR_OUTPUT_PREFIX = 'rockstar_halos/halos_'
 HALOCATALOG_PREFIX     = 'halo_catalogs/catalog_'
 
-def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kwargs):
+def find_halos(dsname, simfile = None, wdir = './', restart = True, *args, **kwargs):
     """
     Find the halos in a dataset. For simplicity
     this ONLY does the halo finding. We do other computations
@@ -72,29 +98,28 @@ def find_halos(dsname, simfile = None, wdir = './', restart = False, *args, **kw
 
 
     """
-    es = yt.simulation(simfile, "Enzo")
-    es.get_time_series(initial_redshift=30.0)
+    if (os.path.isfile(wdir + 'rockstar_halos/ROCKSTARDONE')):
+       	print("ROCKSTARDONE file exists. Exiting")
+       	return
 
-    #ds = yt.load(wdir + dsname + '/' + dsname)
-    #setup_ds(ds)
-
-    #data = ds.all_data()
-    #min_dm_mass = data.quantities.extrema(('dark_matter','particle_mass'))[0].to('Msun').value
-
-    #ds.parameters['min_dm_mass'] = min_dm_mass
-
-    #hc = HaloCatalog(data_ds = ds, finder_method = 'rockstar',
-    #                 finder_kwargs = {'dm_only':True,
-    #                                  'outbase' : ROCKSTAR_OUTPUT_PREFIX + str(ds),
-    #                                  'particle_type':'dark_matter'},
-    #                 output_dir = wdir + HALOCATALOG_PREFIX +str(ds))
-
-    #hc.create()
+    if not (simfile is None):
+        es = yt.simulation(simfile, "Enzo")
+        es.get_time_series(initial_redshift=20.0)
+ 
+        for ds in es:  
+            setup_ds(ds)
+    else:
+        es = yt.load(dsname + '/' + dsname)
+        setup_ds(es)
 
     rhf = RockstarHaloFinder(es, 
                              #num_readers=1, num_writers=1,
-                             particle_type='dark_matter')
+                             particle_type='max_res_dark_matter')
     rhf.run(restart=restart)
+
+    f = open("ROCKSTARDONE",'w')
+    f.write("Completed running rockstar from find_halos.py")
+    f.close()
 
     #halos = yt.load('rockstar_halos/halos_0.0.bin')
     #hc = HaloCatalog(halos_ds=halos, output_dir = widr + 'halo_catalogs/catalog_'+str(ds)))
@@ -142,15 +167,16 @@ if __name__ == '__main__':
     elif "." in str(sys.argv[1]):
         dsnames = None
         simfile = str(sys.argv[1])
-        restart = False
+        restart = True
         if len(sys.argv) > 2:
             restart = bool( sys.argv[2] )
        
     else:
         dsnames = [str(x) for x in sys.argv[1:]]
+        restart = False
 
     if dsnames is None:
-        find_halos(None, simfile = simfile)
+        find_halos(None, simfile = simfile, restart = restart)
     else:
 
         for dsname in dsnames:
