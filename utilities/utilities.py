@@ -52,55 +52,55 @@ def window_average(x, y, dx, where = 'pre', edge_case = 'trim',
     """
     Given input x and y values (x and y must be the same size),
     computes the window average using a width of dx at each x value.
-    
+
     Parameters:
     -------
     x : np.ndarray
         Array of x values
-      
+
     y : np.ndarray
         Array of y values
-        
+
     dx : int,float
         Width (in x) to sample and average over
-        
+
     where : string, optional
         Where to place the window. Default: 'pre':
-        
+
             'pre'  : average over [x-dx,x)
             'mid'  : average over [x-dx/2, x+dx/2)
             'post' : average over [x,x+dx)
-            
+
     edge_case : string, optional
            How to handle when the window is near the min / max
        of the x values. Default : trim
-       
+
            'trim'   : reduce window size appropriately at edges.
                       Example, if 'pre' is used, for all x where
-                      x - dx < xmin, the window is 
+                      x - dx < xmin, the window is
                       [xmin, x).
            'fix'    : fix window size. This will flatten result
                       at edges. Example if 'pre' is used, for all
                       x where x - dx < xmin, the window
-                      [xmin, xmin + dx) is used. 
-                       
+                      [xmin, xmin + dx) is used.
+
     sample_points : np.ndarray, optional
         Use custom sample points to do the averaging. Defaults to
         the input x array.
-         
+
     window : string, optional
         Not yet implemented. Option to choose different window
         types.
-        
-        
+
+
     method : string, optional
         What to do with the points in the window. Default : average.
         Options include, average, sum, median, min, and max
     """
-    
+
     if np.size(x) != np.size(y):
         print("x and y must be the same length: ",np.size(x),np.size(y))
-        
+
         if np.size(x) == (np.size(y)+1):
             print("But it looks like x is just greater by one. Assuming bins and using centers")
             xvals = 0.5 * (x[1:] + x[-1])
@@ -108,29 +108,29 @@ def window_average(x, y, dx, where = 'pre', edge_case = 'trim',
             raise(ValueError)
     else:
         xvals = 1.0*x
-        
+
     if sample_points is None:
         sample_points = 1.0*x
-        
+
     output = np.zeros(np.size(sample_points))
-    
+
     if edge_case == 'fix':
         print("fix edge case is not yet implemented... sorrry")
         raise(RuntimeError)
-    
+
     if where == 'pre':
-        
+
         select_function = lambda array, z : (array >= z-dx) * (array < z)
-        
+
     elif where == 'mid':
-        
+
         select_function = lambda array, z : (array >= z-dx*0.5) * (array < z+dx*0.5)
 
     elif where == 'post':
-        
+
         select_function = lambda array, z : (array >= z) * (array < z+dx)
-    
-    
+
+
     if method == 'average':
         yfunction = lambda z : np.average(z)
     elif method == 'sum':
@@ -141,15 +141,15 @@ def window_average(x, y, dx, where = 'pre', edge_case = 'trim',
         yfunction = lambda z : np.max(z)
     elif method == 'min':
         yfunction = lambda z : np.min(z)
-        
+
     for i in np.arange(np.size(output)):
-        
+
         select    = select_function(xvals, sample_points[i])
         output[i] = yfunction(y[select])
-        
-        
+
+
     return output
-    
+
 
 def simple_rebin(bins, y, new_bins, method = "sum", force=False):
     """
@@ -641,6 +641,36 @@ def species_from_fields(fields, include_primordial = False):
         metals = ['H','He'] + metals
 
     return sort_by_anum(metals)
+
+def fraction_fields(ds):
+    """
+    Which non-species fraction fields are available to be computed?
+    """
+
+    list = ['AGB','Intermediate_Wind','Massive_Wind','SNII','SNIa','SNIa_SDS',
+            'SNIa_HeRS','SNIa_sCh','PopIII','PopIII_PISNe','RProcess']
+
+    available = []
+    if ds.parameters['IndividualStarTrackAGBMetalDensity']:
+        available.append('AGB')
+    if ds.parameters['IndividualStarTrackWindDensity']:
+        available.append('Intermediate_Wind')
+        available.append('Massive_Wind')
+    if ds.parameters['IndividualStarTrackSNMetalDensity']:
+        available.append("SNII")
+        available.append("SNIa")
+        if ds.parameters['IndividualStarSNIaModel'] == 2:
+            available.append("SNIa_SDS")
+            available.append("SNIa_HeRS")
+            available.append("SNIa_sCh")
+    if ds.parameters["IndividualStarPopIIIFormation"]:
+        available.append("PopIII")
+        available.append("PopIII_PISNe")
+
+    if ds.parameters["IndividualStarRProcessModel"]:
+        available.append("RProcess")
+
+    return available
 
 def abundance_ratios_from_fields(fields, select_denom = None, select_num = None):
     """
