@@ -141,11 +141,23 @@ def _mass_fraction_function_generator(ds, asym):
 
         return _mass_fraction
 
+    def return_function_2(a):
+        def _mass_fraction_2(field,data):
+            ele_dens = data[('enzo', a + '_Density_2')].value
+            ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+            ele_dens.convert_to_cgs()
+
+            dens = data[('enzo','Density')].to('g/cm**3')
+            mass_fraction = ele_dens / dens
+            return mass_fraction
+
+        return _mass_fraction
+
+
+
     nfields = 0
     for a in asym:
-
         yt.add_field(('gas', a + '_Fraction'),  sampling_type = 'cell', function = return_function(a), units="")
-
         nfields = nfields + 1
 
     if (('O' in asym) and ('Mg' in asym) and ('Si' in asym)):
@@ -180,6 +192,26 @@ def _mass_fraction_function_generator(ds, asym):
 
             yt.add_field(('gas', 'AGB_Mass_Fraction'), sampling_type = 'cell', function = _AGB_mass_fraction, units="")
 
+        if ds.parameters['IndividualStarTrackWindDensity']:
+            def _IWIND_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'Intermediate_Wind_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].to('g/cm**3')
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+            yt.add_field(('gas', 'Intermediate_Wind_Mass_Fraction'), sampling_type = 'cell', function = _IWIND_mass_fraction, units="")
+            def _MWIND_mass_fraction(field,data):
+                ele_dens = data[('enzo', 'Massive_Wind_Metal_Density')].value
+                ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                ele_dens.convert_to_cgs()
+
+                dens = data[('enzo','Density')].to('g/cm**3')
+                mass_fraction = ele_dens / dens
+                return mass_fraction
+            yt.add_field(('gas', 'Massive_Wind_Mass_Fraction'), sampling_type = 'cell', function = _MWIND_mass_fraction, units="")
+
         if ds.parameters['IndividualStarTrackSNMetalDensity']:
             def _SNII_mass_fraction(field,data):
                 ele_dens = data[('enzo', 'SNII_Metal_Density')].value
@@ -203,6 +235,38 @@ def _mass_fraction_function_generator(ds, asym):
 
             yt.add_field(('gas', 'SNIa_Mass_Fraction'), sampling_type = 'cell', function = _SNIa_mass_fraction, units="")
 
+            if ds.parameters['IndividualStarSNIaModel'] == 2:
+                def _SNIa_sCh_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'SNIa_sCh_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].to('g/cm**3')
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'SNIa_sCh_Mass_Fraction'), sampling_type = 'cell', function = _SNIa_sCh_mass_fraction, units="")
+                def _SNIa_SDS_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'SNIa_SDS_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].to('g/cm**3')
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'SNIa_SDS_Mass_Fraction'), sampling_type = 'cell', function = _SNIa_SDS_mass_fraction, units="")
+                def _SNIa_HeRS_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'SNIa_HeRS_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].to('g/cm**3')
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'SNIa_HeRS_Mass_Fraction'), sampling_type = 'cell', function = _SNIa_HeRS_mass_fraction, units="")
+
             if ds.parameters['IndividualStarPopIIIFormation']:
                 def _PopIII_mass_fraction(field,data):
                     ele_dens = data[('enzo', 'PopIII_Metal_Density')].value
@@ -213,7 +277,35 @@ def _mass_fraction_function_generator(ds, asym):
                     mass_fraction = ele_dens / dens
                     return mass_fraction
 
+                def _PopIII_PISNe_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'PopIII_PISNe_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].to('g/cm**3')
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
                 yt.add_field(('gas', 'PopIII_Mass_Fraction'), sampling_type = 'cell', function = _PopIII_mass_fraction, units="")
+                yt.add_field(('gas', 'PopIII_PISNe_Mass_Fraction'), sampling_type = 'cell', function = _PopIII_PISNe_mass_fraction, units="")
+
+
+                for a in asym:
+                    yt.add_field(('gas', a + '_PopIII_Fraction'),  sampling_type = 'cell', function = return_function_2(a), units="")
+                    nfields = nfields + 1
+
+            if ds.parameters['IndividualStarRProcessModel']
+                def _RProcess_mass_fraction(field,data):
+                    ele_dens = data[('enzo', 'RProcess_Metal_Density')].value
+                    ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
+                    ele_dens.convert_to_cgs()
+
+                    dens = data[('enzo','Density')].to('g/cm**3')
+                    mass_fraction = ele_dens / dens
+                    return mass_fraction
+
+                yt.add_field(('gas', 'RProcess_Mass_Fraction'), sampling_type = 'cell', function = _RProcess_mass_fraction, units="")
+
 
     return nfields
 
