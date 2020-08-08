@@ -630,6 +630,9 @@ def compute_statistics(values, weights=None, limits = [-np.inf, np.inf]):
     for pval in percentiles_list:
         stats['percent_' + perc_string(pval)] = 0
 
+    # some shorthand percentiles for the 1,2,3 sigma percentiles
+    for k in ['0.1','2','16','84','98','99']:
+        stats['percent_' + k] = 0        
 
     # don't throw an error if values is empty
     if values is None or len(values) == 0:
@@ -668,6 +671,10 @@ def compute_statistics(values, weights=None, limits = [-np.inf, np.inf]):
     stats['1-sigma'] = [stats['percent_15.865'], stats['percent_84.135']]
     stats['2-sigma'] = [stats['percent_2.275'] , stats['percent_97.725']]
     stats['3-sigma'] = [stats['percent_0.135'] , stats['percent_99.865']]
+
+    # and make some shorthand percentiles for these
+    for k1, k2 in [ ('16','15.865'), ('84','84.135'),('2','2.275'),('98','97.725'),('0.1','0.135'),('99','99.865')]:
+        stats['percent_'+k1] = stats['percent_' + k2]
 
     #
     # derived statistics giving ranges
@@ -748,7 +755,7 @@ def binned_statistics(values_x, values_y, limits = None, nbins = 100,
     _values_y = values_y[mask]
 
     if weights is None:
-        weights = np.ones(np.size(_values_x))
+        _weights = np.ones(np.size(_values_x))
     else:
         _weights = weights[mask]
 
@@ -800,7 +807,7 @@ def binned_statistics(values_x, values_y, limits = None, nbins = 100,
         # compute and save all stats for this bin.
         # this function returns
         #
-        stats = compute_statistics(masked_y, weights = weights[mask],
+        stats = compute_statistics(masked_y, weights = _weights[mask],
                                    limits = y_limits)
         if stats['number'] == 0:
             #
