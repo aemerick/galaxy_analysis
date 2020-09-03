@@ -515,6 +515,12 @@ def sort_by_anum(names):
     return list(np.array(names)[sort])
 
 def compute_stats(x, return_dict = False, acf = False):
+    """
+
+    OLD FUNCTION. HERE FOR BACKWARDS COMPATABILITY.
+
+    Please use `compute_statistics`
+    """
 
     if not return_dict: # for bakcwards compatability - will remove eventually
         return np.min(x), np.max(x), np.average(x), np.median(x), np.std(x)
@@ -536,6 +542,7 @@ def compute_stats(x, return_dict = False, acf = False):
         d['acf'] = 0.0
 
     return d
+
 
 def weighted_quantile(values, quantiles, weight=None, values_sorted=False):
     """
@@ -567,8 +574,273 @@ def weighted_quantile(values, quantiles, weight=None, values_sorted=False):
 
     return np.interp(quantiles, weighted_quantiles, values)
 
+def weighted_percentile(values, percentiles, weight=None, values_sorted=False):
+    """
+    See `weighted_quantile` for more information.
+    """
+    return weighted_quantile(values, percentiles/100.0, weight=weight, values_sorted=values_sorted)
+
+
+def compute_statistics(values, weights=None, limits = [-np.inf, np.inf]):
+    """
+    Compute a set of statistics for a given set of values with optional
+    weights and limits.
+
+    Provide an empty set of values or "None" to see which statistics
+    are computed
+
+    Parameters
+    ----------
+    values    : 1D-array
+                Array of values to compute. Supply an empty array or
+                'None' to see what statistics are computed.
+    weights   : 1D array (optional)
+                Optional weights for values. Must be same length as values.
+                Default : None
+    limits    : list, tuple (optional)
+                Minimum and maximum values to consider (2D list, tuple).
+                Default considers all values. Default: [-np.inf, np.inf].
+
+    Returns:
+    --------
+    stats     : dictionary
+                Dictionary of computed statistics. Provide an empty 'values'
+                to see what statistics are computed.
+    """
+
+    #
+    # construct default dictionary. This needs to be updated if
+    # new stats are computed below.
+    #
+    stats = {'limits' : [], 'number' : 0, 'median' : 0, 'mean' : 0,
+             '1-sigma' : 0, '2-sigma' : 0, '3-sigma' : 0,
+             '1-sigma_range' : 0, '2-sigma_range' : 0, '3-sigma_range' : 0,
+             'IQR' : 0, 'inter_quartile_range' : 0, 'inter_decile_range' : 0,
+             'mean_median_diff' : 0,
+             'variance' : 0,
+             'std': 0, 'min' : 0, 'max' : 0}
+    #
+    # percentiles to compute, with string formatter
+    # to eliminate trailing zeros and decimals in percentile
+    #
+    # e.g. percentile_0.135  and percentile_10
+    #
+    percentiles_list = [0.135, 2.275, 10, 15.865, 25, 50, 75, 84.135, 90, 97.725, 99.865]
+    perc_string = lambda x : ("%.3f"%(x)).rstrip("0").rstrip('.')
+    for pval in percentiles_list:
+        stats['percent_' + perc_string(pval)] = 0
+
+    # some shorthand percentiles for the 1,2,3 sigma percentiles
+    for k in ['0.1','2','16','84','98','99']:
+        stats['percent_' + k] = 0        
+
+    # don't throw an error if values is empty
+    if values is None or len(values) == 0:
+        return stats
+
+    # select out based on limits
+    mask = (values >= limits[0] ) * (values < limits[-1])
+    _values = values[mask]
+
+    nvalues = np.size(_values)
+    if weights is None:
+        _weights = np.ones(nvalues)
+    else:
+
+        if len(weights) != len(mask):
+            print("Weights must have same size (%i) as `values` array (%i)"%(np.size(weights),np.size(values)))
+            raise ValueError
+
+        _weights = weights[mask]
+
+    stats['limits'] = limits
+    stats['number'] = nvalues
+
+
+    stats['mean']      = np.average(_values, weights=_weights)
+    stats['variance']  = np.sum(weights/np.sum(weights) * (_values - stats['mean'])**2)
+    stats['std']       = np.sqrt(stats['variance'])
+
+    for pval in percentiles_list:
+        stats['percent_' + perc_string(pval)] =\
+                                  weighted_percentile(_values,pval,_weights)
+
+    stats['median'] = stats['percent_50']
+
+    # copy relevant percentiles into 1, 2, and 3 sigma interval pairs
+    stats['1-sigma'] = [stats['percent_15.865'], stats['percent_84.135']]
+    stats['2-sigma'] = [stats['percent_2.275'] , stats['percent_97.725']]
+    stats['3-sigma'] = [stats['percent_0.135'] , stats['percent_99.865']]
+
+    # and make some shorthand percentiles for these
+    for k1, k2 in [ ('16','15.865'), ('84','84.135'),('2','2.275'),('98','97.725'),('0.1','0.135'),('99','99.865')]:
+        stats['percent_'+k1] = stats['percent_' + k2]
+
+    #
+    # derived statistics giving ranges
+    #
+    for k in ['1-sigma','2-sigma','3-sigma']:
+        stats[k + '_range'] = stats[k][1] - stats[k][0]
+    stats['IQR']                  = stats['percent_75'] - stats['percent_25']
+    stats['inter_quartile_range'] = stats['IQR']
+    stats['inter_decile_range']   = stats['percent_90'] - stats['percent_10']
+    stats['mean_median_diff']     = stats['mean'] - stats['median']
+
+    # min, max
+    stats['min'] = np.min(_values)
+    stats['max'] = np.max(_values)
+
+
+    return stats
+
+def binned_statistics(values_x, values_y, limits = None, nbins = 100,
+                      bins = None, weights = None,
+                      y_limits = [-np.inf, np.inf],
+                      empty_value = np.nan,
+                      return_binned_values = False):
+    """
+    Computes binned statistics of `values_y` as a function of `values_x` with optional
+    weights.
+
+    Parameters :
+    -------------
+    values_x, values_y : 1D array
+            1D arrays of same length to compute statistics on. Bins `values_y` as
+            a function of `values_x`.
+
+    limits : list, tuple, optional
+            Min and max values in x dimension to bin along. If not provided,
+            defaults to min and max values of `values_x`.
+            Ignored if `bins` provided. Default : None
+
+    nbins   : int, optional
+            Number of bins. Ignored if `bins` provided. Default : 100
+
+    bins    : 1D array, optional
+            Bins in `values_x` to use. Overrides `limits` and `nbins` arguements.
+            Default : None
+
+    weights : 1D array, optional
+            Weights to use when computing statistics. Must be same size as
+            `values_x`. Default : None
+
+    y_limits : list, tuple, optional
+            Limits for `values_y` below / above which these values will be
+            ignored. Default is to accept all `values_y`. Default : [-np.inf,np.inf]
+
+    empty_value : optional
+             If a bin is empty, stats for that bin (except `number`)
+             are set to this value. Default is `np.nan` to mask out
+             when plotting.
+
+    return_binned_values : bool, optional
+            Return a list of the `values_y` in each bin as well in the
+            output dictionary. Default : False.
+
+    Returns:
+    ---------
+    """
+
+    if bins is None:
+        if limits is None:
+            limits = [np.min(values_x), np.max(values_x)]
+        bins = np.linspace(limits[0], limits[-1], nbins+1)
+    else:
+        limits = [bins[0], bins[-1]]
+        nbins  = np.size(bins)
+
+
+    mask = (values_x >= limits[0]) * (values_x < limits[-1])
+    _values_x = values_x[mask]
+    _values_y = values_y[mask]
+
+    if weights is None:
+        _weights = np.ones(np.size(_values_x))
+    else:
+        _weights = weights[mask]
+
+    # get kwargs of statistics that will be computed
+    # to build dictionary of lists to house the binned stats
+    empty_stats = compute_statistics(None)
+
+    binned_stats = {'bins'        : bins,      # bin edges
+                    'lbins'       : bins[:-1], # left bin edges
+                    'rbins'       : bins[1:],  # right bin edges
+                    'bins_mid'    : 0.5*(bins[:-1]+bins[1:]), # bin centers
+                    'bins_diff'   : (bins[:-1]-bins[1:]),     # db
+                    'bin_limits'  : limits,
+                    'y_limits'    : y_limits,
+                    'total_number': np.size(_values_x),
+                    'binned_y'    : [],    # empty for now, optional to generate
+                    'nbins'       : nbins}
+
+    #
+    # initialize the statistics (better than appending to a list)
+    #
+
+    # stats to skip and not save in binned statistic.
+    # these are all lists / tuples and redundant with other
+    # information
+    skip_stats = ['limits','1-sigma','2-sigma','3-sigma']
+
+    for k in empty_stats.keys():
+        if k in skip_stats:
+            continue
+        binned_stats[k] = np.zeros(binned_stats['nbins']-1)
+
+    if return_binned_values:
+        binned_stats['binned_y'] = [None] * binned_stats['nbins']
+
+    #
+    # generate the masks for all of the points
+    #
+    bin_indexes = np.digitize(_values_x, bins, right = False)
+    print(binned_stats['nbins'],np.min(bin_indexes),np.max(bin_indexes))
+    for i in np.arange(binned_stats['nbins']-1):
+        #
+        # Generate mask and get y values in this bin
+        #
+        mask     = bin_indexes == i
+        masked_y = _values_y[mask]
+
+        #
+        # compute and save all stats for this bin.
+        # this function returns
+        #
+        stats = compute_statistics(masked_y, weights = _weights[mask],
+                                   limits = y_limits)
+        if stats['number'] == 0:
+            #
+            # Set the stats to the empty value
+            # (by default, np.nan to mask out when plotting)
+            #
+            for k in stats.keys():
+                if k in skip_stats:
+                    continue
+                binned_stats[k][i] = empty_value
+            stats['number'] = 0
+
+        else:
+            for k in stats.keys():
+                if k in skip_stats:
+                    continue
+                # print(i,k,stats[k])
+                binned_stats[k][i] = stats[k]
+
+        # save masked y values if requested
+        if return_binned_values:
+            binned_stats['binned_y'][i] = masked_y
+
+
+    return binned_stats
+
 def compute_weighted_stats(x, w, return_dict = True):
     """
+
+    OLD FUNCTION. HERE FOR BACKWARDS COMPATABILITY.
+
+    Please use `compute_statistics`
+
     Returns a dictionary containing statistics information that can
     be easily tossed into a data set. Uses exclusively numpy-based routines
     to compute the relevant weighted statistics.
