@@ -151,7 +151,7 @@ def _mass_fraction_function_generator(ds, asym):
             mass_fraction = ele_dens / dens
             return mass_fraction
 
-        return _mass_fraction
+        return _mass_fraction_2
 
 
 
@@ -294,7 +294,7 @@ def _mass_fraction_function_generator(ds, asym):
                     yt.add_field(('gas', a + '_PopIII_Fraction'),  sampling_type = 'cell', function = return_function_2(a), units="")
                     nfields = nfields + 1
 
-            if ds.parameters['IndividualStarRProcessModel']
+            if ds.parameters['IndividualStarRProcessModel']:
                 def _RProcess_mass_fraction(field,data):
                     ele_dens = data[('enzo', 'RProcess_Metal_Density')].value
                     ele_dens = ele_dens * data.ds.mass_unit / data.ds.length_unit**3
