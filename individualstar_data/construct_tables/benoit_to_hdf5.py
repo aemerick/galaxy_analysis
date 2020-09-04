@@ -315,5 +315,7 @@ if __name__ == "__main__":
     construct_table(SN_model = 'LC18_R_150', wind_model = 'LC18_winds_R_150')
     construct_table(SN_model = 'LC18_R_300', wind_model = 'LC18_winds_R_300')
     construct_table(SN_model = 'LC18_mixture', wind_model = 'LC18_winds_mixture')
+
+    # THIS IS THE FIDUCIAL YIELD SET USED IN THE SIMS:
     construct_table(SN_model = 'LC18_resampled_mixture', wind_model = 'LC18_winds_resampled_mixture')
 
