@@ -1,3 +1,17 @@
+#
+#
+# Fiducial parameters for running the small nested test simulation
+# from John Wise
+#
+# using the individual star formation and stellar feedback
+# methods from A. Emerick.
+#
+# This file is set to include PISNe (see PopIII params to see how to turn off)
+#
+#
+# Head warning on PopIIIOutputOnFeedback!!!
+#
+
 #;-*-C-*-
 StopCycle           = 100000
 StopCPUTime         = 3600000
@@ -21,7 +35,10 @@ RightFaceBoundaryCondition = 3 3 3
 OutputTemperature = 1
 WritePotential    = 1
 OutputCoolingTime = 1
-PopIIIOutputOnFeedback = 2 // enable ?
+PopIIIOutputOnFeedback = 2 // WARNING: TURN THIS OFF AFTER SF
+                            //          REALLY GETS GOING OR ELSE YOU WILL BE DUMPING A TON
+                            //          OF FILES. On for now (set to 2!) to capture the first
+                            //          few PopIII SNe
 
 #
 #  problem parameters
@@ -90,7 +107,7 @@ FluxCorrection         = 2
 RiemannSolver          = 4
 CorrectParentBoundaryFlux = 1
 ConservativeInterpolation = 0
-CourantSafetyNumber         = 0.5
+CourantSafetyNumber         = 0.4
 ParticleCourantSafetyNumber = 0.8
 
 UseMinimumPressureSupport       = 0
@@ -113,9 +130,9 @@ MinimumMassForRefinementLevelExponent = -0.2 0.0
 MinimumEnergyRatioForRefinement = 0.4 // min Egas/Etot for shock refinement
 
 SubgridSizeAutoAdjust = 1
-LoadBalancing         = 4
-ParallelRootGridIO    = 1
+LoadBalancing         = 1
 UnigridTranspose      = 2
+ParallelRootGridIO    = 1
 
 #
 #  set some global parameters
@@ -162,6 +179,7 @@ LWbackground_model           = 0 // fit from Wise+2012 (override HM2012)
 PhotoelectricHeatingDustModel = 1 // Remy-Ruer (low-Z) same in Grackle
                                   // with local attenuation
 PhotoelectricHeatingDustModelEfficiency = 0.05 // < 0 to use scaling
+UseFUVBackground = 1 // Include FUV from UVB
 
 #
 # Star formation and feedback
@@ -177,85 +195,87 @@ StarParticleFeedback   = 32768 // Individual Stars
 #
 IndividualStarRefineToLevel      = 7   // CHANGE
 IndividualStarRefineForRadiation = 1   // use above when just rad feedback (pop III)
-IndividualStarRefineBufferSize   = 4
+IndividualStarRefineToPhysicalRadius = 16.0 // in pc, radius around the particle to flag for refinement
 MustRefineParticleRefineToLevel  = 7   // redundant with above
 IndividualStarRefineTime         = 0.1 // Myr
 
 # ---- physics paramters for star formation ------------
-StarMakerUseJeansMass                   = 0
-StarMakerMaximumFractionCell            = 0.5
-IndividualStarMassFraction              = 0.5
-StarMakerOverDensityThreshold           = 100     # b/c low res here
-IndividualStarSecondaryOverDensityThreshold = 100 # b/c low res here
-StarMakerMassEfficiency                 = 1
-IndividualStarCheckVelocityDiv          = 1
-IndividualStarSFGasMassThreshold        = 100.0
-IndividualStarTemperatureThreshold      = 500.0
-IndividualStarCreationStencilSize       = 3
-IndividualStarVelocityDispersion        = 0.1    // km / s
+StarMakerUseJeansMass                   = 0           // OFF
+IndividualStarMassFraction              = 0.5         // max fraciton of mass in cell to convert to stars
+StarMakerOverDensityThreshold           = 100       // number density threshold for SF. ROUGHLY scales by factor of 4 with factor of 2 change in resolution
+IndividualStarSecondaryOverDensityThreshold = 100    // number density threshold for SF for surrounding cells (see below)
+StarMakerMassEfficiency                 = 1           // efficiency per ff time
+IndividualStarCheckVelocityDiv          = 1           // use div v < 0 as a criteria
+IndividualStarSFGasMassThreshold        = 100.0       // minimum amount of mass needed in cell to form stars
+IndividualStarTemperatureThreshold      = 500.0       // max T to allow SF
+IndividualStarCreationStencilSize       = 3           // SF occurs by checking SF criteria on a center cell and pulling gas from a NxN grid aroudn that cell. (3x3 here)
+IndividualStarVelocityDispersion        = 0.1         // (km/s) dispersion around gas mean velocity for stars formed
 
-IndividualStarTemperatureLimit          = 1.0E8
-IndividualStarTemperatureLimitFactor    = 100.0
+IndividualStarTemperatureLimit          = 1.0E8       // bad name - hard cutoff on temperature in sim to reduce chances of very low density high temp gas slowing things down
+IndividualStarTemperatureLimitFactor    = 100.0       // for above, max factor to reduce T by in a single timestep to enforce the limit
 
-PopIIIH2CriticalFraction    = 0.0005    // go up to 0.001 in higher res / higher SF thresh
-PopIIIMetalCriticalFraction = -1        // use new model
-PopIIIRadiationModel        = 1
-PopIIIStarMass              = 20        // Characteristic mass
+PopIIIH2CriticalFraction    = 0.0005    // f_H2 required for PopIII SF - 0.0005 at 6x10^4 density threshold
+PopIIIMetalCriticalFraction = -1        // < 0 uses Chiaki+ C and Fe thresholds
+PopIIIRadiationModel        = 1         // Using updated radiation model from Heger+
+PopIIIStarMass              = 20        // (Msun) - Characteristic mass for PopIII IMF
 
-IndividualStarPopIIIFormation           = 1
-IndividualStarIMF                       = 2      // Kroupa
+IndividualStarPopIIIFormation           = 1         // Turns this ON
+IndividualStarIMF                       = 2         // Kroupa
 IndividualStarIMFUpperMassCutoff        = 120.000
 IndividualStarIMFLowerMassCutoff        =   0.080
-IndividualStarIMFMassFloor              =  2.0   // lowest mass as indiv particle
+IndividualStarIMFMassFloor              =  2.0      // lowest mass as indiv particle - below this gets grouped together
 
 
 # ---- feedback and yields ------------------------------
 StellarYieldsFilename              = IndividualStarYields.h5
-IndividualStarFollowStellarYields  = 1
-IndividualStarRProcessModel        = 1      // Does nothing for now
+IndividualStarFollowStellarYields  = 1      // Turns ON
+IndividualStarRProcessModel        = 1      // Turns ON - R proc gets deposited for each SNe from stars in between below range
 IndividualStarRProcessMinMass      = 24.37  // 1% of SNII in Kroupa IMF with 8 - 25 Msun SNII
-IndividualStarRProcessMaxMass      = 25.00  // 
-IndividualStarTrackAGBMetalDensity = 1
-IndividualStarTrackSNMetalDensity  = 1
-IndividualStarPrintSNStats         = 1
-IndividualStarSurfaceAbundances    = 1
-LimongiAbundances                  = 1    // if SA is on and using Limongi yields
-IndividualStarExtrapolateYields    = 1    // if star is above / below masses on grid
-                                          // scale abundances to closet grid point (same ratios)
+IndividualStarRProcessMaxMass      = 25.00  //
+IndividualStarTrackAGBMetalDensity = 1      // Turns ON
+IndividualStarTrackWindDensity     = 1      // Turns ON 2 wind fields (those with SNe and those without in separate fields)
+IndividualStarTrackSNMetalDensity  = 1      // Turns ON CCSNe and basic SNIa yield tracking
+IndividualStarPrintSNStats         = 1      // writes stats about SNe event and local gas conditions to stdout
+IndividualStarSurfaceAbundances    = 1      // surface abundance return following strategy in Wieresma+
+LimongiAbundances                  = 1      // if using surface abundances with Limongi yields - applies correction to their initial abundances in computing the surface return
+IndividualStarExtrapolateYields    = 1      // if star is above / below masses on grid
+                                            // scale abundances to closet grid point (same ratios)
 
+IndividualStarOutputChemicalTags   = 0      // track as particle attributes(0)
+IndividualStarSaveTablePositions   = 0      // much faster to do interpoltion if ON, but increases mem
+                                            // this SHOULD probably get turned on but haven't tested if it
+                                            // breaks things in cosmological runs (likely may break stuff to turn on mid-run)
 
-IndividualStarOutputChemicalTags   = 0    // track as particle attributes(0)
-IndividualStarSaveTablePositions   = 0    // cheaper interp, increased mem if 1
-
-IndividualStarFeedbackStencilSize  = -1
-IndividualStarFeedbackStencilSize  = 3.0  // CHANGE THIS AT LOW RES
-IndividualStarAGBWindVelocity      = 10.0 // km / s
-IndividualStarStellarWinds         = 1
-IndividualStarStellarWindVelocity  = 100.0
+IndividualStarFeedbackStencilSize  = -1     // < 0 is OFF - use fixed-cell count to do feedback radius
+IndividualStarFeedbackRadius       = 1.5    // (pc) radius aroudn particle to deposit feedback
+IndividualStarAGBWindVelocity      = 10.0   // (km / s)
+IndividualStarStellarWinds         = 1      // Turns ON
+IndividualStarStellarWindVelocity  = 100.0  // For non-agb winds (-1 to use Starburst99, not recommended)
 IndividualStarMaximumStellarWindVelocity = 100.0 // km / s
 
-IndividualStarDTDSlope     = 1.12       // Maoz+2012
-IndividualStarSNIaFraction = 0.1508     // " " Fraction of stars between 3 and 8 Msun that expl$
-IndividualStarSNIaModel    = 2
+// IndividualStarDTDSlope     = 1.12       // Maoz+2012 - no longer needed for SNIa model 2
+IndividualStarSNIaFraction = 0.1508     // Fraction of stars between 3 and 8 Msun (Kroupa IMF)
+IndividualStarSNIaModel    = 2          // Ruiter+ SNIa model with 4 DTDs (and tracks them as separate color fileds)
 
-IndividualStarIRRadiation = 1
-IndividualStarFUVHeating  = 1
-IndividualStarLWRadiation = 1
+# optically thin radiation:
+IndividualStarIRRadiation = 1           // Turns ON IR band radiation
+IndividualStarFUVHeating  = 1           // Turns ON FUV band radiation and photoelectric heating
+IndividualStarLWRadiation = 1           // Turns ON LW band radiation
 
-IndividualStarOTRadiationMass              = 8.000000
-IndividualStarIonizingRadiationMinimumMass = 8.000000
+IndividualStarOTRadiationMass              = 8.000000 // min mass to have IR,FUV,LW radiation
+IndividualStarIonizingRadiationMinimumMass = 8.000000 // min mass to have ionizing radiation
 
 # --- pop III settings ----
-TypeIILowerMass  = 10.0
-TypeIIUpperMass  = 100.0
-PISNLowerMass    = 140.0   // change these to turn off entirely
-PISNUpperMass    = 260.0
-PopIIIPISNEnergy = 1.0     // change this to < 0 to keep yields but no FB
+TypeIILowerMass  = 10.0     // min mass for CCSNe in popiii
+TypeIIUpperMass  = 100.0    //
+PISNLowerMass    = 140.0    // min mass for popiii PISNe (change this and below to turn off PISNe)
+PISNUpperMass    = 260.0    // set this and above to nonsense (e.g. 0 and 0) to turn off PISNe)
+PopIIIPISNEnergy = -1.0     // < 0 uses Heger model, 0 keeps yields but no energy, > 0 is fixed energy in 10^51 ergs
 
 # ---- Yields -------
-StellarYieldsNumberOfSpecies = 10
-# H He (redundant) C N O Mg Ca Fe Sr Ba
-StellarYieldsAtomicNumbers   = 1 2 6 7 8 12 20 26 38 56
+StellarYieldsNumberOfSpecies = 12
+# H He (redundant since followed in chemistry) C N O Na Mg Ca Mn Fe Sr Ba
+StellarYieldsAtomicNumbers   = 1 2 6 7 8 11 12 20 25 26 38 56
 
 
 # ---- Radiative Transfer Solver Parameters -------------

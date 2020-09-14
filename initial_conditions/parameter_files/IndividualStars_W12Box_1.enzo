@@ -1,6 +1,6 @@
 #
 #
-# Fiducial parameters for running the Wise+2012 BoG box 
+# Fiducial parameters for running the Wise+2012 BoG box
 # using the individual star formation and stellar feedback
 # methods from A. Emerick.
 #
@@ -90,7 +90,7 @@ RiemannSolver          = 4
 ReconstructionMethod   = 1
 CorrectParentBoundaryFlux = 1
 ConservativeInterpolation = 0
-CourantSafetyNumber       = 0.5
+CourantSafetyNumber       = 0.4
 ParticleCourantSafetyNumber = 0.8
 UseMinimumPressureSupport        = 0
 RefineByJeansLengthSafetyFactor  = 4.0
@@ -112,7 +112,7 @@ MinimumMassForRefinementLevelExponent = -0.2 0.0
 MinimumEnergyRatioForRefinement       = 0.4 // min Egas/Etot for shock refinement
 
 SubgridSizeAutoAdjust = 1
-LoadBalancing         = 4
+LoadBalancing         = 1
 UnigridTranspose      = 2
 ParallelRootGridIO    = 1
 
@@ -141,7 +141,7 @@ RadiationRedshiftFullOn = 50
 
 grackle_data_file           = CloudyData_HM2012_highz_shielded.h5     // must use highz one!!
 H2_self_shielding           = 1
-self_shielding_method       = 3 // 
+self_shielding_method       = 3 //
 use_volumetric_heating_rate = 1 // needed for FUV and PE heating
 
 dust_chemistry              = 2 // enables PE heating model (by default)
@@ -176,7 +176,7 @@ StarParticleFeedback   = 32768 // Individual Stars
 #
 IndividualStarRefineToLevel      = 7   // Level to refine to around particles (this evolves!)
 MustRefineParticleRefineToLevel  = 7   // redundant with above (above takes priority)
-IndividualStarRefineForRadiation = 1   // use above when just rad feedback (pop III) to force refinement since thee don't have winds 
+IndividualStarRefineForRadiation = 1   // use above when just rad feedback (pop III) to force refinement since thee don't have winds
 IndividualStarRefineToPhysicalRadius = 5.0 // in pc, radius around the particle to flag for refinement
 IndividualStarRefineTime         = 0.1     // Myr - time AFTER star dies to keep refining (so no sudden de-ref after a SNe)
 
@@ -184,13 +184,13 @@ IndividualStarRefineTime         = 0.1     // Myr - time AFTER star dies to keep
 StarMakerUseJeansMass                   = 0           // OFF
 IndividualStarMassFraction              = 0.5         // max fraciton of mass in cell to convert to stars
 StarMakerOverDensityThreshold           = 2500        // number density threshold for SF. ROUGHLY scales by factor of 4 with factor of 2 change in resolution
-IndividualStarSecondaryOverDensityThreshold = 2500    // number density threshold for SF for surrounding cells (see below) 
+IndividualStarSecondaryOverDensityThreshold = 2500    // number density threshold for SF for surrounding cells (see below)
 StarMakerMassEfficiency                 = 1           // efficiency per ff time
 IndividualStarCheckVelocityDiv          = 1           // use div v < 0 as a criteria
 IndividualStarSFGasMassThreshold        = 100.0       // minimum amount of mass needed in cell to form stars
 IndividualStarTemperatureThreshold      = 500.0       // max T to allow SF
 IndividualStarCreationStencilSize       = 3           // SF occurs by checking SF criteria on a center cell and pulling gas from a NxN grid aroudn that cell. (3x3 here)
-IndividualStarVelocityDispersion        = 0.1         // (km/s) dispersion around gas mean velocity for stars formed 
+IndividualStarVelocityDispersion        = 0.1         // (km/s) dispersion around gas mean velocity for stars formed
 
 IndividualStarTemperatureLimit          = 1.0E8       // bad name - hard cutoff on temperature in sim to reduce chances of very low density high temp gas slowing things down
 IndividualStarTemperatureLimitFactor    = 100.0       // for above, max factor to reduce T by in a single timestep to enforce the limit
@@ -204,15 +204,15 @@ IndividualStarPopIIIFormation           = 1         // Turns this ON
 IndividualStarIMF                       = 2         // Kroupa
 IndividualStarIMFUpperMassCutoff        = 120.000
 IndividualStarIMFLowerMassCutoff        =   0.080
-IndividualStarIMFMassFloor              =  2.0      // lowest mass as indiv particle - below this gets grouped together 
+IndividualStarIMFMassFloor              =  2.0      // lowest mass as indiv particle - below this gets grouped together
 
 
 # ---- feedback and yields ------------------------------
-StellarYieldsFilename              = IndividualStarYields.h5  
+StellarYieldsFilename              = IndividualStarYields.h5
 IndividualStarFollowStellarYields  = 1      // Turns ON
 IndividualStarRProcessModel        = 1      // Turns ON - R proc gets deposited for each SNe from stars in between below range
 IndividualStarRProcessMinMass      = 24.37  // 1% of SNII in Kroupa IMF with 8 - 25 Msun SNII
-IndividualStarRProcessMaxMass      = 25.00  // 
+IndividualStarRProcessMaxMass      = 25.00  //
 IndividualStarTrackAGBMetalDensity = 1      // Turns ON
 IndividualStarTrackWindDensity     = 1      // Turns ON 2 wind fields (those with SNe and those without in separate fields)
 IndividualStarTrackSNMetalDensity  = 1      // Turns ON CCSNe and basic SNIa yield tracking
@@ -261,7 +261,7 @@ StellarYieldsAtomicNumbers   = 1 2 6 7 8 11 12 20 25 26 38 56
 
 # ---- Radiative Transfer Solver Parameters -------------
 #  see Enzo docs for most of these
-RadiativeTransfer = 1                             
+RadiativeTransfer = 1
 RadiativeTransferLoadBalance              = 1
 RadiativeTransferRaysPerCell            = 3.1
 RadiativeTransferInitialHEALPixLevel    = 1
@@ -274,7 +274,7 @@ RadiativeTransferRadiationPressure      = 1
 RadiativeTransferHubbleTimeFraction     = 1
 RadiativeTransferFluxBackgroundLimit    = 0.05
 RadiativeTransferSourceClustering       = 1        // THIS NEEDS TO BE USED WITH CARE
-RadiativeTransferSourceClusteringCount  = 1000     // 
+RadiativeTransferSourceClusteringCount  = 1000     //
 RadiativeTransferOpticallyThinSourceClustering = 1
 RadiativeTransferPhotonMergeRadius      = 10.0     // controls clustering
 RadiativeTransferAdaptiveTimestep       = 1
