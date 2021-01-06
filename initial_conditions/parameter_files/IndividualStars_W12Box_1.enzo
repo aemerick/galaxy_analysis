@@ -112,7 +112,7 @@ MinimumMassForRefinementLevelExponent = -0.2 0.0
 MinimumEnergyRatioForRefinement       = 0.4 // min Egas/Etot for shock refinement
 
 SubgridSizeAutoAdjust = 1
-LoadBalancing         = 1
+LoadBalancing         = 4
 UnigridTranspose      = 2
 ParallelRootGridIO    = 1
 
@@ -144,9 +144,10 @@ H2_self_shielding           = 1
 self_shielding_method       = 3 //
 use_volumetric_heating_rate = 1 // needed for FUV and PE heating
 
-dust_chemistry              = 2 // enables PE heating model (by default)
+dust_chemistry              = 1 // enables PE heating model (by default)
                                 // but turned off below, dust cooling, and
-                                // h2 formation on dust, option 2
+
+H2FormationOnDust           = 2 // h2 formation on dust, option 2
                                 // is unique to my version of Grackle which uses
                                 // a special low-z D/G ratio
 
@@ -155,7 +156,7 @@ photoelectric_heating        = 0 // I deal with this separately for now
 use_isrf_field               = 0 // set to 1 once changes made
 interstellar_radiation_field = 0 // using isrf_habing pointer
 
-LWbackground_model           = 0 // now incorprated into table - otherwise 1 is Wise2012 2 is Qin2020
+LWbackground_model           = 0 // now incorprated into Cloudy table - otherwise 1 is Wise2012 2 is Qin2020
 
 PhotoelectricHeatingDustModel = 1 // Remy-Ruer (low-Z) same in Grackle
                                   // with local attenuation
