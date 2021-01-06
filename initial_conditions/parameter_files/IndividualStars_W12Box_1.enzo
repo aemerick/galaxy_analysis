@@ -42,7 +42,7 @@ PopIIIOutputOnFeedback = 2  // WARNING: TURN THIS OFF AFTER SF
 #  problem parameters
 #
 CosmologySimulationOmegaBaryonNow        = 0.0449
-CosmologySimulationOmegaCDMNow           = 0.266
+CosmologySimulationOmegaCDMNow           = 0.2211
 CosmologySimulationInitialTemperature    = 380
 CosmologySimulationDensityName           = GridDensity
 CosmologySimulationVelocity1Name         = GridVelocities_x
