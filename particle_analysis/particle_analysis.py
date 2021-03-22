@@ -463,8 +463,6 @@ def compute_end_of_life(data,
 
 
 
-    This assumes that stellar particle types have been defined
-    using field_generators.define_particle_types.
 
     Rate is returned in events / Myr
 
